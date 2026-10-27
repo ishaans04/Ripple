@@ -43,9 +43,11 @@ WORKDIR /app
 COPY --from=runtime-deps --chown=node:node /app/node_modules node_modules
 COPY --chown=node:node package.json ./
 COPY --chown=node:node packages/contracts/package.json packages/contracts/
+COPY --chown=node:node packages/engine/package.json packages/engine/
 COPY --chown=node:node packages/database/package.json packages/database/
 COPY --chown=node:node apps/server/package.json apps/server/
 COPY --from=build --chown=node:node /app/packages/contracts/dist packages/contracts/dist
+COPY --from=build --chown=node:node /app/packages/engine/dist packages/engine/dist
 COPY --from=build --chown=node:node /app/packages/database/dist packages/database/dist
 COPY --from=build --chown=node:node /app/packages/database/migrations packages/database/migrations
 COPY --from=build --chown=node:node /app/apps/server/dist apps/server/dist
