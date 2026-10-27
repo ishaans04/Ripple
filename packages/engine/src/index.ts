@@ -19,3 +19,4 @@ export * from './studio-challenge.ts';
 export * from './studio-blueprint.ts';
 export * from './studio-slots.ts';
 export * from './studio-adaptation.ts';
+export * from './studio-selection.ts';
