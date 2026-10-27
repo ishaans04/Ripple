@@ -2,6 +2,7 @@
   "files": [],
   "references": [
     { "path": "packages/contracts/tsconfig.build.json" },
+    { "path": "packages/engine/tsconfig.build.json" },
     { "path": "packages/database/tsconfig.build.json" },
     { "path": "apps/server/tsconfig.build.json" }
   ]

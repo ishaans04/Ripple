@@ -1,0 +1,24 @@
+{
+  "name": "@ripple/engine",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Pure deterministic Ripple game rules: genomes, ballots, habitats, scoring, and explanations",
+  "type": "module",
+  "exports": {
+    ".": {
+      "ripple-source": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "dependencies": {
+    "@noble/hashes": "2.4.0",
+    "zod": "4.6.7"
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json"
+  }
+}

@@ -8,6 +8,7 @@ FROM ${NODE_IMAGE} AS deps
 WORKDIR /app
 COPY package.json package-lock.json .npmrc ./
 COPY packages/contracts/package.json packages/contracts/
+COPY packages/engine/package.json packages/engine/
 COPY packages/database/package.json packages/database/
 COPY apps/server/package.json apps/server/
 COPY apps/web/package.json apps/web/
@@ -25,6 +26,7 @@ FROM ${NODE_IMAGE} AS runtime-deps
 WORKDIR /app
 COPY package.json package-lock.json .npmrc ./
 COPY packages/contracts/package.json packages/contracts/
+COPY packages/engine/package.json packages/engine/
 COPY packages/database/package.json packages/database/
 COPY apps/server/package.json apps/server/
 COPY apps/web/package.json apps/web/
