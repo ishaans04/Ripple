@@ -1,0 +1,43 @@
+/*
+ * Ripple design tokens (PRD section 11.2). Dark neutral surfaces with restrained
+ * biological accents. Contrast pairs are verified by tokens.test.ts.
+ */
+:root {
+  --color-background: #101820;
+  --color-panel: #182630;
+  --color-text-primary: #edf5f4;
+  --color-text-secondary: #a7bcc4;
+  --color-action: #56d6c5;
+  --color-warning: #f0bd68;
+  --color-fossil: #91a3ae;
+  --color-on-action: #101820;
+
+  --font-body: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --font-mono: ui-monospace, 'Cascadia Mono', 'Segoe UI Mono', Consolas, monospace;
+
+  --text-sm: 0.875rem;
+  --text-md: 1rem;
+  --text-lg: 1.25rem;
+  --text-xl: 1.75rem;
+  --text-display: clamp(2.5rem, 6vw, 4rem);
+
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+  --space-12: 3rem;
+
+  --radius-sm: 6px;
+  --radius-md: 12px;
+
+  --focus-ring: 0 0 0 3px var(--color-background), 0 0 0 5px var(--color-action);
+  --motion-fast: 150ms;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --motion-fast: 0ms;
+  }
+}

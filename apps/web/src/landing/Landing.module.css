@@ -1,0 +1,76 @@
+.page {
+  max-width: 60rem;
+  margin: 0 auto;
+  padding-inline: max(var(--space-4), 4vw);
+  padding-block: var(--space-12);
+  display: grid;
+  gap: var(--space-8);
+}
+
+.hero {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.eyebrow {
+  color: var(--color-action);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.title {
+  font-size: var(--text-display);
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+}
+
+.pitch {
+  max-width: 40rem;
+  color: var(--color-text-secondary);
+  font-size: var(--text-lg);
+}
+
+.panel {
+  background: var(--color-panel);
+  border-radius: var(--radius-md);
+  padding: var(--space-6);
+  display: grid;
+  gap: var(--space-4);
+}
+
+.panelHeading {
+  font-size: var(--text-lg);
+}
+
+.loop {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: loop;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+  gap: var(--space-4);
+}
+
+.loopItem {
+  counter-increment: loop;
+  display: grid;
+  gap: var(--space-1);
+}
+
+.loopStep::before {
+  content: counter(loop) '. ';
+  color: var(--color-action);
+  font-family: var(--font-mono);
+}
+
+.loopStep {
+  font-weight: 600;
+}
+
+.loopDetail {
+  color: var(--color-text-secondary);
+  font-size: var(--text-sm);
+}

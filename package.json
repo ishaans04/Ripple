@@ -25,7 +25,7 @@
     "lint": "eslint .",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "build": "tsc -b tsconfig.build.json",
+    "build": "tsc -b tsconfig.build.json && npm run build -w @ripple/web",
     "typecheck": "tsc -p tsconfig.json && npm run typecheck --workspaces --if-present",
     "clean": "tsc -b tsconfig.build.json --clean",
     "test": "vitest run --project unit",
