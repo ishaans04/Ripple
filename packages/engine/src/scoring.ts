@@ -66,15 +66,20 @@ export interface ScoreBreakdown {
   readonly extinct: boolean;
 }
 
-function assertScoreInput(input: ScoreInput, rules: Ruleset): void {
-  assertLegalGenome(input.genome, rules.genome);
-  const { healthBefore, profile, shocks } = input;
-  if (!Number.isSafeInteger(healthBefore) || healthBefore < 1 || healthBefore > rules.health.max) {
+/** A living organism's health is an integer in [1, health.max]; zero is extinction. */
+export function assertLivingHealth(health: number, rules: Ruleset): void {
+  if (!Number.isSafeInteger(health) || health < 1 || health > rules.health.max) {
     throw new EngineError(
       'INVALID_ARGUMENT',
       `a living organism's health is an integer in [1, ${rules.health.max}]`,
     );
   }
+}
+
+function assertScoreInput(input: ScoreInput, rules: Ruleset): void {
+  assertLegalGenome(input.genome, rules.genome);
+  assertLivingHealth(input.healthBefore, rules);
+  const { profile, shocks } = input;
   const { burst, steadiness } = profile;
   if (
     !Number.isSafeInteger(burst) ||

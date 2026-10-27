@@ -6,6 +6,7 @@ export * from './genome.ts';
 export * from './habitat.ts';
 export * from './integer.ts';
 export * from './random.ts';
+export * from './resolution.ts';
 export * from './ruleset.ts';
 export * from './scoring.ts';
 export * from './tally.ts';
