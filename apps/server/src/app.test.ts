@@ -1,11 +1,16 @@
 import { errorResponseSchema } from '@ripple/contracts';
+import pg from 'pg';
 import { afterEach, describe, expect, it } from 'vitest';
 import { buildApp } from './app.ts';
+
+// These routes never touch the database, so the pool is never connected.
+const idlePool = new pg.Pool({ connectionString: 'postgres://unused@127.0.0.1:1/unused' });
 
 function capturedApp() {
   const lines: string[] = [];
   const app = buildApp({
     config: { logLevel: 'info' },
+    pool: idlePool,
     logStream: { write: (line) => lines.push(line) },
   });
   const logs = () => lines.map((line) => JSON.parse(line) as Record<string, unknown>);
