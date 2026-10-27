@@ -62,7 +62,11 @@ export default function Studio() {
     if (confirming && dialog.current?.open === false) dialog.current.showModal();
     if (!confirming) dialog.current?.close();
   }, [confirming]);
-  const [saveStatus, setSaveStatus] = useState('Your draft stays on this device.');
+  const [savedDraft, setSavedDraft] = useState<{
+    blueprint: AppearanceBlueprint | null;
+    saved: boolean;
+  }>({ blueprint: null, saved: false });
+  const [downloaded, setDownloaded] = useState<AppearanceBlueprint | null>(null);
   const blueprint: AppearanceBlueprint = useMemo(
     () => ({
       schemaVersion: 1,
@@ -77,23 +81,37 @@ export default function Studio() {
     [state.part, template],
   );
   useEffect(() => {
-    const timer = setTimeout(() => {
+    // The bounded record is small. Persist on every committed edit rather than
+    // leaving a debounce window in which navigation can discard the latest art.
+    const persist = () => {
       let saved = false;
       try {
         saved = saveDraft(localStorage, blueprint, practiceChallenge, Date.now());
       } catch {
         /* Download remains available. */
       }
-      setSaveStatus(
-        saved
-          ? 'Draft saved on this device.'
-          : 'Device storage is unavailable. Download your design to keep it.',
-      );
-    }, 250);
+      return saved;
+    };
+    const saved = persist();
+    queueMicrotask(() => {
+      setSavedDraft({ blueprint, saved });
+    });
+    const flush = () => {
+      persist();
+    };
+    window.addEventListener('pagehide', flush);
     return () => {
-      clearTimeout(timer);
+      window.removeEventListener('pagehide', flush);
     };
   }, [blueprint]);
+  const saveStatus =
+    downloaded === blueprint
+      ? 'Design downloaded. Your local draft is also kept.'
+      : savedDraft.blueprint !== blueprint
+        ? 'Saving draft…'
+        : savedDraft.saved
+          ? 'Draft saved on this device.'
+          : 'Device storage is unavailable. Download your design to keep it.';
   function download() {
     const accepted = acceptBlueprint(blueprint, practiceChallenge, candidateRuleset);
     const url = URL.createObjectURL(
@@ -109,7 +127,7 @@ export default function Studio() {
       URL.revokeObjectURL(url);
     }, 1000);
     setConfirming(false);
-    setSaveStatus('Design downloaded. Your local draft is also kept.');
+    setDownloaded(blueprint);
   }
   const move = studioMutationMove(template);
   return (
