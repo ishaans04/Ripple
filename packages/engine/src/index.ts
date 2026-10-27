@@ -1,6 +1,7 @@
 export * from './baseline.ts';
 export * from './candidates.ts';
 export * from './canonical.ts';
+export * from './dormant.ts';
 export * from './errors.ts';
 export * from './explanation.ts';
 export * from './genome.ts';
