@@ -1,3 +1,4 @@
+export * from './ancestor.ts';
 export * from './baseline.ts';
 export * from './candidates.ts';
 export * from './canonical.ts';
