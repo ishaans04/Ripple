@@ -49,22 +49,40 @@ export async function applyLifecycle(
     return effect(changed ? 'APPLIED' : 'NO_CHANGE', changed ? 'integration.status' : null);
   }
   if (command.type === 'pause') {
-    if (command.reason === 'manual') {
+    const flagChanged = command.reason === 'manual' && !channel.paused;
+    if (flagChanged) {
       await client.query('update channels set paused=true where world_id=$1 and id=$2', scope);
       channel.paused = true;
     }
-    if (round === null) return effect('NO_CHANGE');
+    if (round === null)
+      return effect(flagChanged ? 'APPLIED' : 'NO_CHANGE', flagChanged ? 'paused' : null, {
+        reason: command.reason,
+      });
     const clock = pauseRoundClock(round.checkpoint.clock, atMs);
-    if (clock === round.checkpoint.clock) return effect('NO_CHANGE');
+    if (clock === round.checkpoint.clock)
+      return effect(flagChanged ? 'APPLIED' : 'NO_CHANGE', flagChanged ? 'paused' : null, {
+        reason: command.reason,
+      });
     await saveCheckpoint(context, { ...round.checkpoint, clock });
     return effect('APPLIED', 'paused', { reason: command.reason });
   }
   if (command.type === 'interrupt') {
+    const flagChanged = channel.healthy;
     await client.query('update channels set healthy=false where world_id=$1 and id=$2', scope);
     channel.healthy = false;
-    if (round === null) return effect('APPLIED', 'integration.status', { reason: command.reason });
+    if (round === null)
+      return effect(
+        flagChanged ? 'APPLIED' : 'NO_CHANGE',
+        flagChanged ? 'integration.status' : null,
+        { reason: command.reason },
+      );
     const clock = interruptRoundClock(round.checkpoint.clock, atMs, timings);
-    if (clock === round.checkpoint.clock) return effect('NO_CHANGE');
+    if (clock === round.checkpoint.clock)
+      return effect(
+        flagChanged ? 'APPLIED' : 'NO_CHANGE',
+        flagChanged ? 'integration.status' : null,
+        { reason: command.reason },
+      );
     await saveCheckpoint(context, { ...round.checkpoint, clock });
     await client.query(`update rounds set confidence='interrupted' where world_id=$1 and id=$2`, [
       channel.world_id,
@@ -74,16 +92,21 @@ export async function applyLifecycle(
   }
   if (!channel.online || !channel.healthy) return effect('INTEGRATION_UNAVAILABLE');
   if (command.type === 'recover' && channel.paused) return effect('PAUSED');
-  if (round === null) return effect('NO_CHANGE');
+  const flagChanged = command.type === 'resume' && channel.paused;
+  if (flagChanged) {
+    await client.query('update channels set paused=false where world_id=$1 and id=$2', scope);
+    channel.paused = false;
+  }
+  if (round === null)
+    return effect(flagChanged ? 'APPLIED' : 'NO_CHANGE', flagChanged ? 'resumed' : null);
   const clock =
     command.type === 'recover'
       ? recoverRoundClock(round.checkpoint.clock, atMs)
       : resumeRoundClock(round.checkpoint.clock, atMs);
-  if (clock === round.checkpoint.clock) return effect('NO_CHANGE');
-  if (command.type === 'resume') {
-    await client.query('update channels set paused=false where world_id=$1 and id=$2', scope);
-    channel.paused = false;
-  }
+  if (clock === round.checkpoint.clock)
+    return effect(flagChanged ? 'APPLIED' : 'NO_CHANGE', flagChanged ? 'resumed' : null, {
+      recoveryRequired: clock.phase === 'INTERRUPTED',
+    });
   await saveCheckpoint(context, { ...round.checkpoint, clock });
   return effect('APPLIED', 'resumed', {
     recovery: command.type === 'recover',

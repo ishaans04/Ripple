@@ -93,6 +93,11 @@ export async function processNextInput(
 ): Promise<WorkerReceipt | null> {
   return transaction(pool, async (client) => {
     await lockChannels(client, worldId, [channelId]);
+    const activeWorld = await client.query(
+      'select id from worlds where id=$1 and (expires_at is null or expires_at>clock_timestamp())',
+      [worldId],
+    );
+    if (activeWorld.rowCount !== 1) return null;
     const context = await loadContext(client, worldId, channelId);
     const { channel } = context;
     if (channel.processed_sequence === channel.intake_sequence) return null;
