@@ -1,0 +1,30 @@
+{
+  "name": "@ripple/database",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Ripple PostgreSQL schema, migrations, and connection management",
+  "type": "module",
+  "exports": {
+    ".": {
+      "ripple-source": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "migrations"
+  ],
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json",
+    "db:generate": "drizzle-kit generate"
+  },
+  "dependencies": {
+    "@types/pg": "8.23.1",
+    "drizzle-orm": "0.45.4",
+    "pg": "8.23.1"
+  },
+  "devDependencies": {
+    "drizzle-kit": "0.31.11"
+  }
+}

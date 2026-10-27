@@ -1,0 +1,94 @@
+{
+  "id": "4f55c262-2b98-4e5b-98a2-fa9a77139e36",
+  "prevId": "00000000-0000-0000-0000-000000000000",
+  "version": "7",
+  "dialect": "postgresql",
+  "tables": {
+    "public.worlds": {
+      "name": "worlds",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "mode": {
+          "name": "mode",
+          "type": "world_mode",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "owner_capability_hash": {
+          "name": "owner_capability_hash",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "rules_hash": {
+          "name": "rules_hash",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "expires_at": {
+          "name": "expires_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "worlds_rules_hash_format": {
+          "name": "worlds_rules_hash_format",
+          "value": "\"worlds\".\"rules_hash\" ~ '^[0-9a-f]{64}$'"
+        },
+        "worlds_owner_capability_hash_format": {
+          "name": "worlds_owner_capability_hash_format",
+          "value": "\"worlds\".\"owner_capability_hash\" is null or \"worlds\".\"owner_capability_hash\" ~ '^[0-9a-f]{64}$'"
+        },
+        "worlds_sandbox_owned_and_expiring": {
+          "name": "worlds_sandbox_owned_and_expiring",
+          "value": "\"worlds\".\"mode\" <> 'sandbox' or (\"worlds\".\"owner_capability_hash\" is not null and \"worlds\".\"expires_at\" is not null)"
+        }
+      },
+      "isRLSEnabled": false
+    }
+  },
+  "enums": {
+    "public.world_mode": {
+      "name": "world_mode",
+      "schema": "public",
+      "values": [
+        "live",
+        "sandbox",
+        "replay"
+      ]
+    }
+  },
+  "schemas": {},
+  "sequences": {},
+  "roles": {},
+  "policies": {},
+  "views": {},
+  "_meta": {
+    "columns": {},
+    "schemas": {},
+    "tables": {}
+  }
+}
