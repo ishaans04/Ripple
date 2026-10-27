@@ -20,9 +20,12 @@ export const worlds = pgTable(
     rulesHash: text('rules_hash').notNull(),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     expiresAt: timestamp('expires_at', { withTimezone: true }),
+    /** Explicit synthetic clock; live worlds always use receipt wall time. */
+    clockAt: timestamp('clock_at', { withTimezone: true }),
   },
   (table) => [
     check('worlds_rules_hash_format', sql`${table.rulesHash} ~ '^[0-9a-f]{64}$'`),
+    check('worlds_live_clock_real', sql`${table.mode} <> 'live' or ${table.clockAt} is null`),
     check(
       'worlds_owner_capability_hash_format',
       sql`${table.ownerCapabilityHash} is null or ${table.ownerCapabilityHash} ~ '^[0-9a-f]{64}$'`,

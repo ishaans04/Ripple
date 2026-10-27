@@ -1,0 +1,2 @@
+ALTER TABLE "worlds" ADD COLUMN "clock_at" timestamp with time zone;--> statement-breakpoint
+ALTER TABLE "worlds" ADD CONSTRAINT "worlds_live_clock_real" CHECK ("worlds"."mode" <> 'live' or "worlds"."clock_at" is null);
