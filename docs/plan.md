@@ -2,7 +2,7 @@
 
 This plan sequences the [PRD](prd.md) feature register (P01-P40) and the [Cocoon Studio addendum](cocoon-studio.md) into phases. Cocoon Studio turns a streamer's break into a bounded creative task: viewers shape a shell by hand or pointer, chat picks a design with a legal gene trade-off, and the approved design hatches at a safe boundary and travels with raids. The addendum has no requirement identifiers, so this plan assigns S01-S21 (see [Cocoon Studio register](#cocoon-studio-register)); each is a pre-release requirement like a P requirement.
 
-Phases run strictly in order; a phase starts only after the previous phase meets its exit criterion. Phases 0 and 1 are complete. The order follows the PRD's dependency order (section 23), with two changes:
+Phases run in order. Phases 0, 1, and 2 are complete. The user has directed implementation to continue with sandbox and synthetic checks while the test Twitch accounts, bot, and public HTTPS URL are unavailable: real integration acceptance stays explicitly pending and never counts as completed live evidence. All other exit checks remain prerequisites for the next phase. The [progress record](progress.md) tracks that deferral and actual evidence. The order follows the PRD's dependency order (section 23), with two changes:
 
 - A synthetic input adapter is built with the event backbone so the game can be developed and demonstrated without live Twitch credentials.
 - The studio's pure rules and browser editor come directly after the engine. The addendum (section 30) asks for browser, worker, and hand-tracking model compatibility to be proven, and blueprint rules property-tested, before any studio state goes live; neither depends on a later phase. The rest of the studio follows the systems it reuses: the event backbone, Twitch identity and ballots, raids, the novel mechanics, and the product surfaces.
@@ -53,12 +53,12 @@ Sections refer to the [addendum](cocoon-studio.md). The phase column shows where
 
 ### Decisions to settle in the phase that builds them
 
-The addendum leaves these open. Each will be decided, tested, and reported when its phase starts, not assumed silently:
+Phase 2 settled the following addendum gaps; the decisions and tests are recorded in [delivery progress](progress.md):
 
-- **Keep current winning (Phase 2):** the addendum's transition diagram has no path for a vote that keeps the current design, or for a studio with no eligible proposal.
-- **Cosmetic-only hatches (Phase 2):** whether a cosmetic-only result consumes the target mutation slot or hatches without one.
-- **Ties against Keep current (Phase 2):** the existing tally gives ties to the earlier option, so a finalist would beat Keep current on a tie unless the studio ballot orders or breaks ties differently.
-- **Founder appearance (Phase 2):** which blueprint, if any, a founding organism has before its first studio.
+- **Keep current:** terminal unchanged outcome, including empty shortlists and no votes; no approval or hatch.
+- **Cosmetic-only hatches:** consume the same eligible future mutation slot and preserve genes/fitness.
+- **Ties against Keep current:** Keep current wins those ties; finalist-only ties retain seeded order.
+- **Founder appearance:** versioned neutral `shell-v1` segmented shell, without studio or artist provenance.
 
 ## Not scheduled
 

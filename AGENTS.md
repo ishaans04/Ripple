@@ -6,3 +6,4 @@
 - Author and commit as `ishaans04 <sharmaishaaan04@gmail.com>`. Do not add AI co-author trailers or additional collaborators.
 - Keep camera, gesture, clock, network, and database operations outside the pure engine. Preserve deterministic accepted-record replay and world isolation.
 - Record phase progress, decisions, validation, and remaining exit checks in `docs/progress.md` so work can resume accurately.
+- The user has explicitly deferred live Twitch acceptance until broadcaster/bot accounts and a public HTTPS URL exist. Continue sequential implementation with applicable sandbox/synthetic checks; keep live gates visibly pending and provide setup instructions at Phase 4. Synthetic tests never establish live acceptance or release readiness.
