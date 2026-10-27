@@ -1,8 +1,14 @@
 import Fastify from 'fastify';
-import { describe, expect, it, vi } from 'vitest';
+import { beforeAll, describe, expect, it, vi } from 'vitest';
 import { createShutdown } from './shutdown.ts';
 
 describe('createShutdown', () => {
+  // The first Fastify instance in a worker lazily loads its schema compilers
+  // (Ajv and fast-json-stringify). Pay that one-time cost here, not in a timed test.
+  beforeAll(async () => {
+    await Fastify().close();
+  });
+
   it('closes the app, runs close hooks, then exits with the requested code', async () => {
     const app = Fastify();
     const order: string[] = [];
