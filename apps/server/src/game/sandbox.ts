@@ -57,7 +57,7 @@ export async function createSyntheticWorld(
       [worldId, sha256Hex(ownerCapability), hash],
     );
     await client.query(
-      `insert into channels (world_id,id,label,rules_hash,seed,configuration,online,healthy) values ($1,$2,'Synthetic channel',$3,$4,$5,true,true)`,
+      `insert into channels (world_id,id,label,rules_hash,seed,configuration,online,healthy,initial_online,initial_healthy) values ($1,$2,'Synthetic channel',$3,$4,$5,true,true,true,true)`,
       [
         worldId,
         channelId,
