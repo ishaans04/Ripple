@@ -2,6 +2,7 @@ export * from './candidates.ts';
 export * from './canonical.ts';
 export * from './errors.ts';
 export * from './genome.ts';
+export * from './habitat.ts';
 export * from './integer.ts';
 export * from './random.ts';
 export * from './ruleset.ts';
