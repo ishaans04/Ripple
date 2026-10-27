@@ -8,15 +8,16 @@ The full specification is in [docs/prd.md](docs/prd.md), and the phased delivery
 
 ## Current status
 
-Ripple is being built phase by phase. **Phase 0 (foundation) is complete.** What works today:
+Ripple is being built phase by phase. **Phase 0 (foundation) and Phase 1 (pure engine) are complete.** What works today:
 
 - The application service (Fastify on Node.js 24) with structured, correlated JSON logs, a uniform error contract, security headers, and graceful shutdown
 - PostgreSQL 18 with versioned migrations applied exactly once under an advisory lock, starting with the `worlds` table that isolates live, sandbox, and replay state
 - Liveness and readiness endpoints (`/health/live`, `/health/ready`)
 - The web landing page, served by the same service, showing live service status
 - One-command local startup with Docker Compose, and CI covering lint, types, unit tests, integration tests on real PostgreSQL, the build, and a Compose smoke test
+- The deterministic game rules as a tested library (`@ripple/engine`; see [Game engine](#game-engine)), reproducing the PRD's worked journey (section 25.4) exactly
 
-Gameplay (the engine, Twitch integration, raids, overlay, and sandbox) arrives in later phases; see the [plan](docs/plan.md).
+The engine is not yet wired to rounds, persistence, Twitch, or any screen, so the game is not playable yet. The event backbone, Twitch integration, raids, overlay, and sandbox arrive in later phases; see the [plan](docs/plan.md).
 
 ## Quick start
 
@@ -84,9 +85,29 @@ Invalid configuration stops startup with a message naming each offending variabl
 apps/server/         Fastify application service: config, logging, health, web serving
 apps/web/            React + Vite browser app: design tokens and landing page
 packages/contracts/  Zod schemas shared by the server and browser
+packages/engine/     Pure deterministic game rules: genomes, ballots, habitats, scoring, explanations
 packages/database/   Drizzle schema, SQL migrations, migration runner
 docs/                PRD, delivery plan, and archived design history
 ```
+
+## Game engine
+
+`@ripple/engine` holds the game rules as pure functions. It performs no I/O and never reads the clock or ambient randomness, so the same recorded inputs always produce the same result in Node or the browser.
+
+| Area          | What it does                                                                                                                                                                                        |
+| ------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Integers      | Safe-integer arithmetic only; floor division and round-half-up are explicit, never floating point                                                                                                   |
+| Rulesets      | Versioned, deeply frozen balance parameters, identified by the SHA-256 of their canonical JSON (RFC 8785, integers only). `candidate-1` holds the PRD's initial, still unvalidated values           |
+| Randomness    | xoshiro128\*\* seeded from SHA-256 of recorded material; unbiased bounded draws; Fisher-Yates shuffle                                                                                               |
+| Genomes       | Pulse, Calm, Grit, Drift in [0, 15] summing to 24; a mutation moves 2 points between two genes                                                                                                      |
+| Ballots       | Three distinct cards from a seeded shuffle of the sorted legal moves; each account's first valid vote stands; ties go to seeded order; no votes means Hold                                          |
+| Habitat       | Burst and steadiness (0-1000) from chat, with one contribution per account per 10-second bucket; confidence needs three accounts; frozen baselines from the last ten valid rounds give context only |
+| Scoring       | The PRD 6.5 integer fitness contract with Grit protection, capped shock, one capped trace, delta and health clamps, and extinction at zero                                                          |
+| Resolution    | Applied, limited (estimate with health held), or interrupted (nothing progresses; never treated as a quiet round)                                                                                   |
+| Explanations  | Deterministic templates: every signed contribution sums to the energy change, at most two leading causes, and the full calculation                                                                  |
+| Journey rules | Raid child health from Drift, dormant capture and offer checks, trace template and qualification, and ancestor trials under matched inputs                                                          |
+
+The lifecycles built on these rules (round scheduling, trace and dormant lifetimes, admission, contests) arrive with the phases that persist them.
 
 ## Architecture
 
