@@ -1,0 +1,3 @@
+ALTER TABLE "organisms" DROP CONSTRAINT "organisms_generation_bounds";--> statement-breakpoint
+ALTER TABLE "organisms" ADD CONSTRAINT "organisms_living_health" CHECK ("organisms"."status" not in ('ALIVE','HARBOR') or "organisms"."health">0);--> statement-breakpoint
+ALTER TABLE "organisms" ADD CONSTRAINT "organisms_generation_bounds" CHECK (("organisms"."parent_id" is null and "organisms"."generation"=0 and "organisms"."founder_id"="organisms"."id") or ("organisms"."parent_id" is not null and "organisms"."parent_id"<>"organisms"."id" and "organisms"."founder_id"<>"organisms"."id" and "organisms"."generation" between 1 and 16));

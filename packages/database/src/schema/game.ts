@@ -136,10 +136,11 @@ export const organisms = pgTable(
       sql`${t.pulse} between 0 and 15 and ${t.calm} between 0 and 15 and ${t.grit} between 0 and 15 and ${t.drift} between 0 and 15 and ${t.pulse}+${t.calm}+${t.grit}+${t.drift}=24`,
     ),
     check('organisms_health_bounds', sql`${t.health} between 0 and 100`),
+    check('organisms_living_health', sql`${t.status} not in ('ALIVE','HARBOR') or ${t.health}>0`),
     check('organisms_status_valid', sql`${t.status} in ('ALIVE','HARBOR','FOSSIL','ARCHIVED')`),
     check(
       'organisms_generation_bounds',
-      sql`${t.generation} between 0 and 16 and (${t.parentId} is not null or ${t.generation}=0)`,
+      sql`(${t.parentId} is null and ${t.generation}=0 and ${t.founderId}=${t.id}) or (${t.parentId} is not null and ${t.parentId}<>${t.id} and ${t.founderId}<>${t.id} and ${t.generation} between 1 and 16)`,
     ),
     check('organisms_version_nonnegative', sql`${t.version} >= 0`),
     index('organisms_parent_idx').on(t.worldId, t.parentId),

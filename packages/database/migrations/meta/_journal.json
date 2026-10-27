@@ -85,6 +85,20 @@
       "when": 1793120222776,
       "tag": "0011_daffy_puma",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1793121329664,
+      "tag": "0012_loud_viper",
+      "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1793121577144,
+      "tag": "0013_freeze_accepted_history",
+      "breakpoints": true
     }
   ]
 }

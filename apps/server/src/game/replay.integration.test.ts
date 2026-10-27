@@ -45,6 +45,18 @@ describe('accepted-record reconstruction', () => {
     const source = await journey(),
       before = await canonicalGameProjection(pool, source);
     const bundle = await exportAcceptedChannel(pool, source);
+    await expect(
+      pool.query('update votes set choice=3 where world_id=$1', [source.worldId]),
+    ).rejects.toMatchObject({ code: '23514' });
+    await expect(
+      pool.query('update habitat_baselines set burst=0 where world_id=$1', [source.worldId]),
+    ).rejects.toMatchObject({ code: '23514' });
+    await expect(
+      pool.query(
+        `update rounds set resolution='{}' where world_id=$1 and completed_at is not null`,
+        [source.worldId],
+      ),
+    ).rejects.toMatchObject({ code: '23514' });
     expect(bundle.records.length).toBeGreaterThan(10);
     const replay = await replayAcceptedChannel(pool, bundle);
     expect(replay.worldId).not.toBe(source.worldId);

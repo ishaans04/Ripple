@@ -216,6 +216,7 @@ export async function canonicalGameProjection(pool: pg.Pool, scope: WorldScope):
       `select jsonb_build_object(
     'channel',(select jsonb_build_object('online',online,'healthy',healthy,'paused',paused,'version',state_version,'checksum',checksum) from channels where world_id=$1 and id=$2),
     'organisms',coalesce((select jsonb_agg(to_jsonb(o)-'world_id'-'created_at' order by o.id) from organisms o where o.world_id=$1 and exists(select 1 from residencies r where r.world_id=o.world_id and r.organism_id=o.id and r.channel_id=$2)),'[]'::jsonb),
+    'lineages',coalesce((select jsonb_agg(to_jsonb(l)-'world_id' order by l.id) from lineages l where l.world_id=$1 and l.origin_channel_id=$2),'[]'::jsonb),
     'rounds',coalesce((select jsonb_agg(to_jsonb(r)-'world_id' order by r.number) from rounds r where r.world_id=$1 and r.channel_id=$2),'[]'::jsonb),
     'residencies',coalesce((select jsonb_agg(to_jsonb(r)-'world_id' order by r.id) from residencies r where r.world_id=$1 and r.channel_id=$2),'[]'::jsonb),
     'baselines',coalesce((select jsonb_agg(to_jsonb(b)-'world_id' order by b.round_id) from habitat_baselines b where b.world_id=$1 and b.channel_id=$2),'[]'::jsonb)
