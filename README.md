@@ -10,7 +10,7 @@ The full specification is in [docs/prd.md](docs/prd.md), extended by the [Cocoon
 
 Ripple is being built phase by phase. **Phase 0 (foundation) and Phase 1 (pure engine) are complete.** What works today:
 
-**Phase 2 is in progress:** the shared studio contracts now validate bounded, immutable shell blueprints and captured challenges. The editor and hand-tracking integration are being built next. See [delivery progress](docs/progress.md) for resolved studio policies and remaining exit checks.
+**Phase 2 is in progress:** [Cocoon Studio practice](http://localhost:3000/studio) now provides a complete local shell editor with hand, pointer, touch, and keyboard controls. Its pure rules, immutable blueprints, and safe mutation-slot handling are implemented. Final verification is recorded in [delivery progress](docs/progress.md).
 
 - The application service (Fastify on Node.js 24) with structured, correlated JSON logs, a uniform error contract, security headers, and graceful shutdown
 - PostgreSQL 18 with versioned migrations applied exactly once under an advisory lock, starting with the `worlds` table that isolates live, sandbox, and replay state
@@ -110,6 +110,16 @@ docs/                PRD, Cocoon Studio addendum, delivery plan, and archived de
 | Journey rules | Raid child health from Drift, dormant capture and offer checks, trace template and qualification, and ancestor trials under matched inputs                                                          |
 
 The lifecycles built on these rules (round scheduling, trace and dormant lifetimes, admission, contests) arrive with the phases that persist them.
+
+## Cocoon Studio practice
+
+Start the app normally and open `/studio`, or follow the practice studio link on the landing page. Choose a legal shell trade-off, drag the white control points or use the labeled sliders, and choose a marking and palette. Undo, redo, reset, local draft recovery, and a confirmed JSON download work without an account or Twitch credentials. Local practice never submits a live proposal or changes live game state.
+
+Hand controls are opt-in. Enable the camera, face your palm toward it, pinch a white control point, move, then release. Calibration includes a mirrored preview, hand detection, sensitivity, and one-hand mode; disable one-hand mode to scale with two pinching hands. Tracking loss freezes editing and never saves or submits. Camera or model failure keeps the draft and leaves all pointer controls usable. Video and landmarks stay in the browser; the microphone is never requested. Camera tracks stop when disabled or when leaving the studio, and inference pauses in hidden tabs.
+
+The pinned MediaPipe 1.1.1 runtime and SHA-256-verified version 1 model are served by Ripple, with inference in a module worker. `npm run build` and the web dev script prepare the package's local WASM assets. See [third-party notices](THIRD_PARTY_NOTICES.md). Production camera access requires HTTPS; localhost works for development.
+
+`npm run test:e2e` builds the application and runs the studio browser journeys against the actual Fastify service and production security headers. Windows Chrome and Edge must be installed. Tests include real model inference on an upstream test photograph (no physical camera needed), synthetic-landmark parity with pointer input, denial, tracking loss, touch dragging, and local recovery. These tests are not a claim of live Twitch integration.
 
 ## Architecture
 

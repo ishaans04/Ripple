@@ -59,7 +59,9 @@ export function EditorCanvas({
             aria-valuemin={shellBounds[key].min}
             aria-valuemax={shellBounds[key].max}
             aria-valuenow={part.parameters[key]}
-            onKeyDown={(event) => { keyboard(key, event); }}
+            onKeyDown={(event) => {
+              keyboard(key, event);
+            }}
             onPointerDown={(event) => {
               event.preventDefault();
               active.current = key;

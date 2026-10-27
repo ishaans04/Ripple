@@ -28,9 +28,11 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "build": "tsc -b tsconfig.build.json && npm run build -w @ripple/web",
-    "typecheck": "tsc -p tsconfig.json && npm run typecheck --workspaces --if-present",
+    "typecheck": "tsc -p tsconfig.json && npm run typecheck --workspaces --if-present && tsc -p tests/tsconfig.json",
     "clean": "tsc -b tsconfig.build.json --clean",
     "test": "vitest run --project unit",
+    "pretest:e2e": "npm run build",
+    "test:e2e": "playwright test",
     "test:integration": "node --env-file-if-exists=.env node_modules/vitest/vitest.mjs run --project integration",
     "db:up": "docker compose up -d --wait db",
     "db:migrate": "npm run migrate -w @ripple/database"

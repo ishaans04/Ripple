@@ -137,21 +137,37 @@ export default function Studio() {
           </div>
           <EditorCanvas part={state.part} dispatch={dispatch} />
           <div className={styles.toolbar}>
-            <button onClick={() => { dispatch({ type: 'undo' }); }} disabled={state.past.length === 0}>
+            <button
+              onClick={() => {
+                dispatch({ type: 'undo' });
+              }}
+              disabled={state.past.length === 0}
+            >
               Undo
             </button>
-            <button onClick={() => { dispatch({ type: 'redo' }); }} disabled={state.future.length === 0}>
+            <button
+              onClick={() => {
+                dispatch({ type: 'redo' });
+              }}
+              disabled={state.future.length === 0}
+            >
               Redo
             </button>
-            <button onClick={() => { dispatch({ type: 'reset' }); }}>Reset shell</button>
+            <button
+              onClick={() => {
+                dispatch({ type: 'reset' });
+              }}
+            >
+              Reset shell
+            </button>
           </div>
           <p className={styles.hint}>
             Mouse, touch, or keyboard. Focus a point and use arrow keys; hold Shift for fine
             adjustments.
           </p>
         </section>
-      <aside className={styles.controls}>
-        <HandControls part={state.part} dispatch={dispatch} />
+        <aside className={styles.controls}>
+          <HandControls part={state.part} dispatch={dispatch} />
           <section>
             <p className={styles.eyebrow}>01 / The trade-off</p>
             <h2>Reinforce the shell</h2>
@@ -193,8 +209,9 @@ export default function Studio() {
                   min={shellBounds[key].min}
                   max={shellBounds[key].max}
                   value={state.part.parameters[key]}
-                  onChange={(event) => { dispatch({ type: 'parameter', key, value: Number(event.target.value) }); }
-                  }
+                  onChange={(event) => {
+                    dispatch({ type: 'parameter', key, value: Number(event.target.value) });
+                  }}
                 />
               </label>
             ))}
@@ -208,7 +225,9 @@ export default function Studio() {
                   <button
                     key={pattern}
                     aria-pressed={state.part.marking.patternId === pattern}
-                    onClick={() => { dispatch({ type: 'marking', pattern }); }}
+                    onClick={() => {
+                      dispatch({ type: 'marking', pattern });
+                    }}
                   >
                     {pattern}
                   </button>
@@ -224,7 +243,9 @@ export default function Studio() {
                     className={styles.palette}
                     data-palette={palette}
                     aria-pressed={state.part.marking.paletteId === palette}
-                    onClick={() => { dispatch({ type: 'palette', palette }); }}
+                    onClick={() => {
+                      dispatch({ type: 'palette', palette });
+                    }}
                   >
                     {palette.replace('-', ' + ')}
                   </button>
@@ -232,7 +253,12 @@ export default function Studio() {
               </div>
             </fieldset>
           </section>
-          <button className={styles.primary} onClick={() => { setConfirming(true); }}>
+          <button
+            className={styles.primary}
+            onClick={() => {
+              setConfirming(true);
+            }}
+          >
             Save design <span aria-hidden="true">↗</span>
           </button>
           <p className={styles.muted} role="status">
@@ -244,22 +270,30 @@ export default function Studio() {
         <span>Created here. Carried onward.</span>
         <span>Local practice · no live proposal is submitted</span>
       </footer>
-          <dialog
-            ref={dialog}
-            className={styles.dialog}
-            onCancel={() => { setConfirming(false); }}
-            aria-labelledby="save-title"
-          >
-            <h2 id="save-title">Save this shell?</h2>
-            <p>
-              Download your design and its genetic trade-off. This saves a local design, not a live
-              proposal.
-            </p>
-            <button className={styles.primary} autoFocus onClick={download}>
-              Download design
-            </button>
-            <button onClick={() => { setConfirming(false); }}>Keep editing</button>
-          </dialog>
+      <dialog
+        ref={dialog}
+        className={styles.dialog}
+        onCancel={() => {
+          setConfirming(false);
+        }}
+        aria-labelledby="save-title"
+      >
+        <h2 id="save-title">Save this shell?</h2>
+        <p>
+          Download your design and its genetic trade-off. This saves a local design, not a live
+          proposal.
+        </p>
+        <button className={styles.primary} autoFocus onClick={download}>
+          Download design
+        </button>
+        <button
+          onClick={() => {
+            setConfirming(false);
+          }}
+        >
+          Keep editing
+        </button>
+      </dialog>
     </main>
   );
 }
