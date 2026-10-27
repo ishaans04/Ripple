@@ -1,9 +1,12 @@
 import Fastify, { LogController, type FastifyInstance } from 'fastify';
 import type pg from 'pg';
+import rateLimit from '@fastify/rate-limit';
 import type { ServerConfig } from './config.ts';
 import { registerErrorHandling } from './errors.ts';
 import { loggerOptions, requestIdFrom, requestIdHeader, type LogDestination } from './logging.ts';
 import { registerHealthRoutes } from './routes/health.ts';
+import { registerGameReadRoutes } from './routes/game-read.ts';
+import { registerGateway } from './game/gateway.ts';
 import { registerSecurityHeaders, registerWebApp } from './web.ts';
 
 export interface AppOptions {
@@ -28,7 +31,10 @@ export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
 
   registerErrorHandling(app);
   await registerSecurityHeaders(app);
+  await app.register(rateLimit, { global: false, max: 60, timeWindow: '1 minute', cache: 10_000 });
+  await registerGateway(app, options.pool);
   registerHealthRoutes(app, options.pool);
+  registerGameReadRoutes(app, options.pool);
   if (options.config.webRoot !== undefined) {
     await registerWebApp(app, options.config.webRoot);
   }

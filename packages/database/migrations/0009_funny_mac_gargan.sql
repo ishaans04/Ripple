@@ -1,0 +1,1 @@
+ALTER TABLE "gateway_tickets" ADD COLUMN "authority_hash" text DEFAULT '' NOT NULL;

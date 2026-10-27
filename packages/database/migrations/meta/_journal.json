@@ -64,6 +64,13 @@
       "when": 1793118919485,
       "tag": "0008_sticky_moonstone",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1793119095734,
+      "tag": "0009_funny_mac_gargan",
+      "breakpoints": true
     }
   ]
 }

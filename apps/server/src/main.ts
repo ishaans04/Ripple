@@ -28,7 +28,9 @@ const database = createDatabase({
 
 const app = await buildApp({ config, pool: database.pool });
 app.addHook('onClose', () => database.close());
-const runtime = startGameRuntime(database.pool, app.log);
+const runtime = startGameRuntime(database.pool, app.log, () => {
+  app.publicGateway.wake();
+});
 app.addHook('preClose', () => runtime.stop());
 
 const shutdown = createShutdown({

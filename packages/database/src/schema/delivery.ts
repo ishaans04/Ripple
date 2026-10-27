@@ -132,6 +132,7 @@ export const gatewayTickets = pgTable(
   'gateway_tickets',
   {
     hash: text('hash').primaryKey(),
+    authorityHash: text('authority_hash').notNull().default(''),
     worldId: uuid('world_id').notNull(),
     channelId: uuid('channel_id').notNull(),
     expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),

@@ -6,6 +6,17 @@ export function errorBody(code: ErrorCode, message: string, requestId: string): 
   return { error: { code, message, requestId } };
 }
 
+export class ApiError extends Error {
+  readonly code: ErrorCode;
+  readonly statusCode: number;
+  constructor(code: ErrorCode, statusCode: number, message: string) {
+    super(message);
+    this.name = 'ApiError';
+    this.code = code;
+    this.statusCode = statusCode;
+  }
+}
+
 /** Every failure leaves the server as the uniform error contract. */
 export function registerErrorHandling(app: FastifyInstance): void {
   app.setNotFoundHandler((request, reply) => {
@@ -17,7 +28,13 @@ export function registerErrorHandling(app: FastifyInstance): void {
   });
 
   app.setErrorHandler<FastifyError>((error, request, reply) => {
+    if (error instanceof ApiError)
+      return reply.code(error.statusCode).send(errorBody(error.code, error.message, request.id));
     const status = error.statusCode ?? 500;
+    if (status === 429)
+      return reply
+        .code(429)
+        .send(errorBody('CAPACITY_FULL', 'Request rate exceeded; retry later.', request.id));
     if (status >= 400 && status < 500) {
       const code: ErrorCode = status === 404 ? 'NOT_FOUND' : 'BAD_REQUEST';
       return reply.code(status).send(errorBody(code, error.message, request.id));
