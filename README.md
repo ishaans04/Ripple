@@ -66,6 +66,7 @@ Sources run directly on Node's TypeScript type stripping; workspace packages res
 | `npm run build`                           | Compile packages and the server; bundle the web app             |
 | `npm run db:up` / `db:migrate`            | Start PostgreSQL / apply migrations                             |
 | `npm run db:generate -w @ripple/database` | Generate a migration from schema changes                        |
+| `npm run sandbox -- ...`                  | Run the isolated synthetic game adapter                         |
 
 ## Configuration
 
@@ -80,6 +81,28 @@ The server reads these environment variables (see [.env.example](.env.example)):
 | `WEB_ROOT`          | unset              | Built web app directory to serve; the Docker image sets it      |
 
 Invalid configuration stops startup with a message naming each offending variable, without echoing values.
+
+## Synthetic round loop
+
+After migrations, run `npm run sandbox -- create`. This creates and seeds an independent, clearly labeled synthetic world, returning its IDs, private owner capability, read-only capability, and snapshot. It expires after 24 hours. Keep the capabilities private. The complete judge interface arrives in Phase 9; this command adapter exercises the real engine, transactions, inbox, and deadline jobs today.
+
+For PowerShell, set `$env:RIPPLE_SANDBOX_CAPABILITY` to the returned owner capability, then substitute the returned world and channel IDs:
+
+```powershell
+npm run sandbox -- vote WORLD_ID CHANNEL_ID alice 2
+npm run sandbox -- advance WORLD_ID CHANNEL_ID 3200
+npm run sandbox -- activity WORLD_ID CHANNEL_ID alice
+npm run sandbox -- activity WORLD_ID CHANNEL_ID bob
+npm run sandbox -- activity WORLD_ID CHANNEL_ID carol
+npm run sandbox -- advance WORLD_ID CHANNEL_ID 12000
+npm run sandbox -- status WORLD_ID CHANNEL_ID
+```
+
+The stored synthetic timings are 3 seconds voting, 200 milliseconds acceptance grace, 12 seconds observation, and 800 milliseconds reveal. An advance runs the actual persisted cutoffs in order. Each advance accepts 1–300,000 milliseconds and returns its operation UUID; supplying that UUID after the milliseconds retries the same step without advancing twice. A bounded run reports `pending` explicitly; retry that operation to continue. Live worlds reject synthetic clocks and commands on the server.
+
+`pause`, `resume`, `offline`, `online`, `input-outage`, and `recover` take the same world/channel arguments. Clean pauses retain active time. Returning online requires an explicit resume; an input outage requires healthy integration followed by explicit recovery and a fresh observation. Limited-confidence complete rounds permit mutations but hold energy.
+
+Read access uses `GET /api/worlds/WORLD_ID/snapshot?channelId=CHANNEL_ID` with `Authorization: Bearer READ_CAPABILITY`. `POST /api/overlay/exchange` accepts `{ "worldId": "...", "channelId": "..." }` with the same header and returns a single-use, 30-second ticket for `/api/live?ticket=...`. WebSockets start with a current snapshot, carry complete versioned projections, reject client writes, cap buffers, check authority again, and repair missed updates from PostgreSQL independently in each gateway. Vote aggregates are limited to twice per second. These endpoints accept scoped read authority, never browser impersonation of live Twitch voters.
 
 ## Repository layout
 

@@ -71,6 +71,13 @@
       "when": 1793119095734,
       "tag": "0009_funny_mac_gargan",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1793119685012,
+      "tag": "0010_sturdy_hannibal_king",
+      "breakpoints": true
     }
   ]
 }

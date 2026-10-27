@@ -16,6 +16,7 @@ export async function claimDeadlines(
   owner: string,
   limit = 32,
   leaseMs = 15_000,
+  scope?: { worldId: string; channelId: string },
 ): Promise<DeadlineLease[]> {
   if (
     !Number.isSafeInteger(limit) ||
@@ -31,8 +32,9 @@ export async function claimDeadlines(
       `select d.world_id,d.channel_id,d.id,d.command,d.due_at from deadlines d join worlds w on w.id=d.world_id
       where d.status in ('pending','leased') and (d.lease_until is null or d.lease_until<=clock_timestamp())
       and d.due_at <= coalesce(w.clock_at,clock_timestamp()) and w.mode<>'replay' and (w.expires_at is null or w.expires_at>clock_timestamp())
+      and ($2::uuid is null or (d.world_id=$2 and d.channel_id=$3))
       order by d.due_at,d.world_id,d.id limit $1 for update of d skip locked`,
-      [limit],
+      [limit, scope?.worldId ?? null, scope?.channelId ?? null],
     );
     for (const job of jobs.rows)
       await client.query(
@@ -71,8 +73,12 @@ export async function deliverDeadline(
     return true;
   });
 }
-export async function scanDeadlines(pool: pg.Pool, owner: string = randomUUID()): Promise<number> {
-  const jobs = await claimDeadlines(pool, owner);
+export async function scanDeadlines(
+  pool: pg.Pool,
+  owner: string = randomUUID(),
+  scope?: { worldId: string; channelId: string },
+): Promise<number> {
+  const jobs = await claimDeadlines(pool, owner, 32, 15_000, scope);
   let delivered = 0;
   for (const job of jobs) if (await deliverDeadline(pool, job, owner)) delivered++;
   return delivered;

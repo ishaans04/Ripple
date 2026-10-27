@@ -7,7 +7,8 @@
   "scripts": {
     "typecheck": "tsc -p tsconfig.json",
     "dev": "node --env-file-if-exists=../../.env --conditions=ripple-source --watch src/main.ts",
-    "start": "node dist/main.js"
+    "start": "node dist/main.js",
+    "sandbox": "node --env-file-if-exists=../../.env --conditions=ripple-source src/cli/sandbox.ts"
   },
   "dependencies": {
     "@fastify/helmet": "13.2.0",
