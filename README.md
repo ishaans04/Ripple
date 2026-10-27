@@ -8,9 +8,9 @@ The full specification is in [docs/prd.md](docs/prd.md), extended by the [Cocoon
 
 ## Current status
 
-Ripple is being built phase by phase. **Phases 0 (foundation), 1 (pure engine), and 2 (studio rules and local editor) are complete.** What works today:
+Ripple is being built phase by phase. **Phases 0–3 are complete: foundation, pure engine, studio rules and local editor, and the event backbone.** What works today:
 
-The [Cocoon Studio practice](http://localhost:3000/studio) provides a complete local shell editor with hand, pointer, touch, and keyboard controls. Its pure rules, immutable blueprints, and safe mutation-slot handling are implemented. **Phase 3, the event backbone, is in progress:** ordered durable intake, round processing, transactional history and public updates, leased deadlines, and process-gap recovery are implemented. Verification and pending live acceptance are recorded in [delivery progress](docs/progress.md).
+The [Cocoon Studio practice](http://localhost:3000/studio) provides a complete local shell editor with hand, pointer, touch, and keyboard controls. Ordered durable intake, round processing, transactional history and public updates, leased deadlines, process-gap recovery, scoped WebSockets, and synthetic command tooling are implemented. **Phase 4, the Twitch live loop, is next.** Verification and pending live acceptance are recorded in [delivery progress](docs/progress.md).
 
 - The application service (Fastify on Node.js 24) with structured, correlated JSON logs, a uniform error contract, security headers, and graceful shutdown
 - PostgreSQL 18 with versioned migrations under an advisory lock, world-scoped game records, immutable ancestry/rules, and database-enforced genome bounds
