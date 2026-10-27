@@ -4,7 +4,7 @@ Ripple is a Twitch-connected, deterministic evolution game shared by streamers a
 
 > Communities shape living strains. Raids carry their descendants. Every host changes the lineage, and successful visitors leave a trace for those who follow.
 
-The full specification is in [docs/prd.md](docs/prd.md), and the phased delivery plan is in [docs/plan.md](docs/plan.md).
+The full specification is in [docs/prd.md](docs/prd.md), extended by the [Cocoon Studio addendum](docs/cocoon-studio.md), and the phased delivery plan is in [docs/plan.md](docs/plan.md).
 
 ## Current status
 
@@ -17,7 +17,7 @@ Ripple is being built phase by phase. **Phase 0 (foundation) and Phase 1 (pure e
 - One-command local startup with Docker Compose, and CI covering lint, types, unit tests, integration tests on real PostgreSQL, the build, and a Compose smoke test
 - The deterministic game rules as a tested library (`@ripple/engine`; see [Game engine](#game-engine)), reproducing the PRD's worked journey (section 25.4) exactly
 
-The engine is not yet wired to rounds, persistence, Twitch, or any screen, so the game is not playable yet. The event backbone, Twitch integration, raids, overlay, and sandbox arrive in later phases; see the [plan](docs/plan.md).
+The engine is not yet wired to rounds, persistence, Twitch, or any screen, so the game is not playable yet. Cocoon Studio (break-time, hand-shaped community designs), the event backbone, Twitch integration, raids, overlay, and sandbox arrive in later phases; see the [plan](docs/plan.md).
 
 ## Quick start
 
@@ -87,7 +87,7 @@ apps/web/            React + Vite browser app: design tokens and landing page
 packages/contracts/  Zod schemas shared by the server and browser
 packages/engine/     Pure deterministic game rules: genomes, ballots, habitats, scoring, explanations
 packages/database/   Drizzle schema, SQL migrations, migration runner
-docs/                PRD, delivery plan, and archived design history
+docs/                PRD, Cocoon Studio addendum, delivery plan, and archived design history
 ```
 
 ## Game engine
