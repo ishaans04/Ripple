@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import type { PublicUpdate } from '@ripple/contracts';
 import type { FastifyBaseLogger, FastifyInstance } from 'fastify';
 import websocket from '@fastify/websocket';
@@ -46,6 +47,17 @@ export class PublicGateway {
           continue;
         }
         client.alive = false;
+        if (client.ready)
+          this.#send(client, {
+            protocolVersion: 1,
+            eventId: randomUUID(),
+            worldId: client.worldId,
+            topic: `channel:${client.channelId}`,
+            stateVersion: client.version,
+            type: 'heartbeat',
+            serverTime: new Date().toISOString(),
+            payload: null,
+          });
         client.socket.ping();
       }
     }, 15_000);

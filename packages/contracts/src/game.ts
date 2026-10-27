@@ -78,3 +78,12 @@ export const publicUpdateSchema = z.strictObject({
   payload: z.unknown(),
 });
 export type PublicUpdate = z.infer<typeof publicUpdateSchema>;
+
+export const readScopeSchema = z.strictObject({
+  worldId: z.uuid().transform((id) => id.toLowerCase()),
+  channelId: z.uuid().transform((id) => id.toLowerCase()),
+});
+export const connectionTicketSchema = z.strictObject({
+  ticket: z.string().regex(/^[A-Za-z0-9_-]{43}$/),
+  expiresAt: z.iso.datetime(),
+});
