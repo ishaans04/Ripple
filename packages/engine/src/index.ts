@@ -3,3 +3,4 @@ export * from './errors.ts';
 export * from './genome.ts';
 export * from './integer.ts';
 export * from './random.ts';
+export * from './ruleset.ts';

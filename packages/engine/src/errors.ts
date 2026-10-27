@@ -7,7 +7,9 @@ export type EngineErrorCode =
   | 'INVALID_ARGUMENT'
   | 'NON_CANONICAL_VALUE'
   | 'ILLEGAL_GENOME'
-  | 'ILLEGAL_MOVE';
+  | 'ILLEGAL_MOVE'
+  | 'INVALID_RULESET'
+  | 'INCOMPATIBLE_RULESET';
 
 export class EngineError extends Error {
   readonly code: EngineErrorCode;
