@@ -20,3 +20,4 @@ export * from './studio-blueprint.ts';
 export * from './studio-slots.ts';
 export * from './studio-adaptation.ts';
 export * from './studio-selection.ts';
+export * from './studio-inheritance.ts';
