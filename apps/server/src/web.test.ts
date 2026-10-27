@@ -39,6 +39,19 @@ describe('web application serving', () => {
     expect(response.headers['cache-control']).toBe('public, max-age=31536000, immutable');
   });
 
+  it('allows camera and WASM only on the studio document and tracking worker', async () => {
+    const studio = await app.inject({ url: '/studio' });
+    expect(studio.statusCode).toBe(200);
+    expect(studio.headers['permissions-policy']).toBe('camera=(self), microphone=()');
+    expect(studio.headers['content-security-policy']).toContain("'wasm-unsafe-eval'");
+    expect(studio.headers['content-security-policy']).toContain("worker-src 'self'");
+    const home = await app.inject({ url: '/' });
+    expect(home.headers['permissions-policy']).toBe('camera=(), microphone=()');
+    expect(home.headers['content-security-policy']).not.toContain('wasm-unsafe-eval');
+    const other = await app.inject({ url: '/assets/index-abc123.js' });
+    expect(other.headers['content-security-policy']).not.toContain('wasm-unsafe-eval');
+  });
+
   it('keeps API-style 404s for unknown paths', async () => {
     const response = await app.inject({ url: '/assets/missing.js' });
     expect(response.statusCode).toBe(404);

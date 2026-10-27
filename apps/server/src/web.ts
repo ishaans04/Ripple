@@ -1,6 +1,7 @@
 import helmet from '@fastify/helmet';
 import fastifyStatic from '@fastify/static';
 import type { FastifyInstance } from 'fastify';
+import { pathOf } from './logging.ts';
 
 /**
  * Security headers for every response. Pages load only same-origin code, and
@@ -26,6 +27,25 @@ export async function registerSecurityHeaders(app: FastifyInstance): Promise<voi
     },
     referrerPolicy: { policy: 'no-referrer' },
   });
+  app.addHook('onSend', async (request, reply, payload) => {
+    const path = pathOf(request.url);
+    const studio = path === '/studio';
+    const trackingWorker = /^\/assets\/hand-worker-[A-Za-z0-9_-]+\.js$/.test(path);
+    reply.header(
+      'permissions-policy',
+      studio ? 'camera=(self), microphone=()' : 'camera=(), microphone=()',
+    );
+    if (studio || trackingWorker) {
+      const policy = reply.getHeader('content-security-policy');
+      if (typeof policy === 'string')
+        reply.header(
+          'content-security-policy',
+          policy.replace("script-src 'self'", "script-src 'self' 'wasm-unsafe-eval'") +
+            ";worker-src 'self'",
+        );
+    }
+    return payload;
+  });
 }
 
 /** Serve the built web application. Fingerprinted assets are cached permanently. */
@@ -41,4 +61,5 @@ export async function registerWebApp(app: FastifyInstance, webRoot: string): Pro
       );
     },
   });
+  app.get('/studio', (_request, reply) => reply.sendFile('index.html'));
 }

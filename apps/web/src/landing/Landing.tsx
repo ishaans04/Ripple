@@ -32,6 +32,15 @@ export function Landing() {
 
       <ServiceStatusPanel />
 
+      <section className={styles.panel}>
+        <h2 className={styles.panelHeading}>Cocoon Studio</h2>
+        <p>
+          Shape a shell with pointer, touch, or keyboard controls and keep your design on this
+          device.
+        </p>
+        <a href="/studio">Open the practice studio →</a>
+      </section>
+
       <section className={styles.panel} aria-labelledby="loop-heading">
         <h2 id="loop-heading" className={styles.panelHeading}>
           How a lineage grows
