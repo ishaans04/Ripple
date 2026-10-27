@@ -6,6 +6,7 @@ export * from './explanation.ts';
 export * from './genome.ts';
 export * from './habitat.ts';
 export * from './integer.ts';
+export * from './migration.ts';
 export * from './random.ts';
 export * from './resolution.ts';
 export * from './ruleset.ts';
