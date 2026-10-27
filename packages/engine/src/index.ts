@@ -17,3 +17,4 @@ export * from './tally.ts';
 export * from './traces.ts';
 export * from './studio-challenge.ts';
 export * from './studio-blueprint.ts';
+export * from './studio-slots.ts';
