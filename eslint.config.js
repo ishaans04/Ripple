@@ -5,7 +5,13 @@ import globals from 'globals';
 import tseslint from 'typescript-eslint';
 
 export default defineConfig([
-  globalIgnores(['**/dist/', '**/coverage/', 'tmp/', 'packages/database/migrations/']),
+  globalIgnores([
+    '**/dist/',
+    '**/coverage/',
+    'tmp/',
+    'packages/database/migrations/',
+    'apps/web/public/vision/',
+  ]),
   js.configs.recommended,
   {
     files: ['**/*.ts', '**/*.tsx'],

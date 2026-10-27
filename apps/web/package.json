@@ -5,7 +5,9 @@
   "description": "Ripple browser surfaces: landing, overlay, controller, passport, and sandbox",
   "type": "module",
   "scripts": {
+    "predev": "node scripts/prepare-vision-assets.mjs",
     "dev": "vite",
+    "prebuild": "node scripts/prepare-vision-assets.mjs",
     "build": "vite build",
     "typecheck": "tsc -p tsconfig.json"
   },

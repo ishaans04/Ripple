@@ -27,3 +27,6 @@ Thumbs.db
 # Editors
 .vscode/
 .idea/
+
+# Copied from the pinned npm package before web dev/build.
+apps/web/public/vision/mediapipe-1.1.1/
