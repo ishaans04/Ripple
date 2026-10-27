@@ -1,0 +1,6 @@
+dist/
+coverage/
+tmp/
+docs/
+package-lock.json
+packages/database/migrations/
