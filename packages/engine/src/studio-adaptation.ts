@@ -56,6 +56,9 @@ export function commitStudioAdaptation(
   readonly slots: MutationSlots;
 } {
   const { challenge, design, id } = pending;
+  const accepted = acceptBlueprint(design.blueprint, challenge, rules);
+  if (accepted.hash !== design.hash)
+    throw new StudioRuleError('INVALID_BLUEPRINT', 'Accepted design hash changed.');
   const previous = slots.commitments.find((entry) => entry.operationId === id);
   if (previous !== undefined) {
     if (previous.slot !== challenge.targetMutationSlot || previous.fingerprint !== design.hash)
@@ -63,9 +66,6 @@ export function commitStudioAdaptation(
     return { outcome: 'already_committed', organism: current, slots };
   }
   revalidateStudioBase(challenge, current, rules);
-  const accepted = acceptBlueprint(design.blueprint, challenge, rules);
-  if (accepted.hash !== design.hash)
-    throw new StudioRuleError('INVALID_BLUEPRINT', 'Accepted design hash changed.');
   if (boundarySlot !== challenge.targetMutationSlot || slots.reservation?.adaptationId !== id) {
     throw new StudioRuleError(
       'SLOT_UNAVAILABLE',

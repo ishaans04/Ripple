@@ -2,10 +2,11 @@ import {
   founderShell,
   blueprintSchema,
   rendererVersionSchema,
+  shellPartSchema,
   type AppearanceBlueprint,
   type ShellPart,
 } from '@ripple/contracts';
-import { blueprintHash } from './studio-blueprint.ts';
+import { blueprintHash, StudioRuleError } from './studio-blueprint.ts';
 import type { Genome } from './genome.ts';
 
 export type CommittedAppearance =
@@ -47,8 +48,19 @@ export function inheritCommittedDesign(parent: {
   readonly genome: Genome;
   readonly appearance: CommittedAppearance;
 }): { readonly genome: Genome; readonly appearance: CommittedAppearance } {
-  const appearance = parent.appearance;
-  if (appearance.kind === 'studio') blueprintSchema.parse(appearance.blueprint);
-  else rendererVersionSchema.parse(appearance.rendererVersion);
+  const source = parent.appearance;
+  let appearance: CommittedAppearance;
+  if (source.kind === 'studio') {
+    const blueprint = blueprintSchema.parse(source.blueprint);
+    if (blueprintHash(blueprint) !== source.hash)
+      throw new StudioRuleError(
+        'INVALID_BLUEPRINT',
+        'Committed appearance hash does not match its design.',
+      );
+    appearance = Object.freeze({ ...source, blueprint });
+  } else {
+    rendererVersionSchema.parse(source.rendererVersion);
+    appearance = Object.freeze({ ...source, part: shellPartSchema.parse(source.part) });
+  }
   return Object.freeze({ genome: Object.freeze({ ...parent.genome }), appearance });
 }

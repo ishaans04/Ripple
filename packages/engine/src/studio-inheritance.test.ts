@@ -6,6 +6,7 @@ import {
   inheritCommittedDesign,
 } from './studio-inheritance.ts';
 import { candidateRuleset as rules } from './ruleset.ts';
+import { blueprintHash } from './studio-blueprint.ts';
 
 const blueprint: AppearanceBlueprint = {
   schemaVersion: 1,
@@ -38,7 +39,7 @@ describe('committed appearance inheritance', () => {
     expect(child.appearance.kind).toBe('founder');
     expect('pending' in child).toBe(false);
     const later = inheritCommittedDesign(parent);
-    expect(later.appearance).toBe(parent.appearance);
+    expect(later.appearance).toEqual(parent.appearance);
   });
   it('publishes channel credit by default and individual credit only with opt-in', () => {
     expect(
@@ -47,5 +48,26 @@ describe('committed appearance inheritance', () => {
     expect(
       committedStudioAppearance(blueprint, null, 'Channel', { optedIn: true, credit: 'Artist' }),
     ).toMatchObject({ artistCredit: 'Artist' });
+  });
+  it('deeply snapshots designs loaded from mutable storage records', () => {
+    const mutable = {
+      ...blueprint,
+      part: { ...founderShell, parameters: { ...founderShell.parameters } },
+    };
+    const child = inheritCommittedDesign({
+      genome: rules.genome.founder,
+      appearance: {
+        kind: 'studio',
+        hash: blueprintHash(mutable),
+        blueprint: mutable,
+        parentHash: null,
+        channelCredit: 'Channel',
+        artistCredit: null,
+      },
+    });
+    mutable.part.parameters.width = 800;
+    expect(
+      child.appearance.kind === 'studio' && child.appearance.blueprint.part.parameters.width,
+    ).toBe(620);
   });
 });

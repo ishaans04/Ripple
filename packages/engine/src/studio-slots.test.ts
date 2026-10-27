@@ -10,6 +10,38 @@ import {
 } from './studio-slots.ts';
 
 describe('shared mutation slot clock', () => {
+  it('never commits a slot twice across generated reservation, break, and interruption sequences', () => {
+    fc.assert(
+      fc.property(
+        fc.array(fc.constantFrom('reserve', 'normal', 'hatch', 'observe', 'interrupt', 'break'), {
+          maxLength: 100,
+        }),
+        (commands) => {
+          let state = initialMutationSlots;
+          for (const command of commands) {
+            const id = `studio-${state.next}`;
+            try {
+              if (command === 'reserve') state = reserveMutationSlot(state, id, state.next);
+              if (command === 'normal')
+                state = consumeMutationSlot(state, `normal-${state.next}`, state.next);
+              if (command === 'hatch' && state.reservation !== null)
+                state = consumeMutationSlot(state, state.reservation.adaptationId, state.next);
+              if (command === 'observe')
+                state = completeSlotObservation(state, state.lastMutation, true);
+              if (command === 'interrupt')
+                state = completeSlotObservation(state, state.lastMutation, false);
+              if (command === 'break') state = releaseMutationSlot(state, id);
+            } catch {
+              /* Rejected commands leave the previous immutable state unchanged. */
+            }
+            expect(new Set(state.commitments.map((entry) => entry.slot)).size).toBe(
+              state.commitments.length,
+            );
+          }
+        },
+      ),
+    );
+  });
   it('prevents an ordinary mutation from also consuming a studio reservation', () => {
     const reserved = reserveMutationSlot(initialMutationSlots, 'studio-1', 1);
     expect(() => consumeMutationSlot(reserved, 'normal-1', 1)).toThrow();
