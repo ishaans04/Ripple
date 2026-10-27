@@ -1,0 +1,2 @@
+ALTER TABLE "organisms" ADD CONSTRAINT "organisms_parent_world_fk" FOREIGN KEY ("world_id","parent_id") REFERENCES "public"."organisms"("world_id","id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "organisms" ADD CONSTRAINT "organisms_founder_world_fk" FOREIGN KEY ("world_id","founder_id") REFERENCES "public"."organisms"("world_id","id") ON DELETE no action ON UPDATE no action;
