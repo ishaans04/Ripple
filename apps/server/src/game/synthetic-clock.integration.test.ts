@@ -1,7 +1,8 @@
 import { randomUUID } from 'node:crypto';
 import pg from 'pg';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { runMigrations } from '@ripple/database';
+import { claimDeadlines, deliverDeadline, runMigrations } from '@ripple/database';
+import { setTimeout as wait } from 'node:timers/promises';
 import {
   createTemporaryDatabase,
   createTestChannel,
@@ -112,5 +113,29 @@ describe('isolated synthetic clock adapter', () => {
     await expect(settleSyntheticWorld(pool, live)).rejects.toMatchObject({
       code: 'WRONG_WORLD_MODE',
     });
+  });
+  it('waits for another dispatcher holding a due lease before reporting an idle channel', async () => {
+    const world = await start(),
+      owner = randomUUID();
+    const due = (
+      await pool.query<{ due_at: Date }>(
+        `select due_at from deadlines where world_id=$1 and status='pending'`,
+        [world.worldId],
+      )
+    ).rows[0]!.due_at;
+    await pool.query('update worlds set clock_at=$2 where id=$1', [world.worldId, due]);
+    const job = (await claimDeadlines(pool, owner, 32, 15000, world))[0]!;
+    let completed = false;
+    const settling = settleSyntheticWorld(pool, world).then((result) => {
+      completed = true;
+      return result;
+    });
+    await wait(100);
+    expect(completed).toBe(false);
+    expect(await deliverDeadline(pool, job, owner)).toBe(true);
+    expect(await settling).toMatchObject({ pending: false });
+    expect((await readSnapshot(pool, world.worldId, world.channelId))?.payload.round?.phase).toBe(
+      'OBSERVING',
+    );
   });
 });

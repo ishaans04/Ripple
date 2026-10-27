@@ -1,4 +1,5 @@
 import { defineConfig } from 'vitest/config';
+import { availableParallelism } from 'node:os';
 
 const sourceConditions = ['ripple-source'];
 
@@ -11,6 +12,7 @@ export default defineConfig({
         extends: true,
         test: {
           name: 'unit',
+          maxWorkers: Math.min(4, availableParallelism()),
           include: ['{packages,apps}/*/src/**/*.test.{ts,tsx}'],
           exclude: ['**/*.integration.test.ts'],
         },

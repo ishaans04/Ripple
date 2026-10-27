@@ -1,13 +1,22 @@
 import { errorResponseSchema } from '@ripple/contracts';
 import type { FastifyInstance } from 'fastify';
 import pg from 'pg';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeAll, describe, expect, it } from 'vitest';
 import { buildApp } from './app.ts';
 
 // These routes never touch the database, so the pool is never connected.
 const idlePool = new pg.Pool({ connectionString: 'postgres://unused@127.0.0.1:1/unused' });
 
 describe('application shell', () => {
+  // Cold schema/compiler initialization is setup, not a request assertion.
+  beforeAll(async () => {
+    const warm = await buildApp({
+      config: { logLevel: 'silent', webRoot: undefined },
+      pool: idlePool,
+    });
+    await warm.ready();
+    await warm.close();
+  }, 20_000);
   let app: FastifyInstance;
   let lines: string[];
   const logs = () => lines.map((line) => JSON.parse(line) as Record<string, unknown>);

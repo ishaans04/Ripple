@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto';
+import { setTimeout as wait } from 'node:timers/promises';
 import { scanDeadlines, transaction } from '@ripple/database';
 import type pg from 'pg';
 import { authorizeSynthetic, SandboxError, type WorldScope } from './sandbox.ts';
@@ -24,7 +25,19 @@ export async function settleSyntheticWorld(
       if ((await processNextInput(pool, scope.worldId, scope.channelId)) === null) break;
       processed++;
     }
-    if (delivered === 0 && count === 0) return { processed, pending: false };
+    if (delivered === 0 && count === 0) {
+      const outstanding = (
+        await pool.query<{ pending: boolean }>(
+          `select
+        exists(select 1 from deadlines d join worlds w on w.id=d.world_id where d.world_id=$1 and d.channel_id=$2 and d.status in ('pending','leased') and d.due_at<=w.clock_at)
+        or exists(select 1 from channels where world_id=$1 and id=$2 and processed_sequence<intake_sequence) as pending`,
+          [scope.worldId, scope.channelId],
+        )
+      ).rows[0]?.pending;
+      if (!outstanding) return { processed, pending: false };
+      // Another dispatcher may own a due lease without having appended its marker yet.
+      await wait(10);
+    }
   }
   return { processed, pending: true };
 }

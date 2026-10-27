@@ -36,6 +36,7 @@
     "test:integration": "node --env-file-if-exists=.env node_modules/vitest/vitest.mjs run --project integration",
     "db:up": "docker compose up -d --wait db",
     "db:migrate": "npm run migrate -w @ripple/database",
-    "sandbox": "npm run sandbox -w @ripple/server --"
+    "sandbox": "npm run sandbox -w @ripple/server --",
+    "smoke:game": "npm run smoke:game -w @ripple/server"
   }
 }

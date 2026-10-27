@@ -67,6 +67,7 @@ Sources run directly on Node's TypeScript type stripping; workspace packages res
 | `npm run db:up` / `db:migrate`            | Start PostgreSQL / apply migrations                             |
 | `npm run db:generate -w @ripple/database` | Generate a migration from schema changes                        |
 | `npm run sandbox -- ...`                  | Run the isolated synthetic game adapter                         |
+| `npm run smoke:game`                      | Verify a synthetic round, HTTP snapshot, and WebSocket          |
 
 ## Configuration
 
@@ -104,6 +105,8 @@ The stored synthetic timings are 3 seconds voting, 200 milliseconds acceptance g
 
 Read access uses `GET /api/worlds/WORLD_ID/snapshot?channelId=CHANNEL_ID` with `Authorization: Bearer READ_CAPABILITY`. `POST /api/overlay/exchange` accepts `{ "worldId": "...", "channelId": "..." }` with the same header and returns a single-use, 30-second ticket for `/api/live?ticket=...`. WebSockets start with a current snapshot, carry complete versioned projections, reject client writes, cap buffers, check authority again, and repair missed updates from PostgreSQL independently in each gateway. Vote aggregates are limited to twice per second. These endpoints accept scoped read authority, never browser impersonation of live Twitch voters.
 
+With the stack running, `docker compose exec -T app node apps/server/dist/cli/smoke-game.js` verifies the installed command tool, a real three-account resolution, the scoped HTTP snapshot, and a snapshot-first WebSocket. It prints a public result summary and keeps generated capabilities out of its output. CI runs this journey inside the production image. For source development, `npm run smoke:game` uses the database environment and the running app at localhost:3000; set `RIPPLE_SMOKE_URL` for another app URL.
+
 ## Repository layout
 
 ```text
@@ -132,7 +135,7 @@ docs/                PRD, Cocoon Studio addendum, delivery plan, and archived de
 | Explanations  | Deterministic templates: every signed contribution sums to the energy change, at most two leading causes, and the full calculation                                                                  |
 | Journey rules | Raid child health from Drift, dormant capture and offer checks, trace template and qualification, and ancestor trials under matched inputs                                                          |
 
-The lifecycles built on these rules (round scheduling, trace and dormant lifetimes, admission, contests) arrive with the phases that persist them.
+The ordered round scheduler persists ballots, observation, reveal, and recovery checkpoints. Trace and dormant lifetimes, admission, and contests arrive with the phases that persist those mechanics.
 
 ## Cocoon Studio practice
 

@@ -35,6 +35,10 @@ Implemented and tested so far: world-scoped schema and identity constraints; ato
 
 CI is green through runtime commit `0e60f9f` ([run 40543552935](https://github.com/ishaans04/Ripple/actions/runs/40543552935)). Before migrating the persistent local development database, a PostgreSQL custom-format backup was saved under ignored `tmp/ripple-before-phase3.dump`; integration suites continue using isolated disposable databases.
 
+Final local verification now covers 377 unit tests, the full 53-case database suite plus the updated five-case synthetic adapter suite (54 total cases), and production-image CLI/HTTP/WebSocket smoke. The adapter now waits for a due lease held by another dispatcher instead of prematurely reporting an idle channel. A manual-pause/outage recovery deadlock and empty-channel pause publication were fixed. Recovery tests include an actual child worker killed immediately after commit and an injected outbox write failure that rolls back the state, cursor, history, and outbox together. Single-channel reconstruction reproduces lineage, organism state, round history, baselines, and explanations in an isolated replay world. Broader multi-channel/studio replay remains tied to the phases that implement those mechanics.
+
+Unit workers are capped at four (or available CPUs) and the cold Fastify compiler initialization is explicit suite setup; the request assertion timeout stays unchanged. No test retries or skipped assertions are used. The final CI gate is pending before Phase 4 starts.
+
 ## Live acceptance deferral requested by the user
 
 The two broadcaster accounts, operator bot, and public HTTPS URL are not set up. Continue sequential implementation with sandbox/synthetic verification where possible. Keep all authentic Twitch, raid, OBS, and hosted acceptance evidence explicitly pending, with no synthetic test represented as live evidence. Provide the account/application/OAuth/HTTPS setup steps when Phase 4 needs them. This user-directed deferral permits continued implementation; it does not satisfy the PRD's final release gate.
