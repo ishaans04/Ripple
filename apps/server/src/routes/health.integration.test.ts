@@ -19,7 +19,10 @@ describe('health routes', () => {
         throw error;
       },
     });
-    app = buildApp({ config: { logLevel: 'silent' }, pool: database.pool });
+    app = await buildApp({
+      config: { logLevel: 'silent', webRoot: undefined },
+      pool: database.pool,
+    });
   });
 
   afterEach(async () => {
@@ -62,7 +65,10 @@ describe('health routes', () => {
         throw error;
       },
     });
-    const isolated = buildApp({ config: { logLevel: 'silent' }, pool: unreachable.pool });
+    const isolated = await buildApp({
+      config: { logLevel: 'silent', webRoot: undefined },
+      pool: unreachable.pool,
+    });
     try {
       const response = await isolated.inject({ url: '/health/ready' });
       expect(response.statusCode).toBe(503);

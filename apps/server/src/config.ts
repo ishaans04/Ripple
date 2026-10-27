@@ -1,3 +1,4 @@
+import { resolve } from 'node:path';
 import { z } from 'zod';
 
 const logLevels = ['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent'] as const;
@@ -13,7 +14,11 @@ const environmentSchema = z.object({
   /** Time allowed to drain requests and release resources before a forced exit. */
   SHUTDOWN_GRACE_MS: z.coerce.number().int().min(1_000).max(120_000).default(15_000),
   /** Directory holding the built web application; omit to serve the API only. */
-  WEB_ROOT: z.string().min(1).optional(),
+  WEB_ROOT: z
+    .string()
+    .min(1)
+    .transform((path) => resolve(path))
+    .optional(),
 });
 
 export interface ServerConfig {

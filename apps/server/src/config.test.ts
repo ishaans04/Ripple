@@ -1,3 +1,4 @@
+import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { ConfigError, loadConfig } from './config.ts';
 
@@ -39,8 +40,14 @@ describe('loadConfig', () => {
       port: 8080,
       logLevel: 'debug',
       shutdownGraceMs: 5000,
-      webRoot: '/app/web',
+      webRoot: resolve('/app/web'),
     });
+  });
+
+  it('resolves a relative web root against the working directory', () => {
+    expect(loadConfig({ DATABASE_URL: databaseUrl, WEB_ROOT: '../web/dist' }).webRoot).toBe(
+      resolve('../web/dist'),
+    );
   });
 
   it('treats empty variables as unset', () => {

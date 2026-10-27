@@ -1,4 +1,5 @@
 import { errorResponseSchema } from '@ripple/contracts';
+import type { FastifyInstance } from 'fastify';
 import pg from 'pg';
 import { afterEach, describe, expect, it } from 'vitest';
 import { buildApp } from './app.ts';
@@ -6,29 +7,29 @@ import { buildApp } from './app.ts';
 // These routes never touch the database, so the pool is never connected.
 const idlePool = new pg.Pool({ connectionString: 'postgres://unused@127.0.0.1:1/unused' });
 
-function capturedApp() {
-  const lines: string[] = [];
-  const app = buildApp({
-    config: { logLevel: 'info' },
-    pool: idlePool,
-    logStream: { write: (line) => lines.push(line) },
-  });
-  const logs = () => lines.map((line) => JSON.parse(line) as Record<string, unknown>);
-  return { app, logs };
-}
-
 describe('application shell', () => {
-  let close: (() => Promise<void>) | undefined;
+  let app: FastifyInstance;
+  let lines: string[];
+  const logs = () => lines.map((line) => JSON.parse(line) as Record<string, unknown>);
+
+  async function start(): Promise<FastifyInstance> {
+    lines = [];
+    app = await buildApp({
+      config: { logLevel: 'info', webRoot: undefined },
+      pool: idlePool,
+      logStream: { write: (line) => lines.push(line) },
+    });
+    return app;
+  }
 
   afterEach(async () => {
-    await close?.();
-    close = undefined;
+    await app.close();
   });
 
   it('echoes a well-formed upstream request id', async () => {
-    const { app } = capturedApp();
-    close = () => app.close();
-    const response = await app.inject({
+    const response = await (
+      await start()
+    ).inject({
       url: '/missing',
       headers: { 'x-request-id': 'trace-1234abcd' },
     });
@@ -36,9 +37,9 @@ describe('application shell', () => {
   });
 
   it('replaces request ids that could inject log structure', async () => {
-    const { app } = capturedApp();
-    close = () => app.close();
-    const response = await app.inject({
+    const response = await (
+      await start()
+    ).inject({
       url: '/missing',
       headers: { 'x-request-id': 'bad id\n{"level":"fatal"}' },
     });
@@ -46,9 +47,7 @@ describe('application shell', () => {
   });
 
   it('answers unknown routes with the error contract', async () => {
-    const { app } = capturedApp();
-    close = () => app.close();
-    const response = await app.inject({ url: '/nothing/here?code=oauth-secret' });
+    const response = await (await start()).inject({ url: '/nothing/here?code=oauth-secret' });
     expect(response.statusCode).toBe(404);
     const body = errorResponseSchema.parse(response.json());
     expect(body.error.code).toBe('NOT_FOUND');
@@ -57,8 +56,7 @@ describe('application shell', () => {
   });
 
   it('hides internal failure details from clients but logs them with the request id', async () => {
-    const { app, logs } = capturedApp();
-    close = () => app.close();
+    await start();
     app.get('/explode', () => {
       throw new Error('connection to db-internal:5432 refused');
     });
@@ -73,8 +71,7 @@ describe('application shell', () => {
   });
 
   it('reports client errors as BAD_REQUEST', async () => {
-    const { app } = capturedApp();
-    close = () => app.close();
+    await start();
     app.post('/echo', (request) => request.body);
     const response = await app.inject({
       method: 'POST',
@@ -87,9 +84,9 @@ describe('application shell', () => {
   });
 
   it('logs request paths without query strings or headers', async () => {
-    const { app, logs } = capturedApp();
-    close = () => app.close();
-    await app.inject({
+    await (
+      await start()
+    ).inject({
       url: '/auth/callback?code=oauth-secret&state=abc',
       headers: { cookie: 'session=secret-cookie', authorization: 'Bearer secret-token' },
     });
@@ -98,5 +95,16 @@ describe('application shell', () => {
     for (const secret of ['oauth-secret', 'secret-cookie', 'secret-token']) {
       expect(output).not.toContain(secret);
     }
+  });
+
+  it('sends security headers on every response', async () => {
+    const response = await (await start()).inject({ url: '/missing' });
+    expect(response.headers['referrer-policy']).toBe('no-referrer');
+    expect(response.headers['x-content-type-options']).toBe('nosniff');
+    const csp = String(response.headers['content-security-policy']);
+    expect(csp).toContain("default-src 'self'");
+    expect(csp).toContain("script-src 'self'");
+    expect(csp).toContain("frame-ancestors 'none'");
+    expect(csp).not.toContain('upgrade-insecure-requests');
   });
 });

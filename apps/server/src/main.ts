@@ -25,7 +25,7 @@ const database = createDatabase({
   },
 });
 
-const app = buildApp({ config, pool: database.pool });
+const app = await buildApp({ config, pool: database.pool });
 app.addHook('onClose', () => database.close());
 
 const shutdown = createShutdown({
