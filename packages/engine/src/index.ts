@@ -1,3 +1,4 @@
+export * from './candidates.ts';
 export * from './canonical.ts';
 export * from './errors.ts';
 export * from './genome.ts';
