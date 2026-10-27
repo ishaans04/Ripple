@@ -57,6 +57,13 @@
       "when": 1793118616641,
       "tag": "0007_majestic_la_nuit",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1793118919485,
+      "tag": "0008_sticky_moonstone",
+      "breakpoints": true
     }
   ]
 }

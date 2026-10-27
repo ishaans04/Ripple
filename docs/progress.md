@@ -27,9 +27,11 @@ Exit evidence:
 
 The shared mutation clock requires a completed active observation between slots. Limited-confidence but complete observation can satisfy that clock; interrupted/missing intervals cannot. Confidence separately controls health, trace, and contest progression, so small communities are not barred from ordinary genetic choices.
 
-## Phase 3 — event backbone (next)
+## Phase 3 — event backbone (in progress)
 
 Build the world-scoped schema, ordered durable intake, pure round transitions, transactional worker and event/outbox writes, leased deadlines, pause/interruption recovery, snapshot-first read-only WebSockets, and isolated synthetic adapter. Required database tests include duplicate receipts, crash-after-commit recovery, and close/ingress races.
+
+Implemented and tested so far: world-scoped schema and identity constraints; atomic receipt deduplication and sequence allocation; pure active-time checkpoints; ordered round worker with atomic event/outbox writes; limited-confidence progression; deadline leasing, cancellation and fencing; runtime ownership and process-gap interruption. Real PostgreSQL tests cover concurrent receipt delivery, competing workers, close/ingress races, recovery after commit, and fresh observation epochs after input outages. Browser access, synthetic clock tooling, replay verification, and the complete phase exit checks remain in progress. Synthetic fixtures using live-mode database rows test recovery policy only; they are not Twitch integration evidence.
 
 ## Live acceptance deferral requested by the user
 

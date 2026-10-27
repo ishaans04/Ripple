@@ -2,6 +2,7 @@ import { createDatabase } from '@ripple/database';
 import { buildApp } from './app.ts';
 import { ConfigError, loadConfig, type ServerConfig } from './config.ts';
 import { createShutdown } from './shutdown.ts';
+import { startGameRuntime } from './game/runtime.ts';
 
 function readConfig(): ServerConfig {
   try {
@@ -27,6 +28,8 @@ const database = createDatabase({
 
 const app = await buildApp({ config, pool: database.pool });
 app.addHook('onClose', () => database.close());
+const runtime = startGameRuntime(database.pool, app.log);
+app.addHook('preClose', () => runtime.stop());
 
 const shutdown = createShutdown({
   app,

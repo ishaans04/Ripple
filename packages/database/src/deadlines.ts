@@ -71,7 +71,7 @@ export async function deliverDeadline(
     return true;
   });
 }
-export async function scanDeadlines(pool: pg.Pool, owner = randomUUID()): Promise<number> {
+export async function scanDeadlines(pool: pg.Pool, owner: string = randomUUID()): Promise<number> {
   const jobs = await claimDeadlines(pool, owner);
   let delivered = 0;
   for (const job of jobs) if (await deliverDeadline(pool, job, owner)) delivered++;

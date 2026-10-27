@@ -10,16 +10,16 @@ The full specification is in [docs/prd.md](docs/prd.md), extended by the [Cocoon
 
 Ripple is being built phase by phase. **Phases 0 (foundation), 1 (pure engine), and 2 (studio rules and local editor) are complete.** What works today:
 
-The [Cocoon Studio practice](http://localhost:3000/studio) provides a complete local shell editor with hand, pointer, touch, and keyboard controls. Its pure rules, immutable blueprints, and safe mutation-slot handling are implemented. **Phase 3, the event backbone, is next.** Verification and pending live acceptance are recorded in [delivery progress](docs/progress.md).
+The [Cocoon Studio practice](http://localhost:3000/studio) provides a complete local shell editor with hand, pointer, touch, and keyboard controls. Its pure rules, immutable blueprints, and safe mutation-slot handling are implemented. **Phase 3, the event backbone, is in progress:** ordered durable intake, round processing, transactional history and public updates, leased deadlines, and process-gap recovery are implemented. Verification and pending live acceptance are recorded in [delivery progress](docs/progress.md).
 
 - The application service (Fastify on Node.js 24) with structured, correlated JSON logs, a uniform error contract, security headers, and graceful shutdown
-- PostgreSQL 18 with versioned migrations applied exactly once under an advisory lock, starting with the `worlds` table that isolates live, sandbox, and replay state
+- PostgreSQL 18 with versioned migrations under an advisory lock, world-scoped game records, immutable ancestry/rules, and database-enforced genome bounds
 - Liveness and readiness endpoints (`/health/live`, `/health/ready`)
 - The web landing page, served by the same service, showing live service status
 - One-command local startup with Docker Compose, and CI covering lint, types, unit tests, integration tests on real PostgreSQL, the build, and a Compose smoke test
 - The deterministic game rules as a tested library (`@ripple/engine`; see [Game engine](#game-engine)), reproducing the PRD's worked journey (section 25.4) exactly
 
-The engine is not yet wired to rounds, persistence, Twitch, or any screen, so the game is not playable yet. Cocoon Studio (break-time, hand-shaped community designs), the event backbone, Twitch integration, raids, overlay, and sandbox arrive in later phases; see the [plan](docs/plan.md).
+The engine now processes persisted rounds with synthetic inputs. Twitch, the connected studio, raids, overlay, and the complete judge sandbox remain later-phase work; see the [plan](docs/plan.md). No live Twitch acceptance is claimed.
 
 ## Quick start
 
