@@ -1,4 +1,4 @@
-import { randomBytes } from 'node:crypto';
+import { randomBytes, randomUUID } from 'node:crypto';
 import pg from 'pg';
 
 export interface TemporaryDatabase {
@@ -47,4 +47,27 @@ export async function createTemporaryDatabase(): Promise<TemporaryDatabase> {
       }
     },
   };
+}
+
+/** Small real-schema fixture; callers may replace the test rules with engine rules. */
+export async function createTestChannel(
+  pool: pg.Pool,
+  mode: 'live' | 'sandbox' | 'replay' = 'replay',
+): Promise<{ worldId: string; channelId: string }> {
+  const worldId = randomUUID();
+  const channelId = randomUUID();
+  const hash = 'd'.repeat(64);
+  await pool.query(
+    'insert into rulesets (hash,version,engine_version,canonical) values ($1,$2,1,$3) on conflict do nothing',
+    [hash, 'database-test', '{}'],
+  );
+  await pool.query(
+    `insert into worlds (id,mode,rules_hash,owner_capability_hash,expires_at) values ($1,$2,$3,$4,now()+interval '1 day')`,
+    [worldId, mode, hash, 'e'.repeat(64)],
+  );
+  await pool.query(
+    'insert into channels (world_id,id,label,rules_hash,seed,configuration) values ($1,$2,$3,$4,$5,$6)',
+    [worldId, channelId, 'Synthetic test channel', hash, 'fixed-seed', '{}'],
+  );
+  return { worldId, channelId };
 }
