@@ -276,6 +276,17 @@ export function explainResolution(resolution: RoundResolution, rules: Ruleset): 
     );
   } else {
     headline = appliedHeadline(score);
+    const healthLimit = score.healthAfter - score.healthBefore - score.delta;
+    if (healthLimit !== 0) {
+      contributions.push({
+        component: 'limit',
+        amount: healthLimit,
+        text:
+          healthLimit > 0
+            ? 'Energy could not fall below 0'
+            : `Energy is capped at ${rules.health.max}`,
+      });
+    }
     if (score.healthBefore + score.delta > rules.health.max) {
       notes.push(`Energy is capped at ${rules.health.max}.`);
     }

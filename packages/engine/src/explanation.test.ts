@@ -267,7 +267,9 @@ describe('explainResolution', () => {
           const score = resolution.outcome === 'applied' ? resolution.score : resolution.estimate;
           const explanation = explainResolution(resolution, rules);
           expect(explanation.contributions.reduce((sum, line) => sum + line.amount, 0)).toBe(
-            score.delta,
+            resolution.outcome === 'applied'
+              ? resolution.healthAfter - resolution.healthBefore
+              : score.delta,
           );
           expect(explanation.causes.length).toBeGreaterThanOrEqual(1);
           expect(explanation.causes.length).toBeLessThanOrEqual(2);
