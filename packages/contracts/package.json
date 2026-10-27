@@ -1,0 +1,20 @@
+{
+  "name": "@ripple/contracts",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Validated schemas shared by the Ripple server and browser surfaces",
+  "type": "module",
+  "exports": {
+    ".": {
+      "ripple-source": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "dependencies": {
+    "zod": "4.6.7"
+  }
+}
