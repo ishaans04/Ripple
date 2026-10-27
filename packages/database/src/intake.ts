@@ -75,8 +75,8 @@ export async function acceptInputInTransaction(
   const sequence = row.intake_sequence + 1;
   // A provider ID is world-wide. Concurrent receipts targeting different channels
   // may conflict here; the loser rolls back and cannot acknowledge new gameplay.
-  await client.query(
-    'insert into inbox (world_id,channel_id,sequence,provider,message_id,command,accepted_at) values ($1,$2,$3,$4,$5,$6,$7)',
+  const inserted = await client.query(
+    'insert into inbox (world_id,channel_id,sequence,provider,message_id,command,accepted_at) values ($1,$2,$3,$4,$5,$6,$7) on conflict (world_id,provider,message_id) do nothing',
     [
       input.worldId,
       input.channelId,
@@ -87,6 +87,7 @@ export async function acceptInputInTransaction(
       row.accepted_at,
     ],
   );
+  if (inserted.rowCount !== 1) throw new IntakeError('RECEIPT_CONFLICT');
   await client.query(
     'update channels set intake_sequence=$3,last_accepted_at=$4 where world_id=$1 and id=$2',
     [input.worldId, input.channelId, sequence, row.accepted_at],

@@ -1,4 +1,5 @@
 import pg from 'pg';
+import { randomUUID } from 'node:crypto';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { acceptInput, acceptInputInTransaction } from './intake.ts';
 import { runMigrations } from './migrate.ts';
@@ -72,5 +73,39 @@ describe('durable ordered intake', () => {
     expect(
       await acceptInput(pool, { ...input, messageId: 'earlier', acceptedAtMs: 1000 }),
     ).toMatchObject({ acceptedAtMs: 2000, sequence: 2 });
+  });
+  it('returns a stable conflict when the same world-wide receipt races across channels', async () => {
+    const scope = await createTestChannel(pool),
+      second = randomUUID();
+    await pool.query(
+      'insert into channels (world_id,id,label,rules_hash,seed,configuration) select world_id,$3,label,rules_hash,seed,configuration from channels where world_id=$1 and id=$2',
+      [scope.worldId, scope.channelId, second],
+    );
+    const input = {
+      ...scope,
+      provider: 'synthetic',
+      messageId: 'cross-channel',
+      command: { type: 'resume' },
+    };
+    const results = await Promise.allSettled([
+      acceptInput(pool, input),
+      acceptInput(pool, { ...input, channelId: second }),
+    ]);
+    expect(results.filter((r) => r.status === 'fulfilled')).toHaveLength(1);
+    const rejected = results.find((r) => r.status === 'rejected');
+    expect(rejected?.status === 'rejected' ? rejected.reason : undefined).toMatchObject({
+      code: 'RECEIPT_CONFLICT',
+    });
+    expect(
+      (
+        await pool.query<{ total: string }>(
+          'select sum(intake_sequence) as total from channels where world_id=$1',
+          [scope.worldId],
+        )
+      ).rows[0]?.total,
+    ).toBe('1');
+    expect(
+      (await pool.query('select * from inbox where world_id=$1', [scope.worldId])).rowCount,
+    ).toBe(1);
   });
 });
