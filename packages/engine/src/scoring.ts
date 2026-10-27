@@ -7,12 +7,18 @@ import { PROFILE_SCALE, type Ruleset } from './ruleset.ts';
 /** A temporary habitat modifier left by a successful visitor. At most one is active per host. */
 export type TraceTemplate = 'shelter' | 'charged' | 'recovery';
 
+/** A habitat's temporal shape: burst + steadiness = PROFILE_SCALE. */
+export interface HabitatProfile {
+  readonly burst: number;
+  readonly steadiness: number;
+}
+
 export interface ScoreInput {
   readonly genome: Genome;
   /** Start health of a living organism, in [1, health.max]. */
   readonly healthBefore: number;
-  /** The round's observed profile; burst + steadiness = PROFILE_SCALE. */
-  readonly profile: { readonly burst: number; readonly steadiness: number };
+  /** The round's observed profile. */
+  readonly profile: HabitatProfile;
   /** Persisted eligible shock markers for this round. */
   readonly shocks: readonly ShockMarker[];
   /** The host's active trace, applied to every organism scored there. */
@@ -76,11 +82,7 @@ export function assertLivingHealth(health: number, rules: Ruleset): void {
   }
 }
 
-function assertScoreInput(input: ScoreInput, rules: Ruleset): void {
-  assertLegalGenome(input.genome, rules.genome);
-  assertLivingHealth(input.healthBefore, rules);
-  const { profile, shocks } = input;
-  const { burst, steadiness } = profile;
+function assertProfile({ burst, steadiness }: HabitatProfile): void {
   if (
     !Number.isSafeInteger(burst) ||
     burst < 0 ||
@@ -92,7 +94,27 @@ function assertScoreInput(input: ScoreInput, rules: Ruleset): void {
       `burst must be an integer in [0, ${PROFILE_SCALE}] and steadiness its complement`,
     );
   }
-  for (const marker of shocks) {
+}
+
+/**
+ * How well a genome suits a habitat:
+ * round_half_up(fitWeight * (Pulse * burst + Calm * steadiness) / (geneMax * PROFILE_SCALE)).
+ * Round scores, choice estimates, and dormant triggers all use this one formula.
+ */
+export function habitatFit(genome: Genome, profile: HabitatProfile, rules: Ruleset): number {
+  assertLegalGenome(genome, rules.genome);
+  assertProfile(profile);
+  return roundHalfUp(
+    rules.scoring.fitWeight * (genome.pulse * profile.burst + genome.calm * profile.steadiness),
+    rules.genome.max * PROFILE_SCALE,
+  );
+}
+
+function assertScoreInput(input: ScoreInput, rules: Ruleset): void {
+  assertLegalGenome(input.genome, rules.genome);
+  assertLivingHealth(input.healthBefore, rules);
+  assertProfile(input.profile);
+  for (const marker of input.shocks) {
     if (!Number.isSafeInteger(marker.amount) || marker.amount < 0) {
       throw new EngineError('INVALID_ARGUMENT', 'shock amounts must be nonnegative integers');
     }
@@ -153,10 +175,7 @@ export function scoreRound(input: ScoreInput, rules: Ruleset): ScoreBreakdown {
 
   const pulseTerm = genome.pulse * burst;
   const calmTerm = genome.calm * steadiness;
-  const fit = roundHalfUp(
-    scoring.fitWeight * (pulseTerm + calmTerm),
-    rules.genome.max * PROFILE_SCALE,
-  );
+  const fit = habitatFit(genome, profile, rules);
 
   const sheltered = input.trace === 'shelter';
   let arrivalShock = 0;
