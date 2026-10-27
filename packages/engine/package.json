@@ -16,6 +16,7 @@
   ],
   "dependencies": {
     "@noble/hashes": "2.4.0",
+    "@ripple/contracts": "0.0.0",
     "zod": "4.6.7"
   },
   "scripts": {

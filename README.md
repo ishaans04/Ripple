@@ -10,6 +10,8 @@ The full specification is in [docs/prd.md](docs/prd.md), extended by the [Cocoon
 
 Ripple is being built phase by phase. **Phase 0 (foundation) and Phase 1 (pure engine) are complete.** What works today:
 
+**Phase 2 is in progress:** the shared studio contracts now validate bounded, immutable shell blueprints and captured challenges. The editor and hand-tracking integration are being built next. See [delivery progress](docs/progress.md) for resolved studio policies and remaining exit checks.
+
 - The application service (Fastify on Node.js 24) with structured, correlated JSON logs, a uniform error contract, security headers, and graceful shutdown
 - PostgreSQL 18 with versioned migrations applied exactly once under an advisory lock, starting with the `worlds` table that isolates live, sandbox, and replay state
 - Liveness and readiness endpoints (`/health/live`, `/health/ready`)
