@@ -16,3 +16,4 @@ export * from './scoring.ts';
 export * from './tally.ts';
 export * from './traces.ts';
 export * from './studio-challenge.ts';
+export * from './studio-blueprint.ts';
