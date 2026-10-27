@@ -1,4 +1,5 @@
 import styles from './Landing.module.css';
+import { ServiceStatusPanel } from './ServiceStatusPanel.tsx';
 
 const lineageLoop = [
   { step: 'Seed', detail: 'A streamer names a founding strain for their community.' },
@@ -28,6 +29,8 @@ export function Landing() {
           lineage, and successful visitors leave a trace for those who follow.
         </p>
       </header>
+
+      <ServiceStatusPanel />
 
       <section className={styles.panel} aria-labelledby="loop-heading">
         <h2 id="loop-heading" className={styles.panelHeading}>
