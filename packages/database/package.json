@@ -23,7 +23,7 @@
   "scripts": {
     "typecheck": "tsc -p tsconfig.json",
     "db:generate": "drizzle-kit generate",
-    "migrate": "node --conditions=ripple-source src/cli/migrate.ts"
+    "migrate": "node --env-file-if-exists=../../.env --conditions=ripple-source src/cli/migrate.ts"
   },
   "dependencies": {
     "@types/pg": "8.23.1",

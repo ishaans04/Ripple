@@ -13,6 +13,9 @@ services:
       POSTGRES_USER: ripple
       POSTGRES_PASSWORD: ripple
       POSTGRES_DB: ripple
+    # Published on loopback only, for local development and integration tests.
+    ports:
+      - '127.0.0.1:55432:5432'
     volumes:
       - db-data:/var/lib/postgresql
     healthcheck:

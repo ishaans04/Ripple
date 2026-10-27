@@ -29,6 +29,8 @@
     "typecheck": "tsc -p tsconfig.json && npm run typecheck --workspaces --if-present",
     "clean": "tsc -b tsconfig.build.json --clean",
     "test": "vitest run --project unit",
-    "test:integration": "vitest run --project integration"
+    "test:integration": "node --env-file-if-exists=.env node_modules/vitest/vitest.mjs run --project integration",
+    "db:up": "docker compose up -d --wait db",
+    "db:migrate": "npm run migrate -w @ripple/database"
   }
 }

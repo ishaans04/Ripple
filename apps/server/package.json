@@ -6,7 +6,7 @@
   "type": "module",
   "scripts": {
     "typecheck": "tsc -p tsconfig.json",
-    "dev": "node --conditions=ripple-source --watch src/main.ts",
+    "dev": "node --env-file-if-exists=../../.env --conditions=ripple-source --watch src/main.ts",
     "start": "node dist/main.js"
   },
   "dependencies": {
