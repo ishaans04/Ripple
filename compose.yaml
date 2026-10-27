@@ -1,0 +1,52 @@
+# Local evaluation: `docker compose up --build`, then open http://localhost:3000.
+# No Twitch or other third-party credentials are required.
+
+x-ripple-image: &ripple-image
+  build:
+    context: .
+  image: ripple-app:local
+
+services:
+  db:
+    image: postgres:18@sha256:edb0c08dc33befd0262ab3b5cf1c4f3f8cfd8b09e88c05b45adee29d6761ddb6
+    environment:
+      POSTGRES_USER: ripple
+      POSTGRES_PASSWORD: ripple
+      POSTGRES_DB: ripple
+    volumes:
+      - db-data:/var/lib/postgresql
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ripple -d ripple']
+      interval: 2s
+      timeout: 3s
+      retries: 30
+    restart: unless-stopped
+
+  # Applies versioned migrations once, under an advisory lock, before the app starts.
+  migrate:
+    <<: *ripple-image
+    command: ['node', 'packages/database/dist/cli/migrate.js']
+    environment:
+      DATABASE_URL: postgres://ripple:ripple@db:5432/ripple
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: 'no'
+
+  app:
+    <<: *ripple-image
+    environment:
+      DATABASE_URL: postgres://ripple:ripple@db:5432/ripple
+      LOG_LEVEL: info
+    ports:
+      - '127.0.0.1:3000:3000'
+    depends_on:
+      db:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    stop_grace_period: 20s
+    restart: unless-stopped
+
+volumes:
+  db-data:
