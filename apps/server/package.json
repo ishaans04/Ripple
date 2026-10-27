@@ -1,0 +1,15 @@
+{
+  "name": "@ripple/server",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Ripple application service: HTTP routes, intake, workers, and browser delivery",
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@ripple/contracts": "0.0.0",
+    "@ripple/database": "0.0.0",
+    "zod": "4.6.7"
+  }
+}
