@@ -54,7 +54,6 @@ export function acceptBlueprint(
     blueprint.studioSessionId !== challenge.studioSessionId ||
     blueprint.baseOrganismId !== challenge.baseOrganismId ||
     blueprint.baseOrganismVersion !== challenge.baseOrganismVersion ||
-    blueprint.rendererVersion !== challenge.rendererVersion ||
     challenge.rulesHash !== rulesetHash(rules)
   ) {
     throw new StudioRuleError(

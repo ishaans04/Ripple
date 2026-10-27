@@ -21,8 +21,8 @@ const proposals = [
   'grit-plus2-pulse-minus2',
   'grit-plus2-calm-minus2',
 ].map((mutationTemplateId, i) => ({
-  id: 'p' + i,
-  artistKey: 'a' + i,
+  id: `p${i}`,
+  artistKey: `a${i}`,
   blueprint: {
     schemaVersion: 1,
     worldId: challenge.worldId,

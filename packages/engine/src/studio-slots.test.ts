@@ -21,7 +21,7 @@ describe('shared mutation slot clock', () => {
     fc.assert(
       fc.property(fc.nat(100), (toggles) => {
         let state = consumeMutationSlot(initialMutationSlots, 'first', 1);
-        for (let i = 0; i < toggles; i += 1) state = releaseMutationSlot(state, 'break-' + i);
+        for (let i = 0; i < toggles; i += 1) state = releaseMutationSlot(state, `break-${i}`);
         expect(() => reserveMutationSlot(state, 'next', 2)).toThrow();
         expect(() =>
           reserveMutationSlot(completeSlotObservation(state, 1, false), 'next', 2),

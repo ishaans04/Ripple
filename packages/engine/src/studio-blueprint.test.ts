@@ -71,10 +71,14 @@ describe('blueprint acceptance', () => {
       appearanceHash: null,
       status: 'ALIVE',
     };
-    expect(() => revalidateStudioBase(challenge, current, rules)).not.toThrow();
-    expect(() => revalidateStudioBase(challenge, { ...current, version: 1 }, rules)).toThrow();
-    expect(() =>
-      revalidateStudioBase(challenge, { ...current, status: 'FOSSIL' }, rules),
-    ).toThrow();
+    expect(() => {
+      revalidateStudioBase(challenge, current, rules);
+    }).not.toThrow();
+    expect(() => {
+      revalidateStudioBase(challenge, { ...current, version: 1 }, rules);
+    }).toThrow();
+    expect(() => {
+      revalidateStudioBase(challenge, { ...current, status: 'FOSSIL' }, rules);
+    }).toThrow();
   });
 });
