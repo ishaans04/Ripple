@@ -19,7 +19,11 @@ The [Cocoon Studio practice](http://localhost:3000/studio) provides a complete l
 - One-command local startup with Docker Compose, and CI covering lint, types, unit tests, integration tests on real PostgreSQL, the build, and a Compose smoke test
 - The deterministic game rules as a tested library (`@ripple/engine`; see [Game engine](#game-engine)), reproducing the PRD's worked journey (section 25.4) exactly
 
-The engine now processes persisted rounds with synthetic inputs. Twitch, the connected studio, raids, overlay, and the complete judge sandbox remain later-phase work; see the [plan](docs/plan.md). No live Twitch acceptance is claimed.
+The engine processes persisted rounds with synthetic inputs. **Phase 4 implementation is in progress:** broadcaster/operator OAuth, encrypted grants, signed EventSub intake, subscription reconciliation, stream recovery, owner commands and bounded bot output have landed. The controller and read-only preview are being verified. Real Twitch and hosted acceptance remain pending; the connected studio, raids, full overlay and judge sandbox remain later-phase work. See the [plan](docs/plan.md).
+
+### Twitch setup
+
+Open `/controller` to inspect connection readiness and manage your channel on a configured HTTPS deployment. Live integration is disabled by default; local practice stays available without secrets. Follow the [Twitch and Railway setup guide](docs/twitch-setup.md) for accounts, exact redirect URLs, independent secret keys, operator bot authorization and the pending live acceptance journey. A successful OAuth redirect alone does not establish subscription readiness.
 
 ## Quick start
 
