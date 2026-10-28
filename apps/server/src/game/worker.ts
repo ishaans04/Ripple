@@ -3,7 +3,7 @@ import { gameCommandSchema, type GameCommand } from '@ripple/contracts';
 import { ENGINE_VERSION, canonicalJson, sha256Hex } from '@ripple/engine';
 import { lockChannels, transaction } from '@ripple/database';
 import type pg from 'pg';
-import { applyLifecycle, type CommandEffect } from './lifecycle.ts';
+import { applyLifecycle, effect, type CommandEffect } from './lifecycle.ts';
 import {
   acceptActivity,
   acceptShock,
@@ -22,6 +22,22 @@ async function apply(
   atMs: number,
 ): Promise<CommandEffect> {
   switch (command.type) {
+    case 'policy':
+      await context.client.query(
+        'insert into twitch_channels(world_id,channel_id,visitor_policy) values($1,$2,$3) on conflict(world_id,channel_id) do update set visitor_policy=excluded.visitor_policy',
+        [context.channel.world_id, context.channel.id, command.visitorPolicy],
+      );
+      return effect('APPLIED', 'policy.changed', { visitorPolicy: command.visitorPolicy });
+    case 'rename':
+      if (context.organism?.id !== command.organismId) return effect('NO_RESIDENT');
+      await context.client.query(
+        'update organisms set name=$3,version=version+1 where world_id=$1 and id=$2',
+        [context.channel.world_id, command.organismId, command.name],
+      );
+      return effect('APPLIED', 'strain.renamed', {
+        organismId: command.organismId,
+        name: command.name,
+      });
     case 'seed':
       return seedResident(context, command, atMs);
     case 'vote':
@@ -139,7 +155,12 @@ export async function processNextInput(
             ),
           }
       : gameCommandSchema.parse(input.command);
-    const result = await apply(context, command, sequence, input.accepted_at.getTime());
+    const result =
+      'expectedVersion' in command &&
+      command.expectedVersion !== undefined &&
+      command.expectedVersion !== channel.state_version
+        ? effect('STALE_VERSION')
+        : await apply(context, command, sequence, input.accepted_at.getTime());
     await reconcileRoundDeadline(context);
     const record = {
       engineVersion: ENGINE_VERSION,

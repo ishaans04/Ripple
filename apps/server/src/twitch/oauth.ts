@@ -6,6 +6,7 @@ import type pg from 'pg';
 import { TwitchClient, TwitchError } from './client.ts';
 import { checkIdentity, requiredScopes, storeGrant, type GrantPurpose } from './grants.ts';
 import { enrollChannel } from './installation.ts';
+import { registerController } from './controller.ts';
 import { equalSecret, opaqueToken } from './security.ts';
 import { ControlError, cookie, createOwnerSession, requireOrigin, setCookie } from './sessions.ts';
 
@@ -15,6 +16,7 @@ export function registerOAuth(
   api: TwitchClient,
   worldId: string,
 ): void {
+  registerController(app, pool, api.config.origin);
   app.addHook('onRequest', async (_request, reply) => {
     reply.header('Cache-Control', 'no-store');
   });

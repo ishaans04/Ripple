@@ -20,6 +20,7 @@ export interface ChannelSnapshot {
   organism: {
     id: string;
     version: number;
+    name: string;
     genome: Genome;
     health: number;
     status: string;
@@ -57,6 +58,7 @@ export async function readSnapshot(
     organism: {
       id: string;
       version: number;
+      name: string;
       pulse: number;
       calm: number;
       grit: number;
@@ -77,7 +79,7 @@ export async function readSnapshot(
     server_time: Date;
   }>(
     `select c.state_version,c.label,w.mode,c.online,c.healthy,c.paused,c.rules_hash,(c.configuration->>'graceMs')::int as grace_ms,
-    (select jsonb_build_object('id',o.id,'version',o.version,'pulse',o.pulse,'calm',o.calm,'grit',o.grit,'drift',o.drift,'health',o.health,'status',o.status,'appearance',o.appearance)
+    (select jsonb_build_object('id',o.id,'version',o.version,'name',o.name,'pulse',o.pulse,'calm',o.calm,'grit',o.grit,'drift',o.drift,'health',o.health,'status',o.status,'appearance',o.appearance)
       from residencies r join organisms o on o.world_id=r.world_id and o.id=r.organism_id
       where r.world_id=c.world_id and r.channel_id=c.id and r.role='resident' order by (r.ended_at is null) desc,r.started_at desc limit 1) as organism,
     (select jsonb_build_object('id',r.id,'number',r.number,'kind',r.kind,'phase',r.phase,'checkpoint',r.checkpoint,'resolution',r.resolution,'explanation',r.explanation)
@@ -106,6 +108,7 @@ export async function readSnapshot(
           ? null
           : {
               id: organism.id,
+              name: organism.name,
               version: organism.version,
               genome: {
                 pulse: organism.pulse,

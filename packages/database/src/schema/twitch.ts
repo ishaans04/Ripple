@@ -49,6 +49,7 @@ export const twitchChannels = pgTable(
     inputError: text('input_error'),
     visitorPolicy: text('visitor_policy').notNull().default('ask'),
     lastSeedAt: timestamp('last_seed_at', { withTimezone: true }),
+    seedCooldownMs: integer('seed_cooldown_ms').notNull().default(180000),
   },
   (t) => [
     primaryKey({ columns: [t.worldId, t.channelId] }),
@@ -110,5 +111,23 @@ export const botMessages = pgTable(
       'bot_message_status',
       sql`${t.status} in ('pending','sending','sent','uncertain','failed')`,
     ),
+  ],
+);
+
+export const controllerOperations = pgTable(
+  'controller_operations',
+  {
+    worldId: uuid('world_id').notNull(),
+    channelId: uuid('channel_id').notNull(),
+    key: uuid('key').notNull(),
+    requestHash: text('request_hash').notNull(),
+    sequence: integer('sequence').notNull(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.worldId, t.channelId, t.key] }),
+    foreignKey({
+      columns: [t.worldId, t.channelId],
+      foreignColumns: [channels.worldId, channels.id],
+    }),
   ],
 );

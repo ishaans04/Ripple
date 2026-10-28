@@ -21,6 +21,15 @@ export const liveRoundTimings: RoundTimings = Object.freeze({
 });
 
 const actorKey = z.string().min(1).max(128);
+export const strainNameSchema = z
+  .string()
+  .trim()
+  .min(1)
+  .max(40)
+  .refine(
+    (value) => !/[\u0000-\u001f\u007f-\u009f\u202a-\u202e\u2066-\u2069]/.test(value),
+    'Control characters are not allowed',
+  );
 export const gameCommandSchema = z.discriminatedUnion('type', [
   z.strictObject({
     type: z.literal('seed'),
@@ -28,6 +37,8 @@ export const gameCommandSchema = z.discriminatedUnion('type', [
     lineageId: z.uuid(),
     residencyId: z.uuid(),
     roundId: z.uuid(),
+    name: strainNameSchema.optional(),
+    expectedVersion: z.int().nonnegative().optional(),
   }),
   z.strictObject({
     type: z.literal('vote'),
@@ -43,8 +54,12 @@ export const gameCommandSchema = z.discriminatedUnion('type', [
     revision: z.int().min(0),
     nextRoundId: z.uuid(),
   }),
-  z.strictObject({ type: z.literal('pause'), reason: z.enum(['manual', 'offline', 'shutdown']) }),
-  z.strictObject({ type: z.literal('resume') }),
+  z.strictObject({
+    type: z.literal('pause'),
+    reason: z.enum(['manual', 'offline', 'shutdown']),
+    expectedVersion: z.int().nonnegative().optional(),
+  }),
+  z.strictObject({ type: z.literal('resume'), expectedVersion: z.int().nonnegative().optional() }),
   z.strictObject({ type: z.literal('integration'), online: z.boolean(), healthy: z.boolean() }),
   z.strictObject({ type: z.literal('stream'), online: z.boolean() }),
   z.strictObject({ type: z.literal('inputHealth'), healthy: z.boolean() }),
@@ -52,7 +67,18 @@ export const gameCommandSchema = z.discriminatedUnion('type', [
     type: z.literal('interrupt'),
     reason: z.enum(['input_outage', 'process_gap', 'incompatible_rules']),
   }),
-  z.strictObject({ type: z.literal('recover') }),
+  z.strictObject({ type: z.literal('recover'), expectedVersion: z.int().nonnegative().optional() }),
+  z.strictObject({
+    type: z.literal('rename'),
+    organismId: z.uuid(),
+    name: strainNameSchema,
+    expectedVersion: z.int().nonnegative(),
+  }),
+  z.strictObject({
+    type: z.literal('policy'),
+    visitorPolicy: z.enum(['ask', 'accept', 'reject']),
+    expectedVersion: z.int().nonnegative(),
+  }),
 ]);
 export type GameCommand = z.infer<typeof gameCommandSchema>;
 

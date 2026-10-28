@@ -2,11 +2,12 @@ import { randomBytes } from 'node:crypto';
 import pg from 'pg';
 import type { FastifyInstance } from 'fastify';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { runMigrations } from '@ripple/database';
+import { acceptInput, runMigrations } from '@ripple/database';
 import { createTemporaryDatabase, type TemporaryDatabase } from '@ripple/database/testing';
 import { buildApp } from '../app.ts';
 import { TwitchClient } from './client.ts';
 import type { TwitchConfig } from './security.ts';
+import { processNextInput } from '../game/worker.ts';
 
 describe('browser-bound broadcaster and operator OAuth', () => {
   let temporary: TemporaryDatabase, pool: pg.Pool, app: FastifyInstance;
@@ -20,6 +21,7 @@ describe('browser-bound broadcaster and operator OAuth', () => {
     operatorSecret: 'o'.repeat(40),
   };
   let exchanges = 0;
+  let ownerCookies: Record<string, string> = {};
   beforeAll(async () => {
     temporary = await createTemporaryDatabase();
     pool = new pg.Pool({ connectionString: temporary.connectionString });
@@ -65,6 +67,7 @@ describe('browser-bound broadcaster and operator OAuth', () => {
     const callback = await app.inject({ url, cookies: { [browser.name]: browser.value } });
     expect(callback.statusCode).toBe(302);
     expect(callback.headers.location).toBe('/controller');
+    ownerCookies = Object.fromEntries(callback.cookies.map((c) => [c.name, c.value]));
     expect(callback.cookies.map((c) => c.name)).toEqual([
       '__Host-ripple-session',
       '__Host-ripple-csrf',
@@ -114,5 +117,106 @@ describe('browser-bound broadcaster and operator OAuth', () => {
     expect(
       (await pool.query("select channel_id,subject from oauth_grants where purpose='bot'")).rows,
     ).toEqual([{ channel_id: null, subject: '999' }]);
+  });
+  it('enforces ownership, CSRF, expected versions and idempotency before a named seed commits', async () => {
+    const status = await app.inject({ url: '/api/controller/status', cookies: ownerCookies });
+    expect(status.statusCode).toBe(200);
+    const owner = status.json<{ worldId: string; channelId: string; csrfToken: string }>();
+    await acceptInput(pool, {
+      worldId: owner.worldId,
+      channelId: owner.channelId,
+      provider: 'test-setup',
+      messageId: 'healthy',
+      command: { type: 'integration', online: true, healthy: true },
+      requiredMode: 'live',
+    });
+    await processNextInput(pool, owner.worldId, owner.channelId);
+    const key = '11111111-1111-4111-8111-111111111111',
+      url = `/api/channels/${owner.channelId}/seed`,
+      payload = { expectedVersion: 1, name: '<Shell & Tide>' };
+    const headers = {
+      origin: config.origin,
+      'x-csrf-token': owner.csrfToken,
+      'idempotency-key': key,
+    };
+    expect(
+      (await app.inject({ method: 'POST', url, cookies: ownerCookies, payload })).statusCode,
+    ).toBe(403);
+    expect(
+      (
+        await app.inject({
+          method: 'POST',
+          url: `/api/channels/00000000-0000-4000-8000-000000000000/seed`,
+          cookies: ownerCookies,
+          headers,
+          payload,
+        })
+      ).statusCode,
+    ).toBe(403);
+    expect(
+      (
+        await app.inject({
+          method: 'POST',
+          url,
+          cookies: ownerCookies,
+          headers,
+          payload: { ...payload, expectedVersion: 0 },
+        })
+      ).statusCode,
+    ).toBe(409);
+    const accepted = await app.inject({
+      method: 'POST',
+      url,
+      cookies: ownerCookies,
+      headers,
+      payload,
+    });
+    expect(accepted.statusCode).toBe(202);
+    const retry = await app.inject({
+      method: 'POST',
+      url,
+      cookies: ownerCookies,
+      headers,
+      payload,
+    });
+    expect(retry.json<{ sequence: number; duplicate: boolean }>()).toMatchObject({
+      sequence: accepted.json<{ sequence: number }>().sequence,
+      duplicate: true,
+    });
+    expect(
+      (
+        await app.inject({
+          method: 'POST',
+          url,
+          cookies: ownerCookies,
+          headers,
+          payload: { ...payload, name: 'Different' },
+        })
+      ).statusCode,
+    ).toBe(409);
+    await processNextInput(pool, owner.worldId, owner.channelId);
+    const result = await app.inject({
+      url: `/api/controller/commands/${key}`,
+      cookies: ownerCookies,
+    });
+    expect(result.json<{ result: { code: string } }>().result.code).toBe('APPLIED');
+    expect((await pool.query('select name from organisms')).rows).toEqual([
+      { name: '<Shell & Tide>' },
+    ]);
+    const read = await app.inject({
+      method: 'POST',
+      url: '/api/controller/read-capability',
+      cookies: ownerCookies,
+      headers,
+    });
+    expect(read.statusCode).toBe(200);
+    expect(
+      (
+        await app.inject({
+          url: '/api/controller/status',
+          headers: { authorization: `Bearer ${read.json<{ capability: string }>().capability}` },
+        })
+      ).statusCode,
+    ).toBe(401);
   });
 });

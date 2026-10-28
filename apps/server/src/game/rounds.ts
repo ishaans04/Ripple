@@ -112,6 +112,16 @@ export async function seedResident(
     appearance: founderAppearance,
   };
   await openNextRound(context, command.roundId, atMs);
+  if (command.name !== undefined)
+    await client.query('update organisms set name=$3 where world_id=$1 and id=$2', [
+      channel.world_id,
+      command.organismId,
+      command.name,
+    ]);
+  await client.query(
+    'update twitch_channels set last_seed_at=$3 where world_id=$1 and channel_id=$2',
+    [channel.world_id, channel.id, new Date(atMs)],
+  );
   return effect('APPLIED', 'ballot.opened', {
     organismId: command.organismId,
     roundId: command.roundId,

@@ -34,6 +34,15 @@ export class PublicGateway {
   readonly #heartbeatTimer: ReturnType<typeof setInterval>;
   #polling: Promise<void> | null = null;
   #closed = false;
+  connected(worldId: string, channelId: string): number {
+    return [...this.#clients].filter(
+      (client) =>
+        client.worldId === worldId &&
+        client.channelId === channelId &&
+        client.ready &&
+        client.alive,
+    ).length;
+  }
   constructor(pool: pg.Pool, logger: Pick<FastifyBaseLogger, 'error'>) {
     this.#pool = pool;
     this.#logger = logger;
