@@ -39,6 +39,50 @@ export const strainNameSchema = z
       }),
     'Control characters are not allowed',
   );
+const admissionEligibility = z.strictObject({
+  authorized: z.boolean(),
+  rulesCompatible: z.boolean(),
+});
+export const propagationCommandSchema = z.discriminatedUnion('type', [
+  z.strictObject({
+    type: z.literal('raid'),
+    transferId: z.uuid(),
+    childId: z.uuid(),
+    residencyId: z.uuid(),
+    arrivalRoundId: z.uuid(),
+    destinationChannelId: z.uuid().nullable(),
+    destinationTwitchId: z.string().min(1).max(100),
+  }),
+  z.strictObject({
+    type: z.literal('arrive'),
+    transferId: z.uuid(),
+    roundId: z.uuid(),
+    eligibility: admissionEligibility.optional(),
+  }),
+  z.strictObject({ type: z.literal('expireAdmission'), transferId: z.uuid() }),
+  z.strictObject({
+    type: z.literal('admission'),
+    transferId: z.uuid(),
+    transferVersion: z.int().nonnegative(),
+    decision: z.enum(['accept', 'decline']),
+    expectedVersion: z.int().nonnegative().optional(),
+    roundId: z.uuid(),
+    eligibility: admissionEligibility.optional(),
+  }),
+  z.strictObject({
+    type: z.literal('admissionSweep'),
+    roundId: z.uuid(),
+    eligibility: admissionEligibility.optional(),
+  }),
+  z.strictObject({ type: z.literal('prepare'), expectedVersion: z.int().nonnegative().optional() }),
+  z.strictObject({
+    type: z.literal('blockSource'),
+    sourceChannelId: z.uuid(),
+    blocked: z.boolean(),
+    expectedVersion: z.int().nonnegative().optional(),
+  }),
+]);
+export type PropagationCommand = z.infer<typeof propagationCommandSchema>;
 export const gameCommandSchema = z.discriminatedUnion('type', [
   z.strictObject({
     type: z.literal('seed'),

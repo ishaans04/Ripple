@@ -11,6 +11,7 @@ export interface CommandEffect {
   code: GameResultCode;
   updateType: string | null;
   detail: Readonly<Record<string, unknown>>;
+  dependencies?: readonly Readonly<Record<string, unknown>>[];
 }
 export function effect(
   code: GameResultCode,
