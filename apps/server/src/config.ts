@@ -1,5 +1,6 @@
 import { resolve } from 'node:path';
 import { z } from 'zod';
+import { readTwitchConfig, type TwitchConfig } from './twitch/security.ts';
 
 const logLevels = ['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent'] as const;
 
@@ -28,6 +29,7 @@ export interface ServerConfig {
   logLevel: (typeof logLevels)[number];
   shutdownGraceMs: number;
   webRoot: string | undefined;
+  twitch?: TwitchConfig;
 }
 
 export class ConfigError extends Error {
@@ -61,6 +63,12 @@ export function loadConfig(env: Record<string, string | undefined>): ServerConfi
   }
 
   const parsed = result.data;
+  let twitch: TwitchConfig | undefined;
+  try {
+    twitch = readTwitchConfig(definedOnly);
+  } catch (error) {
+    throw new ConfigError([error instanceof Error ? error.message : 'Invalid live configuration']);
+  }
   return {
     databaseUrl: parsed.DATABASE_URL,
     host: parsed.HOST,
@@ -68,5 +76,6 @@ export function loadConfig(env: Record<string, string | undefined>): ServerConfi
     logLevel: parsed.LOG_LEVEL,
     shutdownGraceMs: parsed.SHUTDOWN_GRACE_MS,
     webRoot: parsed.WEB_ROOT,
+    ...(twitch === undefined ? {} : { twitch }),
   };
 }

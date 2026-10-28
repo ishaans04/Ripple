@@ -45,9 +45,11 @@ Exit evidence on code commit `0a41ed4`:
 
 The local database remains intact. Custom-format backups are saved under ignored `tmp/ripple-before-phase3.dump` and `tmp/ripple-phase3-loop.dump`; this is not a backup-restore rehearsal claim. That release exercise remains Phase 10.
 
-## Phase 4 ? Twitch live loop (next)
+## Phase 4 — Twitch live loop (in progress)
 
 Implement broadcaster/operator OAuth, encrypted grants, signed EventSub intake and subscription recovery, normalized local chat, stream/category lifecycle, bot announcements, setup states and Railway deployment configuration. Provide account/app/OAuth/HTTPS setup instructions. Synthetic/provider-fixture tests can proceed now; the user has deferred real Twitch and hosted acceptance until the accounts and URL exist.
+
+Live configuration is opt-in and fails closed on missing secrets or a non-HTTPS public origin. Grant ciphertext uses AES-256-GCM with grant-identity authenticated data; actor hashing uses a separate key. No live acceptance is claimed.
 
 ## Live acceptance deferral requested by the user
 
