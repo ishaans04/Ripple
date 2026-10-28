@@ -1,0 +1,58 @@
+.page {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 2rem 1.25rem;
+  display: grid;
+  gap: 1.5rem;
+}
+.panel {
+  background: var(--color-panel, #182630);
+  border: 1px solid #48616b;
+  border-radius: 1rem;
+  padding: 1.5rem;
+  display: grid;
+  gap: 1rem;
+}
+.page a {
+  color: #56d6c5;
+}
+.page label {
+  display: grid;
+  gap: 0.4rem;
+}
+.page input,
+.page select {
+  width: 100%;
+  background: #101820;
+  color: #edf5f4;
+  border: 1px solid #a7bcc4;
+  border-radius: 0.4rem;
+  padding: 0.7rem;
+  font: inherit;
+}
+.page button,
+.button {
+  padding: 0.7rem 1rem;
+  border: 1px solid #56d6c5;
+  border-radius: 0.4rem;
+  font: inherit;
+  color: #edf5f4;
+  background: #16443f;
+  cursor: pointer;
+}
+.page button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+.creature {
+  width: min(240px, 100%);
+  margin: auto;
+}
+.page li {
+  margin-block: 0.5rem;
+}

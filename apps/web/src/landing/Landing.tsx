@@ -31,6 +31,11 @@ export function Landing() {
       </header>
 
       <ServiceStatusPanel />
+      <section className={styles.panel}>
+        <h2 className={styles.panelHeading}>Your channel</h2>
+        <p>Connect Twitch, check subscription readiness, and control your strain.</p>
+        <a href="/controller">Open channel controller →</a>
+      </section>
 
       <section className={styles.panel}>
         <h2 className={styles.panelHeading}>Cocoon Studio</h2>

@@ -40,11 +40,16 @@ export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
   await registerGateway(app, options.pool);
   registerHealthRoutes(app, options.pool);
   registerGameReadRoutes(app, options.pool);
+  app.get('/api/connection', (_request, reply) => {
+    reply.header('Cache-Control', 'no-store');
+    return reply.send({ liveEnabled: options.config.twitch !== undefined });
+  });
   if (options.config.twitch !== undefined) {
     const api = options.twitchApi ?? new TwitchClient(options.config.twitch);
     const worldId = await ensureInstallation(options.pool, options.config.twitch);
-    await app.register(async (scope) => {
+    await app.register((scope, _options, done) => {
       registerOAuth(scope, options.pool, api, worldId);
+      done();
     });
     await registerWebhook(app, options.pool, options.config.twitch);
   }

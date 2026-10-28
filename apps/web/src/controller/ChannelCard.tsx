@@ -1,0 +1,68 @@
+import type { ChannelView } from '@ripple/contracts';
+import { ShellRenderer } from '../studio/ShellRenderer.tsx';
+import styles from './Controller.module.css';
+export function ChannelCard({ channel }: { channel: ChannelView }) {
+  const creature = channel.organism,
+    round = channel.round;
+  const design =
+    creature?.appearance.kind === 'studio' ? creature.appearance.blueprint : creature?.appearance;
+  return (
+    <section className={styles.panel} aria-label="Channel state">
+      <h2>{channel.label}</h2>
+      <p>
+        {channel.mode === 'sandbox' ? 'Synthetic world · ' : ''}
+        {channel.online ? 'Stream live' : 'Stream offline'} ·{' '}
+        {channel.healthy ? 'Inputs healthy' : 'Inputs held'} ·{' '}
+        {channel.paused ? 'Manually paused' : 'Automatic clock'}
+      </p>
+      {creature === null ? (
+        <p>No resident strain. The broadcaster can seed when the stream and inputs are ready.</p>
+      ) : (
+        <>
+          <h3>{creature.name}</h3>
+          <div className={styles.creature}>
+            {design !== undefined && (
+              <ShellRenderer part={design.part} rendererVersion={design.rendererVersion} />
+            )}
+          </div>
+          <p>
+            Energy {creature.health}/100 · {creature.status}
+          </p>
+          <p>
+            Pulse {creature.genome.pulse} · Calm {creature.genome.calm} · Grit{' '}
+            {creature.genome.grit} · Drift {creature.genome.drift}
+          </p>
+        </>
+      )}
+      {round !== null && (
+        <>
+          <h3>
+            Round {round.number} · {round.phase}
+          </h3>
+          {round.clock.paused && (
+            <p>Clock held. Committed genes stay; incomplete observations do not change energy.</p>
+          )}
+          {round.phase === 'VOTING' && (
+            <>
+              <p>Vote in Twitch chat. Your first valid vote stands.</p>
+              <ol>
+                {round.candidates.map((c, i) => (
+                  <li key={i}>
+                    <strong>{c.effect}</strong> — {c.tradeOff}. Vote !ripple {i + 1} ·{' '}
+                    {round.counts[i] ?? 0} votes
+                  </li>
+                ))}
+              </ol>
+              <p>
+                {round.voteCloseAtMs === null
+                  ? 'Voting clock is held.'
+                  : `Voting closes at ${new Date(round.voteCloseAtMs).toLocaleTimeString()}.`}
+              </p>
+            </>
+          )}
+          {round.explanation !== null && <p>{round.explanation.headline}</p>}
+        </>
+      )}
+    </section>
+  );
+}
