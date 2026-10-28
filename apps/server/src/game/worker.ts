@@ -38,6 +38,27 @@ async function apply(
       return applyAdmissionCommand(context, command, sequence, atMs);
     case 'prepare':
       return requestPreparation(context);
+    case 'blockLineage': {
+      const lineage = await context.client.query(
+        'select id from lineages where world_id=$1 and id=$2',
+        [context.channel.world_id, command.lineageId],
+      );
+      if (lineage.rowCount !== 1) return effect('NO_CHANGE');
+      const changed = command.blocked
+        ? await context.client.query(
+            'insert into lineage_blocks(world_id,channel_id,lineage_id) values($1,$2,$3) on conflict do nothing',
+            [context.channel.world_id, context.channel.id, command.lineageId],
+          )
+        : await context.client.query(
+            'delete from lineage_blocks where world_id=$1 and channel_id=$2 and lineage_id=$3',
+            [context.channel.world_id, context.channel.id, command.lineageId],
+          );
+      return effect(
+        changed.rowCount === 1 ? 'APPLIED' : 'NO_CHANGE',
+        changed.rowCount === 1 ? 'lineage.block_changed' : null,
+        { lineageId: command.lineageId, blocked: command.blocked },
+      );
+    }
     case 'blockSource': {
       const source = await context.client.query(
         'select id from channels where world_id=$1 and id=$2',
@@ -305,6 +326,7 @@ export async function processNextInput(
         [
           'policy',
           'blockSource',
+          'blockLineage',
           'stream',
           'inputHealth',
           'integration',
@@ -322,10 +344,11 @@ export async function processNextInput(
         result.code === 'APPLIED' &&
         wakesAdmission &&
         mode !== 'replay' &&
-        channel.online &&
-        channel.healthy &&
-        !channel.paused &&
-        context.round?.phase !== 'INTERRUPTED' &&
+        (['policy', 'blockSource', 'blockLineage'].includes(command.type) ||
+          (channel.online &&
+            channel.healthy &&
+            !channel.paused &&
+            context.round?.phase !== 'INTERRUPTED')) &&
         (await pendingAdmissions(context)).length > 0
       )
         await acceptInputInTransaction(client, {

@@ -17,5 +17,17 @@ export const channelControlSchema = z.discriminatedUnion('action', [
     sourceChannelId: z.uuid(),
     blocked: z.boolean(),
   }),
+  z.strictObject({
+    action: z.literal('blockLineage'),
+    ...version,
+    lineageId: z.uuid(),
+    blocked: z.boolean(),
+  }),
 ]);
 export type ChannelControl = z.infer<typeof channelControlSchema>;
+export const blocksPageSchema = z.object({
+  kind: z.enum(['source', 'lineage']),
+  items: z.array(z.object({ id: z.uuid(), label: z.string() })).max(50),
+  next: z.uuid().nullable(),
+});
+export type BlocksPage = z.infer<typeof blocksPageSchema>;

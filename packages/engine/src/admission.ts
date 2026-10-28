@@ -73,6 +73,7 @@ export function forkBlock(
 export type AdmissionOutcome =
   | 'NOT_ENROLLED'
   | 'SOURCE_BLOCKED'
+  | 'LINEAGE_BLOCKED'
   | 'POLICY_REJECTED'
   | 'RULES_INCOMPATIBLE'
   | 'GRANT_REVOKED'
@@ -85,6 +86,7 @@ export type AdmissionOutcome =
 export interface AdmissionInput {
   enrolled: boolean;
   sourceBlocked: boolean;
+  lineageBlocked: boolean;
   policy: 'ask' | 'accept' | 'reject';
   approved: boolean;
   rulesCompatible: boolean;
@@ -102,6 +104,7 @@ export function admissionOutcome(
 ): AdmissionOutcome {
   if (!input.enrolled) return 'NOT_ENROLLED';
   if (input.sourceBlocked) return 'SOURCE_BLOCKED';
+  if (input.lineageBlocked) return 'LINEAGE_BLOCKED';
   if (input.policy === 'reject') return 'POLICY_REJECTED';
   if (input.waitingAhead >= policy.harborCap) return 'HARBOR_FULL';
   if (!input.rulesCompatible) return 'RULES_INCOMPATIBLE';

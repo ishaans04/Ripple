@@ -82,6 +82,12 @@ export const propagationCommandSchema = z.discriminatedUnion('type', [
     blocked: z.boolean(),
     expectedVersion: z.int().nonnegative().optional(),
   }),
+  z.strictObject({
+    type: z.literal('blockLineage'),
+    lineageId: z.uuid(),
+    blocked: z.boolean(),
+    expectedVersion: z.int().nonnegative().optional(),
+  }),
 ]);
 export type PropagationCommand = z.infer<typeof propagationCommandSchema>;
 export const gameCommandSchema = z.discriminatedUnion('type', [

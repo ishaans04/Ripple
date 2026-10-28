@@ -10,6 +10,7 @@ import { cookie, ControlError, ownerSession } from './sessions.ts';
 import { opaqueToken, type TwitchConfig } from './security.ts';
 import { subscriptionVersions } from './webhook.ts';
 import { ownerControlCommand } from './owner-control.ts';
+import { registerOwnerBlocks } from './owner-blocks.ts';
 
 const seedBody = z.strictObject({ expectedVersion: z.int().nonnegative(), name: strainNameSchema });
 const versionBody = z.strictObject({ expectedVersion: z.int().nonnegative() });
@@ -20,6 +21,7 @@ export function registerController(
   pool: pg.Pool,
   config: TwitchConfig,
 ): void {
+  registerOwnerBlocks(app, pool, config);
   app.get(
     '/api/controller/status',
     { config: { rateLimit: { max: 120, timeWindow: '1 minute' } } },

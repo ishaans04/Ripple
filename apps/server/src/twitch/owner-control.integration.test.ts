@@ -214,4 +214,65 @@ describe('owner preparation and admission controls', () => {
     );
     expect(child.rows[0]?.status).toBe('ARCHIVED');
   });
+  it('lists and removes only the owner channel blocks, with world-scoped lineage validation', async () => {
+    expect((await app.inject({ url: '/api/controller/blocks?kind=source' })).statusCode).toBe(401);
+    const lineageId = (
+      await pool.query<{ lineage_id: string }>(
+        "select o.lineage_id from organisms o join residencies r on r.world_id=o.world_id and r.organism_id=o.id where r.world_id=$1 and r.channel_id=$2 and r.role='resident'",
+        [worldId, source],
+      )
+    ).rows[0]!.lineage_id;
+    expect(
+      (
+        await post({
+          action: 'blockLineage',
+          lineageId: randomUUID(),
+          blocked: true,
+          expectedVersion: await version(),
+        })
+      ).statusCode,
+    ).toBe(404);
+    for (const body of [
+      { action: 'blockSource', sourceChannelId: source },
+      { action: 'blockLineage', lineageId },
+    ]) {
+      expect(
+        (await post({ ...body, blocked: true, expectedVersion: await version() })).statusCode,
+      ).toBe(202);
+      while (await processNextInput(pool, worldId, target));
+    }
+    for (const [kind, id] of [
+      ['source', source],
+      ['lineage', lineageId],
+    ]) {
+      const page = await app.inject({ url: `/api/controller/blocks?kind=${kind}`, cookies });
+      expect(page.json()).toEqual({ kind, items: [{ id, label: 'source' }], next: null });
+    }
+    expect(
+      (await app.inject({ url: '/api/controller/blocks?kind=source&after=invalid', cookies }))
+        .statusCode,
+    ).toBe(400);
+    expect(
+      (
+        await post({
+          action: 'blockLineage',
+          lineageId,
+          blocked: false,
+          expectedVersion: await version(),
+        })
+      ).statusCode,
+    ).toBe(202);
+    while (await processNextInput(pool, worldId, target));
+    expect(
+      (await app.inject({ url: '/api/controller/blocks?kind=lineage', cookies })).json(),
+    ).toEqual({ kind: 'lineage', items: [], next: null });
+    expect(
+      (
+        await pool.query('select 1 from source_blocks where world_id=$1 and channel_id=$2', [
+          worldId,
+          source,
+        ])
+      ).rowCount,
+    ).toBe(0);
+  });
 });

@@ -40,5 +40,18 @@ export async function ownerControlCommand(
       expectedVersion: body.expectedVersion,
     };
   }
+  if (body.action === 'blockLineage') {
+    const lineage = await client.query('select 1 from lineages where world_id=$1 and id=$2', [
+      owner.world_id,
+      body.lineageId,
+    ]);
+    if (lineage.rowCount !== 1) throw new ControlError(404, 'NOT_FOUND');
+    return {
+      type: 'blockLineage',
+      lineageId: body.lineageId,
+      blocked: body.blocked,
+      expectedVersion: body.expectedVersion,
+    };
+  }
   return { type: 'prepare', expectedVersion: body.expectedVersion };
 }

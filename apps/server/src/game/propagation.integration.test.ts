@@ -365,4 +365,78 @@ describe('persisted preparation, welcome and shared visitor observations', () =>
       ).rowCount,
     ).toBeGreaterThan(0);
   }, 30000);
+  it('archives blocked pending lineages and sources while offline, without evicting active visitors', async () => {
+    const world = await start(),
+      target = await peer(world),
+      secondSource = await peer(world);
+    const first = raidCommand(target);
+    await send(world, world.channelId, first);
+    const lineageId = (
+      await pool.query<{ lineage_id: string }>(
+        'select lineage_id from organisms where world_id=$1 and id=$2',
+        [world.worldId, first.childId],
+      )
+    ).rows[0]!.lineage_id;
+    await send(world, target, { type: 'stream', online: false });
+    await send(world, target, { type: 'blockLineage', lineageId, blocked: true });
+    const readTransfer = async (id: string) =>
+      (
+        await pool.query<TransferRow>('select * from transfers where world_id=$1 and id=$2', [
+          world.worldId,
+          id,
+        ])
+      ).rows[0]!;
+    expect((await readTransfer(first.transferId)).outcome).toBe('LINEAGE_BLOCKED');
+    expect((await snapshot(world)).payload.organism?.status).toBe('ALIVE');
+    expect(
+      (await send(world, target, { type: 'blockLineage', lineageId, blocked: true }))[0]?.effect
+        .code,
+    ).toBe('NO_CHANGE');
+    await send(world, target, { type: 'blockLineage', lineageId, blocked: false });
+    expect((await readTransfer(first.transferId)).outcome).toBe('LINEAGE_BLOCKED');
+    const next = raidCommand(target);
+    await send(world, secondSource, next);
+    expect((await readTransfer(next.transferId)).outcome).toBe('OFFLINE_HOLD');
+    await send(world, target, {
+      type: 'blockSource',
+      sourceChannelId: secondSource,
+      blocked: true,
+    });
+    expect((await readTransfer(next.transferId)).outcome).toBe('SOURCE_BLOCKED');
+    await send(world, target, { type: 'stream', online: true });
+    await acceptVisitors(world, target);
+    const thirdSource = await peer(world),
+      active = raidCommand(target);
+    await send(world, thirdSource, active);
+    expect((await readTransfer(active.transferId)).outcome).toBe('ACTIVE');
+    await send(world, target, { type: 'blockSource', sourceChannelId: thirdSource, blocked: true });
+    expect((await readTransfer(active.transferId)).outcome).toBe('ACTIVE');
+    // Existing visitors need the explicit decline control; blocking affects admission.
+    await send(world, target, {
+      type: 'admission',
+      transferId: active.transferId,
+      transferVersion: (await readTransfer(active.transferId)).version,
+      decision: 'decline',
+      roundId: randomUUID(),
+    });
+    expect((await readTransfer(active.transferId)).outcome).toBe('DECLINED');
+    const other = await start(),
+      foreign = (
+        await pool.query<{ lineage_id: string }>(
+          'select lineage_id from organisms where world_id=$1',
+          [other.worldId],
+        )
+      ).rows[0]!.lineage_id;
+    expect(
+      (await send(world, target, { type: 'blockLineage', lineageId: foreign, blocked: true }))[0]
+        ?.effect.code,
+    ).toBe('NO_CHANGE');
+    await expect(
+      pool.query('insert into lineage_blocks(world_id,channel_id,lineage_id) values($1,$2,$3)', [
+        world.worldId,
+        target,
+        foreign,
+      ]),
+    ).rejects.toMatchObject({ code: '23503' });
+  }, 20000);
 });

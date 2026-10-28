@@ -146,6 +146,13 @@ export async function reconsiderAdmission(
       [channel.world_id, channel.id],
     )
   ).rows[0];
+  const lineageBlocked =
+    (
+      await client.query(
+        'select 1 from lineage_blocks where world_id=$1 and channel_id=$2 and lineage_id=$3',
+        [channel.world_id, channel.id, transfer.snapshot.parent?.lineageId ?? null],
+      )
+    ).rowCount !== 0;
   const busy =
     (
       await client.query(
@@ -157,6 +164,7 @@ export async function reconsiderAdmission(
     {
       enrolled: true,
       sourceBlocked: blocked,
+      lineageBlocked,
       policy: settings?.visitor_policy ?? 'ask',
       approved: approve || transfer.approved_at !== null,
       rulesCompatible:
@@ -170,7 +178,7 @@ export async function reconsiderAdmission(
     },
     policy,
   );
-  if (['SOURCE_BLOCKED', 'POLICY_REJECTED', 'HARBOR_FULL'].includes(outcome))
+  if (['SOURCE_BLOCKED', 'LINEAGE_BLOCKED', 'POLICY_REJECTED', 'HARBOR_FULL'].includes(outcome))
     return archive(context, transfer, outcome, sequence, atMs);
   const newlyApproved = approve && transfer.approved_at === null;
   if (outcome === transfer.outcome && !newlyApproved) return effect('NO_CHANGE');

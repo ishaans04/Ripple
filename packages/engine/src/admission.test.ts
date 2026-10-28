@@ -10,6 +10,7 @@ import {
 const ready: AdmissionInput = {
   enrolled: true,
   sourceBlocked: false,
+  lineageBlocked: false,
   policy: 'accept',
   approved: false,
   rulesCompatible: true,
@@ -34,6 +35,7 @@ describe('bounded raid admission policy', () => {
       [{ healthy: false }, 'INPUT_UNAVAILABLE'],
       [{ rulesCompatible: false }, 'RULES_INCOMPATIBLE'],
       [{ sourceBlocked: true }, 'SOURCE_BLOCKED'],
+      [{ lineageBlocked: true }, 'LINEAGE_BLOCKED'],
       [{ policy: 'reject' }, 'POLICY_REJECTED'],
     ] as const)
       expect(admissionOutcome({ ...ready, ...change })).toBe(outcome);

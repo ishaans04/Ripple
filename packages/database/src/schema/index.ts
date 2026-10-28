@@ -8,3 +8,4 @@ export * from './runtime.ts';
 export * from './sandbox-clock.ts';
 export * from './twitch.ts';
 export * from './propagation.ts';
+export * from './moderation.ts';
