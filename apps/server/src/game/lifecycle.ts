@@ -23,12 +23,36 @@ export async function applyLifecycle(
   context: GameContext,
   command: Extract<
     GameCommand,
-    { type: 'pause' | 'resume' | 'interrupt' | 'recover' | 'integration' }
+    {
+      type: 'pause' | 'resume' | 'interrupt' | 'recover' | 'integration' | 'stream' | 'inputHealth';
+    }
   >,
   atMs: number,
 ): Promise<CommandEffect> {
   const { channel, round, client, timings } = context;
   const scope = [channel.world_id, channel.id];
+  if (command.type === 'stream' || command.type === 'inputHealth') {
+    const result = await applyLifecycle(
+      context,
+      {
+        type: 'integration',
+        online: command.type === 'stream' ? command.online : channel.online,
+        healthy: command.type === 'inputHealth' ? command.healthy : channel.healthy,
+      },
+      atMs,
+    );
+    if (
+      channel.online &&
+      channel.healthy &&
+      !channel.paused &&
+      context.round !== null &&
+      context.round.checkpoint.clock.phase !== 'INTERRUPTED'
+    ) {
+      const resumed = await applyLifecycle(context, { type: 'resume' }, atMs);
+      if (resumed.code === 'APPLIED') return resumed;
+    }
+    return result;
+  }
   if (command.type === 'integration') {
     const changed = channel.online !== command.online || channel.healthy !== command.healthy;
     await client.query('update channels set online=$3,healthy=$4 where world_id=$1 and id=$2', [

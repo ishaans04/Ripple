@@ -46,6 +46,8 @@ export const gameCommandSchema = z.discriminatedUnion('type', [
   z.strictObject({ type: z.literal('pause'), reason: z.enum(['manual', 'offline', 'shutdown']) }),
   z.strictObject({ type: z.literal('resume') }),
   z.strictObject({ type: z.literal('integration'), online: z.boolean(), healthy: z.boolean() }),
+  z.strictObject({ type: z.literal('stream'), online: z.boolean() }),
+  z.strictObject({ type: z.literal('inputHealth'), healthy: z.boolean() }),
   z.strictObject({
     type: z.literal('interrupt'),
     reason: z.enum(['input_outage', 'process_gap', 'incompatible_rules']),

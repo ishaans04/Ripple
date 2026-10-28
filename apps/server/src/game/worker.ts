@@ -13,6 +13,7 @@ import {
 } from './rounds.ts';
 import { loadContext, type GameContext } from './store.ts';
 import { readSnapshot } from './snapshot.ts';
+import { chatIntentSchema } from '../twitch/chat.ts';
 
 async function apply(
   context: GameContext,
@@ -34,6 +35,8 @@ async function apply(
     case 'pause':
     case 'resume':
     case 'integration':
+    case 'stream':
+    case 'inputHealth':
     case 'interrupt':
     case 'recover':
       return applyLifecycle(context, command, atMs);
@@ -114,7 +117,28 @@ export async function processNextInput(
       )
     ).rows[0];
     if (input === undefined) throw new Error('The next accepted sequence is missing.');
-    const command = gameCommandSchema.parse(input.command);
+    const intent = chatIntentSchema.safeParse(input.command);
+    const command: GameCommand = intent.success
+      ? intent.data.action === 'vote'
+        ? {
+            type: 'vote',
+            actorKey: sha256Hex(
+              canonicalJson([intent.data.actorBase, context.round?.id ?? 'none', 'vote']),
+            ),
+            choice: intent.data.choice!,
+          }
+        : {
+            type: 'activity',
+            actorKey: sha256Hex(
+              canonicalJson([
+                intent.data.actorBase,
+                context.round?.id ?? 'none',
+                context.round?.checkpoint.clock.observationEpoch ?? 0,
+                'activity',
+              ]),
+            ),
+          }
+      : gameCommandSchema.parse(input.command);
     const result = await apply(context, command, sequence, input.accepted_at.getTime());
     await reconcileRoundDeadline(context);
     const record = {
