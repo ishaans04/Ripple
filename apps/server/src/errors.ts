@@ -1,6 +1,8 @@
 import type { ErrorCode, ErrorResponse } from '@ripple/contracts';
 import type { FastifyError, FastifyInstance } from 'fastify';
 import { pathOf } from './logging.ts';
+import { ControlError } from './twitch/sessions.ts';
+import { TwitchError } from './twitch/client.ts';
 
 export function errorBody(code: ErrorCode, message: string, requestId: string): ErrorResponse {
   return { error: { code, message, requestId } };
@@ -28,6 +30,12 @@ export function registerErrorHandling(app: FastifyInstance): void {
   });
 
   app.setErrorHandler<FastifyError>((error, request, reply) => {
+    if (error instanceof ControlError)
+      return reply.code(error.status).send(errorBody(error.code, error.code, request.id));
+    if (error instanceof TwitchError)
+      return reply
+        .code(error.status === 401 ? 401 : 503)
+        .send(errorBody(error.code, error.code, request.id));
     if (error instanceof ApiError)
       return reply.code(error.statusCode).send(errorBody(error.code, error.message, request.id));
     const status = error.statusCode ?? 500;

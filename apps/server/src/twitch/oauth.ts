@@ -3,7 +3,7 @@ import { sha256Hex } from '@ripple/engine';
 import { z } from 'zod';
 import type { FastifyInstance } from 'fastify';
 import type pg from 'pg';
-import { TwitchClient, TwitchError } from './client.ts';
+import type { TwitchClient } from './client.ts';
 import { checkIdentity, requiredScopes, storeGrant, type GrantPurpose } from './grants.ts';
 import { enrollChannel } from './installation.ts';
 import { registerController } from './controller.ts';
@@ -20,23 +20,6 @@ export function registerOAuth(
   app.addHook('onRequest', async (_request, reply) => {
     reply.header('Cache-Control', 'no-store');
   });
-  app.setErrorHandler((error, _request, reply) => {
-    const status =
-      error instanceof ControlError
-        ? error.status
-        : error instanceof TwitchError
-          ? error.status === 401
-            ? 401
-            : 503
-          : 500;
-    const code =
-      error instanceof ControlError
-        ? error.code
-        : error instanceof TwitchError
-          ? error.code
-          : 'INTERNAL_ERROR';
-    return reply.code(status).send({ error: { code, message: code } });
-  });
   async function start(purpose: GrantPurpose, browser: string): Promise<string> {
     const state = opaqueToken();
     await pool.query(
@@ -51,7 +34,7 @@ export function registerOAuth(
       state,
       force_verify: 'true',
     });
-    return `https://id.twitch.tv/oauth2/authorize?${parameters}`;
+    return `https://id.twitch.tv/oauth2/authorize?${parameters.toString()}`;
   }
   app.get(
     '/auth/twitch/start',
@@ -109,11 +92,12 @@ export function registerOAuth(
       checkIdentity(identity, api.config, claimed.purpose);
       if (identity.user_id === undefined || identity.login === undefined)
         throw new ControlError(400, 'INVALID_IDENTITY');
-      const subject = identity.user_id;
+      const subject = identity.user_id,
+        login = identity.login;
       await transaction(pool, async (client) => {
         const channel =
           claimed.purpose === 'broadcaster'
-            ? await enrollChannel(client, worldId, subject, identity.login!)
+            ? await enrollChannel(client, worldId, subject, login)
             : null;
         await storeGrant(client, api.config, worldId, channel, claimed.purpose, tokens, identity);
         if (channel !== null)

@@ -36,13 +36,13 @@ describe('durable Twitch installation', () => {
     await expect(
       ensureInstallation(pool, { ...config, actorKey: randomBytes(32).toString('base64') }),
     ).rejects.toThrow('ACTOR_HASH_KEY changed');
-    const worldId = worlds[0]!;
+    const worldId = worlds[0];
     const a = await transaction(pool, (c) => enrollChannel(c, worldId, '123', 'broadcaster'));
     const b = await transaction(pool, (c) => enrollChannel(c, worldId, '123', 'broadcaster'));
     expect(a).toBe(b);
     expect(
       (
-        await pool.query(
+        await pool.query<Record<string, unknown>>(
           'select online,healthy,initial_online,initial_healthy from channels where world_id=$1',
           [worldId],
         )

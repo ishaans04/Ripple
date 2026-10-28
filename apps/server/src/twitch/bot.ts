@@ -3,7 +3,7 @@ import { z } from 'zod';
 import type pg from 'pg';
 import type { GameContext } from '../game/store.ts';
 import type { CommandEffect } from '../game/lifecycle.ts';
-import { TwitchClient, TwitchError } from './client.ts';
+import { type TwitchClient, TwitchError } from './client.ts';
 
 /** Called inside the game transaction; sending is always deferred until commit. */
 export async function queueAnnouncement(
@@ -19,6 +19,8 @@ export async function queueAnnouncement(
   if (live.rowCount !== 1) return;
   let message: string | undefined;
   switch (result.updateType) {
+    case null:
+      return;
     case 'ballot.opened':
       if (round !== null)
         message = `Ripple round ${round.number}: ${round.checkpoint.candidates.map((c, i) => `${i + 1}: ${c.effect} (${c.tradeOff})`).join('; ')}. Vote !ripple 1, 2 or 3 within ${Math.floor(context.timings.voteMs / 1000)} seconds. First valid vote stands; no votes means Hold.`;
@@ -52,6 +54,8 @@ export async function queueAnnouncement(
       message =
         'Ripple has resumed. Follow the current ballot; recovery starts a fresh observation when required.';
       break;
+    default:
+      return;
   }
   if (message === undefined) return;
   const expires = round?.checkpoint.clock.deadlineAtMs ?? Date.now() + 30000;
@@ -132,7 +136,8 @@ export async function dispatchBotMessage(
         }),
       );
     if (!sent.success) throw new TwitchError(502, 'INVALID_RESPONSE');
-    const row = sent.data.data[0]!;
+    const row = sent.data.data[0];
+    if (row === undefined) throw new TwitchError(502, 'INVALID_RESPONSE');
     await pool.query(
       'update bot_messages set status=$4,error_code=$5 where world_id=$1 and channel_id=$2 and key=$3',
       [

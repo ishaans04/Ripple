@@ -7,6 +7,7 @@ import { normalizeChat } from './chat.ts';
 import type { TwitchConfig } from './security.ts';
 import { ControlError } from './sessions.ts';
 import { verifyWebhook } from './signature.ts';
+import { errorBody } from '../errors.ts';
 
 export const subscriptionVersions: Readonly<Record<string, string>> = Object.freeze({
   'channel.chat.message': '1',
@@ -190,7 +191,8 @@ export async function handleWebhook(
       );
       if (
         changed.rowCount === 1 &&
-        previous?.category_id != null &&
+        previous?.category_id !== undefined &&
+        previous.category_id !== null &&
         previous.category_id !== category.data.category_id
       )
         await acceptInputInTransaction(client, {
@@ -220,10 +222,14 @@ export async function registerWebhook(
   pool: pg.Pool,
   config: TwitchConfig,
 ): Promise<void> {
-  await app.register(async (scope) => {
+  await app.register((scope, _options, done) => {
     scope.removeContentTypeParser('application/json');
-    scope.addContentTypeParser('application/json', { parseAs: 'buffer' }, (_request, body, done) =>
-      done(null, body),
+    scope.addContentTypeParser(
+      'application/json',
+      { parseAs: 'buffer' },
+      (_request, body, done) => {
+        done(null, body);
+      },
     );
     scope.post('/webhooks/twitch', { bodyLimit: 64 * 1024 }, async (request, reply) => {
       try {
@@ -234,13 +240,14 @@ export async function registerWebhook(
           request.body as Buffer,
         );
         return challenge === null
-          ? reply.code(204).send()
-          : reply.type('text/plain').send(challenge);
+          ? await reply.code(204).send()
+          : await reply.type('text/plain').send(challenge);
       } catch (error) {
         if (error instanceof ControlError)
-          return reply.code(error.status).send({ error: { code: error.code } });
+          return await reply.code(error.status).send(errorBody(error.code, error.code, request.id));
         throw error;
       }
     });
+    done();
   });
 }

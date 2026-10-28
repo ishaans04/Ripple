@@ -27,7 +27,16 @@ export const strainNameSchema = z
   .min(1)
   .max(40)
   .refine(
-    (value) => !/[\u0000-\u001f\u007f-\u009f\u202a-\u202e\u2066-\u2069]/.test(value),
+    (value) =>
+      Array.from(value).every((char) => {
+        const code = char.codePointAt(0) ?? 0;
+        return (
+          code >= 32 &&
+          !(code >= 127 && code <= 159) &&
+          !(code >= 8234 && code <= 8238) &&
+          !(code >= 8294 && code <= 8297)
+        );
+      }),
     'Control characters are not allowed',
   );
 export const gameCommandSchema = z.discriminatedUnion('type', [

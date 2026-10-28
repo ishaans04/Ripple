@@ -1,11 +1,12 @@
 import type pg from 'pg';
 import type { FastifyRequest, FastifyReply } from 'fastify';
+import type { ErrorCode } from '@ripple/contracts';
 import { equalSecret, opaqueToken, privateHash, type TwitchConfig } from './security.ts';
 
 export class ControlError extends Error {
   readonly status: number;
-  readonly code: string;
-  constructor(status: number, code: string) {
+  readonly code: ErrorCode;
+  constructor(status: number, code: ErrorCode) {
     super(code);
     this.status = status;
     this.code = code;

@@ -58,14 +58,21 @@ describe('ordered live chat identity scoping', () => {
         world.worldId,
       ])
     ).rows[0]!.due_at;
-    await pool.query('update worlds set clock_at=$2 where id=$1', [world.worldId, due]);
+    await pool.query<Record<string, unknown>>('update worlds set clock_at=$2 where id=$1', [
+      world.worldId,
+      due,
+    ]);
     await scanDeadlines(pool);
     await processNextInput(pool, world.worldId, world.channelId);
     for (let n = 0; n < 3; n++) await send({ type: 'twitch.chat', actorBase, action: 'activity' });
     for (let n = 0; n < 3; n++) await processNextInput(pool, world.worldId, world.channelId);
     expect(
-      (await pool.query('select * from activity_contributions where world_id=$1', [world.worldId]))
-        .rowCount,
+      (
+        await pool.query<Record<string, unknown>>(
+          'select * from activity_contributions where world_id=$1',
+          [world.worldId],
+        )
+      ).rowCount,
     ).toBe(1);
     const events = await pool.query<{ command: { type: string; actorKey?: string } }>(
       'select command from game_events where world_id=$1 order by sequence',

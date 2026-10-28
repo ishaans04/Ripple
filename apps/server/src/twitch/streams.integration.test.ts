@@ -32,26 +32,26 @@ describe('stream recovery reconciliation', () => {
   it('does not overwrite a newer webhook with an in-flight REST result, and records disabled intake once', async () => {
     const world = await ensureInstallation(pool, config),
       channel = await transaction(pool, (c) => enrollChannel(c, world, '123', 'owner'));
-    const api = new TwitchClient(config, (async (url) => {
-      if (String(url).endsWith('/token'))
-        return Response.json({ access_token: 'app', expires_in: 3600 });
-      if (String(url).includes('/streams?')) {
-        await pool.query(
+    const api = new TwitchClient(config, async (url) => {
+      if (url.endsWith('/token')) return Response.json({ access_token: 'app', expires_in: 3600 });
+      if (url.includes('/streams?')) {
+        await pool.query<Record<string, unknown>>(
           "update twitch_channels set lifecycle_at=clock_timestamp(),category_at=clock_timestamp(),category_id='newer' where world_id=$1 and channel_id=$2",
           [world, channel],
         );
         return Response.json({ data: [] });
       }
       return Response.json({ data: [{ broadcaster_id: '123', game_id: 'older' }] });
-    }) as typeof fetch);
+    });
     await reconcileStreams(pool, api, world);
-    expect((await pool.query('select category_id from twitch_channels')).rows[0]?.category_id).toBe(
-      'newer',
-    );
-    expect((await pool.query('select * from inbox')).rowCount).toBe(0);
+    expect(
+      (await pool.query<Record<string, unknown>>('select category_id from twitch_channels')).rows[0]
+        ?.category_id,
+    ).toBe('newer');
+    expect((await pool.query<Record<string, unknown>>('select * from inbox')).rowCount).toBe(0);
     await interruptLiveInput(pool, 'LIVE_TWITCH_DISABLED');
     await interruptLiveInput(pool, 'LIVE_TWITCH_DISABLED');
-    expect((await pool.query('select command from inbox')).rows).toEqual([
+    expect((await pool.query<Record<string, unknown>>('select command from inbox')).rows).toEqual([
       { command: { type: 'interrupt', reason: 'input_outage' } },
     ]);
   });

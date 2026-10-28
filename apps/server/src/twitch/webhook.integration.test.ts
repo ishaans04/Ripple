@@ -67,7 +67,7 @@ describe('signed EventSub intake in PostgreSQL', () => {
         },
       ),
     );
-    await pool.query(
+    await pool.query<Record<string, unknown>>(
       "insert into twitch_subscriptions(world_id,channel_id,type,version,condition,status) values($1,$2,'channel.chat.message','1',$3,'creating')",
       [worldId, channelId, JSON.stringify(condition)],
     );
@@ -124,9 +124,13 @@ describe('signed EventSub intake in PostgreSQL', () => {
     );
     expect(response.statusCode).toBe(200);
     expect(response.body).toBe('verify-me');
-    expect((await pool.query('select status,provider_id from twitch_subscriptions')).rows).toEqual([
-      { status: 'enabled', provider_id: 'subscription-one' },
-    ]);
+    expect(
+      (
+        await pool.query<Record<string, unknown>>(
+          'select status,provider_id from twitch_subscriptions',
+        )
+      ).rows,
+    ).toEqual([{ status: 'enabled', provider_id: 'subscription-one' }]);
     expect(
       (
         await signed({
@@ -161,12 +165,16 @@ describe('signed EventSub intake in PostgreSQL', () => {
     await processNextInput(pool, worldId, channelId);
     expect((await signed(body)).statusCode).toBe(204);
     expect(
-      (await pool.query("select command from inbox where provider='twitch-chat'")).rowCount,
+      (
+        await pool.query<Record<string, unknown>>(
+          "select command from inbox where provider='twitch-chat'",
+        )
+      ).rowCount,
     ).toBe(1);
-    expect((await pool.query('select * from votes')).rowCount).toBe(1);
-    expect(JSON.stringify((await pool.query('select command from inbox')).rows)).not.toContain(
-      '!ripple',
-    );
+    expect((await pool.query<Record<string, unknown>>('select * from votes')).rowCount).toBe(1);
+    expect(
+      JSON.stringify((await pool.query<Record<string, unknown>>('select command from inbox')).rows),
+    ).not.toContain('!ripple');
     expect(
       (
         await signed(
@@ -189,7 +197,7 @@ describe('signed EventSub intake in PostgreSQL', () => {
         })
       ).statusCode,
     ).toBe(204);
-    expect((await pool.query('select * from votes')).rowCount).toBe(1);
+    expect((await pool.query<Record<string, unknown>>('select * from votes')).rowCount).toBe(1);
   });
   it('records revoked input as an interruption before acknowledging', async () => {
     expect(
@@ -201,7 +209,11 @@ describe('signed EventSub intake in PostgreSQL', () => {
       ).statusCode,
     ).toBe(204);
     expect((await processNextInput(pool, worldId, channelId))?.effect.code).toBe('APPLIED');
-    expect((await pool.query('select healthy from channels')).rows[0]?.healthy).toBe(false);
-    expect((await pool.query('select phase from rounds')).rows[0]?.phase).toBe('INTERRUPTED');
+    expect(
+      (await pool.query<Record<string, unknown>>('select healthy from channels')).rows[0]?.healthy,
+    ).toBe(false);
+    expect(
+      (await pool.query<Record<string, unknown>>('select phase from rounds')).rows[0]?.phase,
+    ).toBe('INTERRUPTED');
   });
 });

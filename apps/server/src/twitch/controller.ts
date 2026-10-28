@@ -25,13 +25,24 @@ export function registerController(
       const owner = await ownerSession(pool, request, config);
       const snapshot = await readSnapshot(pool, owner.world_id, owner.channel_id);
       const settings = (
-        await pool.query(
+        await pool.query<{
+          input_error: string | null;
+          visitor_policy: 'ask' | 'accept' | 'reject';
+          last_seed_at: Date | null;
+          seed_cooldown_ms: number;
+        }>(
           'select input_error,visitor_policy,last_seed_at,seed_cooldown_ms from twitch_channels where world_id=$1 and channel_id=$2',
           [owner.world_id, owner.channel_id],
         )
       ).rows[0];
       const subscriptions = (
-        await pool.query(
+        await pool.query<{
+          type: string;
+          version: string;
+          status: string;
+          cost: number;
+          verified_at: Date | null;
+        }>(
           'select type,version,status,cost,verified_at from twitch_subscriptions where world_id=$1 and channel_id=$2 order by type',
           [owner.world_id, owner.channel_id],
         )
@@ -65,7 +76,7 @@ export function registerController(
       key = z.uuid().safeParse((request.params as { key: unknown }).key);
     if (!key.success) throw new ControlError(400, 'BAD_REQUEST');
     const row = (
-      await pool.query<{ sequence: number; result: unknown | null }>(
+      await pool.query<{ sequence: number; result: unknown }>(
         `select o.sequence,e.result from controller_operations o left join game_events e on e.world_id=o.world_id and e.channel_id=o.channel_id and e.sequence=o.sequence where o.world_id=$1 and o.channel_id=$2 and o.key=$3`,
         [owner.world_id, owner.channel_id, key.data],
       )

@@ -11,14 +11,19 @@ const chatSchema = z.object({
   source_broadcaster_user_id: id.nullish(),
   source_message_id: z.string().min(1).max(128).nullish(),
 });
-export const chatIntentSchema = z
-  .strictObject({
+export const chatIntentSchema = z.discriminatedUnion('action', [
+  z.strictObject({
     type: z.literal('twitch.chat'),
     actorBase: z.string().regex(/^[0-9a-f]{64}$/),
-    action: z.enum(['vote', 'activity']),
-    choice: z.int().min(1).max(3).optional(),
-  })
-  .refine((c) => (c.action === 'activity' ? c.choice === undefined : c.choice !== undefined));
+    action: z.literal('vote'),
+    choice: z.int().min(1).max(3),
+  }),
+  z.strictObject({
+    type: z.literal('twitch.chat'),
+    actorBase: z.string().regex(/^[0-9a-f]{64}$/),
+    action: z.literal('activity'),
+  }),
+]);
 export type ChatIntent = z.infer<typeof chatIntentSchema>;
 export function normalizeChat(
   value: unknown,
@@ -38,7 +43,8 @@ export function normalizeChat(
   const source = event.source_broadcaster_user_id,
     sourceId = event.source_message_id;
   // Incomplete Shared Chat metadata is ambiguous; do not manufacture locality.
-  if ((source == null) !== (sourceId == null)) return null;
+  if ((source === null || source === undefined) !== (sourceId === null || sourceId === undefined))
+    return null;
   if ((source ?? event.broadcaster_user_id) !== scope.twitchId) return null;
   const text = event.message.text.trim();
   if (text.length === 0) return null;

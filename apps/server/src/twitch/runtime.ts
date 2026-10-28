@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { acceptInputInTransaction, transaction } from '@ripple/database';
 import type { FastifyBaseLogger } from 'fastify';
 import type pg from 'pg';
-import { TwitchClient, TwitchError } from './client.ts';
+import { type TwitchClient, TwitchError } from './client.ts';
 import { maintainGrant, type GrantRow } from './grants.ts';
 import { reconcileSubscriptions } from './subscriptions.ts';
 import { reconcileStreams } from './streams.ts';

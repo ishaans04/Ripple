@@ -142,7 +142,7 @@ export async function processNextInput(
             actorKey: sha256Hex(
               canonicalJson([intent.data.actorBase, context.round?.id ?? 'none', 'vote']),
             ),
-            choice: intent.data.choice!,
+            choice: intent.data.choice,
           }
         : {
             type: 'activity',

@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import type { TwitchConfig } from './security.ts';
+export type TwitchTransport = (url: string, init: RequestInit) => Promise<Response>;
 
 const tokenSchema = z.object({
   access_token: z.string().min(1),
@@ -42,10 +43,10 @@ export class TwitchError extends Error {
 /** No provider response bodies, request URLs or credentials are attached to errors. */
 export class TwitchClient {
   readonly config: TwitchConfig;
-  private readonly transport: typeof fetch;
+  private readonly transport: TwitchTransport;
   private cachedApp: { access: string; until: number } | undefined;
   private appPending: Promise<string> | undefined;
-  constructor(config: TwitchConfig, transport: typeof fetch = fetch) {
+  constructor(config: TwitchConfig, transport: TwitchTransport = fetch) {
     this.config = config;
     this.transport = transport;
   }
@@ -83,12 +84,14 @@ export class TwitchClient {
       for (;;) {
         const part = await reader.read();
         if (part.done) break;
-        size += part.value.length;
+        const value: unknown = part.value;
+        if (!(value instanceof Uint8Array)) throw new Error('Invalid response stream');
+        size += value.length;
         if (size > 1024 * 1024) {
           await reader.cancel();
           throw new Error('limit');
         }
-        chunks.push(part.value);
+        chunks.push(value);
       }
       return JSON.parse(Buffer.concat(chunks).toString('utf8')) as unknown;
     } catch {

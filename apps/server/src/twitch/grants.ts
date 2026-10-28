@@ -1,7 +1,12 @@
 import { randomUUID } from 'node:crypto';
 import { transaction, acceptInputInTransaction } from '@ripple/database';
 import type pg from 'pg';
-import { TwitchClient, TwitchError, type ProviderTokens, type ValidatedToken } from './client.ts';
+import {
+  type TwitchClient,
+  TwitchError,
+  type ProviderTokens,
+  type ValidatedToken,
+} from './client.ts';
 import { decryptTokens, encryptTokens, type TwitchConfig } from './security.ts';
 
 export const requiredScopes = {

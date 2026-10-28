@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { transaction, acceptInputInTransaction } from '@ripple/database';
 import { z } from 'zod';
 import type pg from 'pg';
-import { TwitchClient, TwitchError } from './client.ts';
+import { type TwitchClient, TwitchError } from './client.ts';
 
 /** Reconcile missed lifecycle notifications without overwriting a newer webhook. */
 export async function reconcileStreams(
@@ -40,6 +40,7 @@ export async function reconcileStreams(
       stream.data.data.some((s) => s.user_id !== channel.twitch_id)
     )
       throw new TwitchError(502, 'INVALID_RESPONSE');
+    const infoEntry = info.data.data[0];
     await transaction(pool, async (client) => {
       await client.query('select id from channels where world_id=$1 and id=$2 for update', [
         worldId,
@@ -67,14 +68,15 @@ export async function reconcileStreams(
           messageId: randomUUID(),
           command: { type: 'stream', online: stream.data.data.some((s) => s.type === 'live') },
         });
-      const category = info.data.data[0]!.game_id;
+      const category = infoEntry.game_id;
       const updated = await client.query(
         'update twitch_channels set category_id=$4,category_at=$5 where world_id=$1 and channel_id=$2 and category_at is not distinct from $3',
         [worldId, channel.id, channel.category_at, category, startedAt],
       );
       if (
         updated.rowCount === 1 &&
-        current?.category_id != null &&
+        current?.category_id !== undefined &&
+        current.category_id !== null &&
         current.category_id !== category
       )
         await acceptInputInTransaction(client, {

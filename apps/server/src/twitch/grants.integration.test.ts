@@ -49,17 +49,20 @@ describe('grant lifecycle in PostgreSQL', () => {
       );
       return id;
     });
-    await pool.query("update oauth_grants set expires_at=clock_timestamp()-interval '1 second'");
+    await pool.query<Record<string, unknown>>(
+      "update oauth_grants set expires_at=clock_timestamp()-interval '1 second'",
+    );
     const grant = (await pool.query<GrantRow>('select * from oauth_grants')).rows[0]!;
     let refreshes = 0,
       revoked = false;
-    const api = new TwitchClient(config, (async (url, init) => {
-      if (String(url).endsWith('/token')) {
+    const api = new TwitchClient(config, async (url, init) => {
+      await Promise.resolve();
+      if (url.endsWith('/token')) {
         refreshes++;
         await new Promise((resolve) => setTimeout(resolve, 30));
         return Response.json({ access_token: 'new', refresh_token: 'rotated', expires_in: 3600 });
       }
-      if (revoked || new Headers(init?.headers).get('Authorization') === 'OAuth old')
+      if (revoked || new Headers(init.headers).get('Authorization') === 'OAuth old')
         return new Response(null, { status: 401 });
       return Response.json({
         client_id: config.clientId,
@@ -67,24 +70,29 @@ describe('grant lifecycle in PostgreSQL', () => {
         scopes: ['channel:bot'],
         expires_in: 3600,
       });
-    }) as typeof fetch);
+    });
     const results = await Promise.all([
       maintainGrant(pool, api, grant, true),
       maintainGrant(pool, api, grant, true),
     ]);
     expect(results.sort()).toEqual([false, true]);
     expect(refreshes).toBe(1);
-    await pool.query(
+    await pool.query<Record<string, unknown>>(
       "insert into controller_sessions(hash,world_id,channel_id,subject,csrf_hash,expires_at) values ('session',$1,$2,'123','csrf',clock_timestamp()+interval '1 hour')",
       [world, channel],
     );
     revoked = true;
     await expect(maintainGrant(pool, api, grant, true)).rejects.toThrow('GRANT_REVOKED');
-    expect((await pool.query('select * from controller_sessions')).rowCount).toBe(0);
     expect(
-      (await pool.query('select revoked_at from oauth_grants')).rows[0]?.revoked_at,
+      (await pool.query<Record<string, unknown>>('select * from controller_sessions')).rowCount,
+    ).toBe(0);
+    expect(
+      (await pool.query<Record<string, unknown>>('select revoked_at from oauth_grants')).rows[0]
+        ?.revoked_at,
     ).toBeInstanceOf(Date);
-    expect((await pool.query('select command from inbox')).rows[0]?.command).toEqual({
+    expect(
+      (await pool.query<Record<string, unknown>>('select command from inbox')).rows[0]?.command,
+    ).toEqual({
       type: 'interrupt',
       reason: 'input_outage',
     });

@@ -3,7 +3,7 @@ import { canonicalJson, sha256Hex } from '@ripple/engine';
 import { randomUUID } from 'node:crypto';
 import { z } from 'zod';
 import type pg from 'pg';
-import { TwitchClient, TwitchError } from './client.ts';
+import { type TwitchClient, TwitchError } from './client.ts';
 import { subscriptionVersions } from './webhook.ts';
 
 const remoteSchema = z.object({
@@ -26,9 +26,7 @@ export async function listSubscriptions(
   api: TwitchClient,
 ): Promise<{ subscriptions: Remote[]; totalCost: number; maxCost: number }> {
   const subscriptions: Remote[] = [];
-  let cursor: string | undefined,
-    totalCost = 0,
-    maxCost = 0;
+  let cursor: string | undefined;
   for (let page = 0; page < 100; page++) {
     const result = pageSchema.safeParse(
       await api.helix(
@@ -37,8 +35,8 @@ export async function listSubscriptions(
     );
     if (!result.success) throw new TwitchError(502, 'INVALID_RESPONSE');
     subscriptions.push(...result.data.data);
-    totalCost = result.data.total_cost;
-    maxCost = result.data.max_total_cost;
+    const totalCost = result.data.total_cost,
+      maxCost = result.data.max_total_cost;
     cursor = result.data.pagination?.cursor;
     if (cursor === undefined) return { subscriptions, totalCost, maxCost };
   }
@@ -77,6 +75,7 @@ export async function reconcileSubscriptions(
   api: TwitchClient,
   world: string,
 ): Promise<{ totalCost: number; maxCost: number }> {
+  const listedAt = new Date();
   const listing = await listSubscriptions(api);
   const bot = (
     await pool.query<{ subject: string }>(
@@ -133,8 +132,7 @@ export async function reconcileSubscriptions(
           )
         ).rows[0];
         const same =
-          stored !== undefined &&
-          stored.transport_hash === transportHash &&
+          stored?.transport_hash === transportHash &&
           canonicalJson(stored.condition) === canonicalJson(condition);
         const remote = same
           ? listing.subscriptions.find(
@@ -157,6 +155,21 @@ export async function reconcileSubscriptions(
           );
           return false;
         }
+        // A challenge received after this REST request began is fresher evidence than its listing.
+        if (
+          same &&
+          stored.status === 'enabled' &&
+          stored.verified_at !== null &&
+          stored.verified_at.getTime() >= listedAt.getTime()
+        )
+          return false;
+        if (same && stored.status === 'enabled' && remote?.status !== 'enabled') {
+          await client.query(
+            'update twitch_subscriptions set status=$4 where world_id=$1 and channel_id=$2 and type=$3',
+            [world, channel.id, type, remote?.status ?? 'SUBSCRIPTION_MISSING'],
+          );
+          await markHealth(client, world, channel.id, false, 'SUBSCRIPTIONS_PENDING');
+        }
         if (same && stored.recent) return false;
         obsolete = remote?.id ?? stored?.provider_id ?? undefined;
         const claimedRow = await client.query<{ attempt_at: Date }>(
@@ -164,7 +177,9 @@ export async function reconcileSubscriptions(
           on conflict(world_id,channel_id,type) do update set provider_id=null,version=excluded.version,condition=excluded.condition,status='creating',transport_hash=excluded.transport_hash,attempt_at=excluded.attempt_at,verified_at=null returning attempt_at`,
           [world, channel.id, type, version, JSON.stringify(condition), transportHash],
         );
-        attemptAt = claimedRow.rows[0]!.attempt_at;
+        const attempt = claimedRow.rows[0];
+        if (attempt === undefined) throw new Error('Subscription attempt missing');
+        attemptAt = attempt.attempt_at;
         await markHealth(client, world, channel.id, false, 'SUBSCRIPTIONS_PENDING');
         return true;
       });
@@ -197,7 +212,8 @@ export async function reconcileSubscriptions(
             }),
           );
         if (!response.success) throw new TwitchError(502, 'INVALID_RESPONSE');
-        const created = response.data.data[0]!;
+        const created = response.data.data[0];
+        if (created === undefined) throw new TwitchError(502, 'INVALID_RESPONSE');
         // A verified callback may already have enabled this row; never downgrade it.
         await pool.query(
           `update twitch_subscriptions set provider_id=$4,cost=$5,status=case when verified_at is not null then status else $6 end where world_id=$1 and channel_id=$2 and type=$3 and transport_hash=$7 and attempt_at=$8 and (provider_id is null or provider_id=$4)`,

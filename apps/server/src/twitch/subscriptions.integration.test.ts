@@ -58,16 +58,20 @@ describe('subscription reconciliation', () => {
     let creates = 0,
       deletes = 0;
     const remote: Record<string, unknown>[] = [];
-    const api = new TwitchClient(config, (async (url, init) => {
-      if (String(url).endsWith('/token'))
-        return Response.json({ access_token: 'app', expires_in: 3600 });
-      if (init?.method === 'DELETE') {
+    const api = new TwitchClient(config, async (url, init) => {
+      await Promise.resolve();
+      if (url.endsWith('/token')) return Response.json({ access_token: 'app', expires_in: 3600 });
+      if (init.method === 'DELETE') {
         deletes++;
         return new Response(null, { status: 204 });
       }
-      if (init?.method === 'POST') {
+      if (init.method === 'POST') {
         creates++;
-        const request = JSON.parse(String(init.body)) as {
+        const request = JSON.parse(
+          typeof init.body === 'string' || init.body instanceof URLSearchParams
+            ? init.body.toString()
+            : '',
+        ) as {
           type: string;
           version: string;
           condition: Record<string, string>;
@@ -106,7 +110,7 @@ describe('subscription reconciliation', () => {
         });
       }
       return Response.json({ data: remote, total_cost: 0, max_total_cost: 10000, pagination: {} });
-    }) as typeof fetch);
+    });
     await Promise.all([
       reconcileSubscriptions(pool, api, world),
       reconcileSubscriptions(pool, api, world),
@@ -114,13 +118,15 @@ describe('subscription reconciliation', () => {
     expect(creates).toBe(4);
     expect(
       (
-        await pool.query(
+        await pool.query<Record<string, unknown>>(
           "select * from twitch_subscriptions where status='enabled' and verified_at is not null",
         )
       ).rowCount,
     ).toBe(4);
     while (await processNextInput(pool, world, channel));
-    expect((await pool.query('select healthy from channels')).rows[0]?.healthy).toBe(true);
+    expect(
+      (await pool.query<Record<string, unknown>>('select healthy from channels')).rows[0]?.healthy,
+    ).toBe(true);
     await reconcileSubscriptions(pool, api, world);
     expect(creates).toBe(4);
     expect(deletes).toBe(0);

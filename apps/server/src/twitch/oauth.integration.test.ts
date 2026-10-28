@@ -7,6 +7,7 @@ import { createTemporaryDatabase, type TemporaryDatabase } from '@ripple/databas
 import { buildApp } from '../app.ts';
 import { TwitchClient } from './client.ts';
 import type { TwitchConfig } from './security.ts';
+import { controllerStatusSchema } from '@ripple/contracts';
 import { processNextInput } from '../game/worker.ts';
 
 describe('browser-bound broadcaster and operator OAuth', () => {
@@ -27,17 +28,22 @@ describe('browser-bound broadcaster and operator OAuth', () => {
     temporary = await createTemporaryDatabase();
     pool = new pg.Pool({ connectionString: temporary.connectionString });
     await runMigrations(pool);
-    const api = new TwitchClient(config, (async (url, init) => {
-      if (String(url).endsWith('/token')) {
+    const api = new TwitchClient(config, async (url, init) => {
+      await Promise.resolve();
+      if (url.endsWith('/token')) {
         exchanges++;
-        const code = new URLSearchParams(String(init?.body)).get('code');
+        const code = new URLSearchParams(
+          typeof init.body === 'string' || init.body instanceof URLSearchParams
+            ? init.body.toString()
+            : '',
+        ).get('code');
         return Response.json({
           access_token: code ?? 'owner',
           refresh_token: 'private-refresh',
           expires_in: 3600,
         });
       }
-      const bot = new Headers(init?.headers).get('Authorization') === 'OAuth bot';
+      const bot = new Headers(init.headers).get('Authorization') === 'OAuth bot';
       return Response.json({
         client_id: config.clientId,
         user_id: bot ? '999' : '123',
@@ -45,7 +51,7 @@ describe('browser-bound broadcaster and operator OAuth', () => {
         scopes: bot ? ['user:bot', 'user:read:chat', 'user:write:chat'] : ['channel:bot'],
         expires_in: 3600,
       });
-    }) as typeof fetch);
+    });
     app = await buildApp({
       config: { logLevel: 'silent', webRoot: undefined, twitch: config },
       pool,
@@ -83,10 +89,12 @@ describe('browser-bound broadcaster and operator OAuth', () => {
       400,
     );
     expect(exchanges).toBe(1);
-    const grant = (await pool.query('select * from oauth_grants')).rows[0];
+    const grant = (await pool.query<Record<string, unknown>>('select * from oauth_grants')).rows[0];
     expect(grant?.subject).toBe('123');
     expect(JSON.stringify(grant?.encrypted_tokens)).not.toContain('private-refresh');
-    expect((await pool.query('select * from controller_sessions')).rowCount).toBe(1);
+    expect(
+      (await pool.query<Record<string, unknown>>('select * from controller_sessions')).rowCount,
+    ).toBe(1);
   });
   it('requires operator authorization and exact origin for the separate bot grant', async () => {
     expect(
@@ -116,7 +124,11 @@ describe('browser-bound broadcaster and operator OAuth', () => {
     expect(callback.statusCode).toBe(302);
     expect(callback.cookies).toHaveLength(0);
     expect(
-      (await pool.query("select channel_id,subject from oauth_grants where purpose='bot'")).rows,
+      (
+        await pool.query<Record<string, unknown>>(
+          "select channel_id,subject from oauth_grants where purpose='bot'",
+        )
+      ).rows,
     ).toEqual([{ channel_id: null, subject: '999' }]);
   });
   it('enforces ownership, CSRF, expected versions and idempotency before a named seed commits', async () => {
@@ -201,9 +213,13 @@ describe('browser-bound broadcaster and operator OAuth', () => {
       cookies: ownerCookies,
     });
     expect(result.json<{ result: { code: string } }>().result.code).toBe('APPLIED');
-    expect((await pool.query('select name from organisms')).rows).toEqual([
+    expect((await pool.query<Record<string, unknown>>('select name from organisms')).rows).toEqual([
       { name: '<Shell & Tide>' },
     ]);
+    const current = await app.inject({ url: '/api/controller/status', cookies: ownerCookies });
+    expect(controllerStatusSchema.parse(current.json()).snapshot?.payload.organism?.name).toBe(
+      '<Shell & Tide>',
+    );
     const read = await app.inject({
       method: 'POST',
       url: '/api/controller/read-capability',
