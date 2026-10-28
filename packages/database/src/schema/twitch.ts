@@ -68,6 +68,7 @@ export const twitchSubscriptions = pgTable(
     version: text('version').notNull(),
     providerId: text('provider_id').unique(),
     condition: jsonb('condition').notNull(),
+    transportHash: text('transport_hash').notNull().default(''),
     status: text('status').notNull(),
     cost: integer('cost').notNull().default(0),
     attemptAt: timestamp('attempt_at', { withTimezone: true }),

@@ -61,7 +61,7 @@ export async function handleWebhook(
     throw new ControlError(403, 'UNKNOWN_SUBSCRIPTION');
   return transaction(pool, async (client) => {
     // The channel lock comes before subscription/receipt locks, matching reconciliation and game writers.
-    const found = (
+    let found = (
       await client.query<SubscriptionRow>(
         `select s.*,c.twitch_id from twitch_subscriptions s join channels c on c.world_id=s.world_id and c.id=s.channel_id join worlds w on w.id=s.world_id
       where w.mode='live' and s.type=$1 and s.version=$2 and s.condition=$3::jsonb and (s.provider_id=$4 or (s.provider_id is null and s.status='creating')) order by s.world_id,s.channel_id for update of c`,
@@ -69,6 +69,22 @@ export async function handleWebhook(
       )
     ).rows[0];
     if (found === undefined) throw new ControlError(403, 'UNKNOWN_SUBSCRIPTION');
+    // Re-read after acquiring the channel lock: another callback may have changed the registry while this query waited.
+    const current = (
+      await client.query<SubscriptionRow>(
+        "select * from twitch_subscriptions where world_id=$1 and channel_id=$2 and type=$3 and version=$4 and condition=$5::jsonb and (provider_id=$6 or (provider_id is null and status='creating'))",
+        [
+          found.world_id,
+          found.channel_id,
+          sub.type,
+          sub.version,
+          JSON.stringify(sub.condition),
+          sub.id,
+        ],
+      )
+    ).rows[0];
+    if (current === undefined) throw new ControlError(403, 'UNKNOWN_SUBSCRIPTION');
+    found = { ...current, twitch_id: found.twitch_id };
     const hash = sha256Hex(raw.toString('utf8'));
     const inserted = await client.query(
       'insert into twitch_receipts(message_id,payload_hash) values($1,$2) on conflict do nothing',

@@ -1,0 +1,1 @@
+ALTER TABLE "twitch_subscriptions" ADD COLUMN "transport_hash" text DEFAULT '' NOT NULL;
