@@ -8,12 +8,16 @@ import { registerHealthRoutes } from './routes/health.ts';
 import { registerGameReadRoutes } from './routes/game-read.ts';
 import { registerGateway } from './game/gateway.ts';
 import { registerSecurityHeaders, registerWebApp } from './web.ts';
+import { TwitchClient } from './twitch/client.ts';
+import { ensureInstallation } from './twitch/installation.ts';
+import { registerOAuth } from './twitch/oauth.ts';
 
 export interface AppOptions {
-  config: Pick<ServerConfig, 'logLevel' | 'webRoot'>;
+  config: Pick<ServerConfig, 'logLevel' | 'webRoot' | 'twitch'>;
   pool: pg.Pool;
   /** Overrides stdout, used by tests to inspect log output. */
   logStream?: LogDestination;
+  twitchApi?: TwitchClient;
 }
 
 export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
@@ -35,6 +39,13 @@ export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
   await registerGateway(app, options.pool);
   registerHealthRoutes(app, options.pool);
   registerGameReadRoutes(app, options.pool);
+  if (options.config.twitch !== undefined) {
+    const api = options.twitchApi ?? new TwitchClient(options.config.twitch);
+    const worldId = await ensureInstallation(options.pool, options.config.twitch);
+    await app.register(async (scope) => {
+      registerOAuth(scope, options.pool, api, worldId);
+    });
+  }
   if (options.config.webRoot !== undefined) {
     await registerWebApp(app, options.config.webRoot);
   }

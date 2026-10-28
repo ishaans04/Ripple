@@ -1,0 +1,118 @@
+import { randomBytes } from 'node:crypto';
+import pg from 'pg';
+import type { FastifyInstance } from 'fastify';
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { runMigrations } from '@ripple/database';
+import { createTemporaryDatabase, type TemporaryDatabase } from '@ripple/database/testing';
+import { buildApp } from '../app.ts';
+import { TwitchClient } from './client.ts';
+import type { TwitchConfig } from './security.ts';
+
+describe('browser-bound broadcaster and operator OAuth', () => {
+  let temporary: TemporaryDatabase, pool: pg.Pool, app: FastifyInstance;
+  const config: TwitchConfig = {
+    origin: 'https://ripple.example',
+    clientId: 'oauth-test',
+    clientSecret: 'secret',
+    webhookSecret: 's'.repeat(64),
+    encryptionKey: randomBytes(32).toString('base64'),
+    actorKey: randomBytes(32).toString('base64'),
+    operatorSecret: 'o'.repeat(40),
+  };
+  let exchanges = 0;
+  beforeAll(async () => {
+    temporary = await createTemporaryDatabase();
+    pool = new pg.Pool({ connectionString: temporary.connectionString });
+    await runMigrations(pool);
+    const api = new TwitchClient(config, (async (url, init) => {
+      if (String(url).endsWith('/token')) {
+        exchanges++;
+        const code = new URLSearchParams(String(init?.body)).get('code');
+        return Response.json({
+          access_token: code ?? 'owner',
+          refresh_token: 'private-refresh',
+          expires_in: 3600,
+        });
+      }
+      const bot = new Headers(init?.headers).get('Authorization') === 'OAuth bot';
+      return Response.json({
+        client_id: config.clientId,
+        user_id: bot ? '999' : '123',
+        login: bot ? 'bot' : 'owner',
+        scopes: bot ? ['user:bot', 'user:read:chat', 'user:write:chat'] : ['channel:bot'],
+        expires_in: 3600,
+      });
+    }) as typeof fetch);
+    app = await buildApp({
+      config: { logLevel: 'silent', webRoot: undefined, twitch: config },
+      pool,
+      twitchApi: api,
+    });
+    await app.ready();
+  }, 20000);
+  afterAll(async () => {
+    await app.close();
+    await pool.end();
+    await temporary.drop();
+  });
+  it('rejects state theft and reuse, stores only encrypted grants, and issues scoped owner cookies', async () => {
+    const start = await app.inject({ url: '/auth/twitch/start' });
+    expect(start.statusCode).toBe(302);
+    const state = new URL(String(start.headers.location)).searchParams.get('state');
+    const browser = start.cookies[0]!;
+    const url = `/auth/twitch/callback?state=${state}&code=owner`;
+    expect((await app.inject({ url })).statusCode).toBe(400);
+    const callback = await app.inject({ url, cookies: { [browser.name]: browser.value } });
+    expect(callback.statusCode).toBe(302);
+    expect(callback.headers.location).toBe('/controller');
+    expect(callback.cookies.map((c) => c.name)).toEqual([
+      '__Host-ripple-session',
+      '__Host-ripple-csrf',
+    ]);
+    expect(callback.cookies[0]).toMatchObject({
+      secure: true,
+      httpOnly: true,
+      sameSite: 'Lax',
+      path: '/',
+    });
+    expect((await app.inject({ url, cookies: { [browser.name]: browser.value } })).statusCode).toBe(
+      400,
+    );
+    expect(exchanges).toBe(1);
+    const grant = (await pool.query('select * from oauth_grants')).rows[0];
+    expect(grant?.subject).toBe('123');
+    expect(JSON.stringify(grant?.encrypted_tokens)).not.toContain('private-refresh');
+    expect((await pool.query('select * from controller_sessions')).rowCount).toBe(1);
+  });
+  it('requires operator authorization and exact origin for the separate bot grant', async () => {
+    expect(
+      (
+        await app.inject({
+          method: 'POST',
+          url: '/auth/twitch/bot/start',
+          payload: { operatorSecret: config.operatorSecret },
+        })
+      ).statusCode,
+    ).toBe(403);
+    const start = await app.inject({
+      method: 'POST',
+      url: '/auth/twitch/bot/start',
+      headers: { origin: config.origin },
+      payload: { operatorSecret: config.operatorSecret },
+    });
+    expect(start.statusCode).toBe(200);
+    const state = new URL(
+      start.json<{ authorizationUrl: string }>().authorizationUrl,
+    ).searchParams.get('state');
+    const browser = start.cookies[0]!;
+    const callback = await app.inject({
+      url: `/auth/twitch/callback?state=${state}&code=bot`,
+      cookies: { [browser.name]: browser.value },
+    });
+    expect(callback.statusCode).toBe(302);
+    expect(callback.cookies).toHaveLength(0);
+    expect(
+      (await pool.query("select channel_id,subject from oauth_grants where purpose='bot'")).rows,
+    ).toEqual([{ channel_id: null, subject: '999' }]);
+  });
+});
