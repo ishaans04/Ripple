@@ -7,65 +7,19 @@ import {
   finishRoundObservation,
   founderAppearance,
   initialMutationSlots,
-  openMutationRound,
-  type BaselineRound,
   type BallotVote,
 } from '@ripple/engine';
+import { openNextRound, closeSpecialBallot } from './round-scheduling.ts';
 import { effect, type CommandEffect } from './lifecycle.ts';
+import {
+  captureRoundParticipants,
+  participantCheckpoint,
+  finishVisitorObservation,
+  lockParticipantLineages,
+} from './visitor-observation.ts';
 import { genomeOf, saveCheckpoint, type GameContext } from './store.ts';
 
-export async function openNextRound(
-  context: GameContext,
-  roundId: string,
-  atMs: number,
-): Promise<void> {
-  const { client, channel, organism, rules, timings } = context;
-  if (organism?.status !== 'ALIVE') throw new Error('Only a living resident can open a round.');
-  const history = await client.query<{ round_id: string; contributions: number; burst: number }>(
-    'select round_id,contributions,burst from habitat_baselines where world_id=$1 and channel_id=$2 order by completed_at desc,round_id desc limit $3',
-    [channel.world_id, channel.id, rules.baseline.windowRounds],
-  );
-  const baseline: BaselineRound[] = history.rows.reverse().map((r) => ({
-    roundId: r.round_id,
-    contributions: r.contributions,
-    burst: r.burst,
-    confidence: 'confident',
-  }));
-  const checkpoint = openMutationRound(
-    { seed: channel.seed, roundId, genome: genomeOf(organism), history: baseline, atMs, timings },
-    rules,
-  );
-  const number = (
-    await client.query<{ number: number }>(
-      'select coalesce(max(number),0)+1 as number from rounds where world_id=$1 and channel_id=$2',
-      [channel.world_id, channel.id],
-    )
-  ).rows[0]?.number;
-  if (number === undefined) throw new Error('Cannot allocate round number.');
-  await client.query(
-    `insert into rounds (world_id,id,channel_id,organism_id,number,kind,phase,rules_hash,seed,checkpoint,opened_at)
-    values ($1,$2,$3,$4,$5,'MUTATION','VOTING',$6,$7,$8,$9)`,
-    [
-      channel.world_id,
-      roundId,
-      channel.id,
-      organism.id,
-      number,
-      channel.rules_hash,
-      channel.seed,
-      JSON.stringify(checkpoint),
-      new Date(atMs),
-    ],
-  );
-  context.round = {
-    id: roundId,
-    number,
-    organism_id: organism.id,
-    phase: 'VOTING',
-    checkpoint,
-    completed_at: null,
-  };
-}
+export { openNextRound } from './round-scheduling.ts';
 export async function seedResident(
   context: GameContext,
   command: Extract<GameCommand, { type: 'seed' }>,
@@ -144,7 +98,11 @@ export async function acceptVote(
   const { round, channel, client } = context;
   if (!canAccept(context) || round?.phase !== 'VOTING') return effect('NO_ACTIVE_BALLOT');
   if (command.roundId !== undefined && command.roundId !== round.id) return effect('STALE_VERSION');
-  if (command.choice > round.checkpoint.candidates.length) return effect('NO_ACTIVE_BALLOT');
+  if (
+    command.choice >
+    (round.checkpoint.specialBallot?.options.length ?? round.checkpoint.candidates.length)
+  )
+    return effect('NO_ACTIVE_BALLOT');
   const inserted = await client.query(
     'insert into votes (world_id,channel_id,round_id,actor_key,choice,accepted_sequence) values ($1,$2,$3,$4,$5,$6) on conflict do nothing',
     [channel.world_id, channel.id, round.id, command.actorKey, command.choice, sequence],
@@ -220,6 +178,8 @@ export async function applyRoundDeadline(
       actorKey: v.actor_key,
       choice: v.choice,
     }));
+    if (round.checkpoint.specialBallot !== undefined)
+      return closeSpecialBallot(context, ordered, sequence, atMs, clock);
     const closed = closeMutationRound(round.checkpoint, ordered, organism.mutation_slots, round.id);
     await client.query(
       'update organisms set pulse=$3,calm=$4,grit=$5,drift=$6,mutation_slots=$7,version=version+1 where world_id=$1 and id=$2',
@@ -245,6 +205,7 @@ export async function applyRoundDeadline(
       sequence,
     ]);
     await saveCheckpoint(context, { ...round.checkpoint, clock, counts: closed.tally.counts });
+    await captureRoundParticipants(context);
     return effect('APPLIED', 'ballot.closed', {
       roundId: round.id,
       choiceId: closed.choiceId,
@@ -253,13 +214,15 @@ export async function applyRoundDeadline(
     });
   }
   if (round.phase === 'OBSERVING') {
+    await lockParticipantLineages(context);
+    await captureRoundParticipants(context);
     const members = await client.query<{ actor_key: string; bucket: number }>(
       'select actor_key,bucket from activity_contributions where world_id=$1 and round_id=$2 and observation_epoch=$3 order by bucket,actor_key',
       [channel.world_id, round.id, round.checkpoint.clock.observationEpoch],
     );
     const finished = finishRoundObservation(
       {
-        checkpoint: round.checkpoint,
+        checkpoint: await participantCheckpoint(context, organism.id, round.checkpoint),
         genome: genomeOf(organism),
         health: organism.health,
         slots: organism.mutation_slots,
@@ -327,12 +290,32 @@ export async function applyRoundDeadline(
         'update residencies set ended_at=$3 where world_id=$1 and organism_id=$2 and ended_at is null',
         [channel.world_id, organism.id, new Date(atMs)],
       );
-    await saveCheckpoint(context, { ...round.checkpoint, clock });
-    return effect('APPLIED', status === 'FOSSIL' ? 'strain.fossilized' : 'round.resolved', {
-      roundId: round.id,
+    const visitorResult = await finishVisitorObservation(
+      context,
+      members.rows.map((m) => ({
+        actorKey: m.actor_key,
+        offsetMs: m.bucket * rules.habitat.bucketMs,
+      })),
       resolution,
-      explanation: finished.explanation,
-    });
+      finished.explanation,
+      sequence,
+      atMs,
+    );
+    await saveCheckpoint(context, { ...round.checkpoint, clock });
+    return effect(
+      'APPLIED',
+      visitorResult !== null
+        ? 'contest.resolved'
+        : status === 'FOSSIL'
+          ? 'strain.fossilized'
+          : 'round.resolved',
+      {
+        roundId: round.id,
+        resolution,
+        explanation: finished.explanation,
+        ...(visitorResult === null ? {} : { visitor: visitorResult }),
+      },
+    );
   }
   await saveCheckpoint(context, { ...round.checkpoint, clock });
   await client.query('update rounds set completed_at=$3 where world_id=$1 and id=$2', [
@@ -340,8 +323,8 @@ export async function applyRoundDeadline(
     round.id,
     new Date(atMs),
   ]);
-  if (organism.status === 'ALIVE') {
-    await openNextRound(context, command.nextRoundId, atMs);
+  context.round = null;
+  if (await openNextRound(context, command.nextRoundId, atMs)) {
     return effect('APPLIED', 'ballot.opened', { roundId: command.nextRoundId });
   }
   context.round = null;

@@ -21,6 +21,8 @@ The [Cocoon Studio practice](http://localhost:3000/studio) provides a complete l
 
 The engine processes persisted rounds with synthetic inputs. The configured Twitch adapter supports broadcaster/operator OAuth, encrypted grants, signed EventSub intake, subscription reconciliation, local chat voting/activity, stream recovery and bounded bot output. `/controller` provides connection steps, named seeding, pause/recovery, visitor policy and read-only preview links. These integrations pass provider-fixture and PostgreSQL checks; **no real Twitch or hosted acceptance is claimed**. Connected raids, novel mechanics, the full broadcast surfaces, connected Studio and judge sandbox remain in the [plan](docs/plan.md).
 
+Phase 5 is in progress. The propagation backend passes synthetic/PostgreSQL checks for bounded descendants, destination admission, preparation/welcome ballots, matched observations, shelter, contests and FIFO harbor behavior. Signed raid intake and broadcaster admission controls are being connected and verified before this phase's exit; no real raid evidence is claimed.
+
 ### Twitch setup
 
 Open `/controller` to inspect connection readiness and manage your channel on a configured HTTPS deployment. Live integration is disabled by default; local practice stays available without secrets. Follow the [Twitch and Railway setup guide](docs/twitch-setup.md) for accounts, exact redirect URLs, independent secret keys, operator bot authorization and the pending live acceptance journey. A successful OAuth redirect alone does not establish subscription readiness.

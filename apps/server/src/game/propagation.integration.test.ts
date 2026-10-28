@@ -1,0 +1,368 @@
+import { randomUUID } from 'node:crypto';
+import pg from 'pg';
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { runMigrations, scanDeadlines } from '@ripple/database';
+import { createTemporaryDatabase, type TemporaryDatabase } from '@ripple/database/testing';
+import type { GameCommand } from '@ripple/contracts';
+import {
+  acceptSyntheticCommand,
+  createSyntheticWorld,
+  syntheticSeedCommand,
+  type SyntheticWorld,
+} from './sandbox.ts';
+import { processNextInput, type WorkerReceipt } from './worker.ts';
+import { readSnapshot } from './snapshot.ts';
+import type { TransferRow } from './propagation-store.ts';
+
+describe('persisted preparation, welcome and shared visitor observations', () => {
+  let temporary: TemporaryDatabase, pool: pg.Pool;
+  beforeAll(async () => {
+    temporary = await createTemporaryDatabase();
+    pool = new pg.Pool({ connectionString: temporary.connectionString });
+    await runMigrations(pool);
+  });
+  afterAll(async () => {
+    await pool.end();
+    await temporary.drop();
+  });
+  async function drain(world: SyntheticWorld): Promise<WorkerReceipt[]> {
+    const results: WorkerReceipt[] = [];
+    for (let pass = 0; pass < 200; pass++) {
+      const channels = await pool.query<{ id: string }>(
+        'select id from channels where world_id=$1 and processed_sequence<intake_sequence order by id',
+        [world.worldId],
+      );
+      if (channels.rowCount === 0) return results;
+      for (const c of channels.rows) {
+        const result = await processNextInput(pool, world.worldId, c.id);
+        if (result !== null) results.push(result);
+      }
+    }
+    throw new Error('World input did not settle');
+  }
+  async function send(
+    world: SyntheticWorld,
+    channelId: string,
+    command: GameCommand,
+  ): Promise<WorkerReceipt[]> {
+    await acceptSyntheticCommand(
+      pool,
+      { worldId: world.worldId, channelId },
+      world.ownerCapability,
+      randomUUID(),
+      command,
+    );
+    return drain(world);
+  }
+  async function snapshot(world: SyntheticWorld, channelId = world.channelId) {
+    const result = await readSnapshot(pool, world.worldId, channelId);
+    if (result === null) throw new Error('Missing synthetic channel');
+    return result;
+  }
+  async function peer(world: SyntheticWorld, seed = true) {
+    const channelId = randomUUID();
+    await pool.query(
+      `insert into channels(world_id,id,label,rules_hash,seed,configuration,online,healthy,initial_online,initial_healthy) select world_id,$3,'Synthetic receiver',rules_hash,$4,configuration,true,true,true,true from channels where world_id=$1 and id=$2`,
+      [world.worldId, world.channelId, channelId, 'receiver-seed'],
+    );
+    if (seed) await send(world, channelId, syntheticSeedCommand());
+    return channelId;
+  }
+  async function start() {
+    const world = await createSyntheticWorld(pool);
+    await send(world, world.channelId, syntheticSeedCommand());
+    return world;
+  }
+  async function cutoff(world: SyntheticWorld, channelId = world.channelId) {
+    const job = (
+      await pool.query<{ due_at: Date }>(
+        "select due_at from deadlines where world_id=$1 and channel_id=$2 and command->>'type'='deadline' and status='pending' order by due_at limit 1",
+        [world.worldId, channelId],
+      )
+    ).rows[0];
+    if (job === undefined) throw new Error('Missing round cutoff');
+    await pool.query('update worlds set clock_at=greatest(clock_at,$2) where id=$1', [
+      world.worldId,
+      job.due_at,
+    ]);
+    await scanDeadlines(pool);
+    return drain(world);
+  }
+  async function round(world: SyntheticWorld, channelId = world.channelId) {
+    await cutoff(world, channelId);
+    await cutoff(world, channelId);
+    await cutoff(world, channelId);
+  }
+  async function acceptVisitors(world: SyntheticWorld, target: string) {
+    const current = await snapshot(world, target);
+    await send(world, target, {
+      type: 'policy',
+      visitorPolicy: 'accept',
+      expectedVersion: current.version,
+    });
+  }
+  function raidCommand(target: string): Extract<GameCommand, { type: 'raid' }> {
+    return {
+      type: 'raid',
+      transferId: randomUUID(),
+      childId: randomUUID(),
+      residencyId: randomUUID(),
+      arrivalRoundId: randomUUID(),
+      destinationChannelId: target,
+      destinationTwitchId: target,
+    };
+  }
+  it('coalesces preparation at the next boundary, commits standing Shield, and never adds a mutation slot', async () => {
+    const world = await start();
+    expect((await send(world, world.channelId, { type: 'prepare' }))[0]?.effect.code).toBe(
+      'APPLIED',
+    );
+    expect((await send(world, world.channelId, { type: 'prepare' }))[0]?.effect.code).toBe(
+      'NO_CHANGE',
+    );
+    expect((await snapshot(world)).payload.round?.kind).toBe('MUTATION');
+    await round(world);
+    const prepared = await snapshot(world);
+    expect(prepared.payload.round?.kind).toBe('PREPARATION');
+    const slotsBefore = (
+      await pool.query<{ mutation_slots: unknown }>(
+        'select mutation_slots from organisms where world_id=$1',
+        [world.worldId],
+      )
+    ).rows[0]!.mutation_slots;
+    const shield = prepared.payload.round!.candidates.findIndex((c) => c.id === 'shield') + 1;
+    await send(world, world.channelId, {
+      type: 'vote',
+      actorKey: 'preparation-voter',
+      choice: shield,
+    });
+    await cutoff(world);
+    expect(
+      (
+        await pool.query<{ preparation: string }>(
+          'select preparation from channel_play where world_id=$1 and channel_id=$2',
+          [world.worldId, world.channelId],
+        )
+      ).rows[0]?.preparation,
+    ).toBe('shield');
+    expect((await snapshot(world)).payload.organism?.genome).toEqual({
+      pulse: 6,
+      calm: 6,
+      grit: 6,
+      drift: 6,
+    });
+    const slots = (
+      await pool.query<{ mutation_slots: { next: number } }>(
+        'select mutation_slots from organisms where world_id=$1',
+        [world.worldId],
+      )
+    ).rows[0]!.mutation_slots;
+    expect(slots).toEqual(slotsBefore);
+    const target = await peer(world, false);
+    await acceptVisitors(world, target);
+    const cmd = raidCommand(target);
+    await send(world, world.channelId, cmd);
+    const transfer = (
+      await pool.query<TransferRow>('select * from transfers where world_id=$1 and id=$2', [
+        world.worldId,
+        cmd.transferId,
+      ])
+    ).rows[0]!;
+    expect(transfer.snapshot.preparation).toBe('shield');
+    expect(transfer.snapshot.arrival).toEqual({ health: 28, spent: 4, shockReduction: 2 });
+    const incoming = await snapshot(world, target);
+    expect(incoming.payload.round?.kind).toBe('WELCOME');
+    expect(incoming.payload.round?.candidates).toHaveLength(2);
+  }, 20000);
+  it('keeps an open ballot unchanged, holds Shelter through limited data, then compares matched fitness once', async () => {
+    const world = await start(),
+      target = await peer(world);
+    await acceptVisitors(world, target);
+    const before = await snapshot(world, target),
+      parent = (await snapshot(world)).payload.organism!;
+    const cmd = raidCommand(target);
+    await send(world, world.channelId, cmd);
+    expect((await snapshot(world, target)).payload.round?.id).toBe(before.payload.round?.id);
+    expect((await snapshot(world, target)).payload.round?.candidates).toEqual(
+      before.payload.round?.candidates,
+    );
+    await round(world, target);
+    let current = await snapshot(world, target);
+    expect(current.payload.round?.kind).toBe('WELCOME');
+    const shelter = current.payload.round!.candidates.findIndex((c) => c.id === 'shelter') + 1;
+    expect(shelter).toBeGreaterThan(0);
+    await send(world, target, { type: 'vote', actorKey: 'welcome-voter', choice: shelter });
+    await cutoff(world, target);
+    await cutoff(world, target);
+    expect(
+      (
+        await pool.query<{ shelter_pending: boolean; arrival_pending: boolean }>(
+          'select shelter_pending,arrival_pending from visitor_state where world_id=$1',
+          [world.worldId],
+        )
+      ).rows,
+    ).toEqual([{ shelter_pending: true, arrival_pending: true }]);
+    await cutoff(world, target);
+    await cutoff(world, target);
+    for (const actorKey of ['alice', 'bob', 'carol'])
+      await send(world, target, { type: 'activity', actorKey });
+    const resolution = await cutoff(world, target);
+    const compared = resolution.find((r) => r.effect.updateType === 'contest.resolved');
+    expect(compared?.effect.detail.visitor).toMatchObject({
+      contest: { outcome: 'sheltered', moved: 5, shelterPending: false },
+    });
+    expect(
+      (
+        await pool.query<{ shelter_pending: boolean; arrival_pending: boolean }>(
+          'select shelter_pending,arrival_pending from visitor_state where world_id=$1',
+          [world.worldId],
+        )
+      ).rows,
+    ).toEqual([{ shelter_pending: false, arrival_pending: false }]);
+    await cutoff(world, target);
+    await cutoff(world, target);
+    for (const actorKey of ['alice', 'bob', 'carol'])
+      await send(world, target, { type: 'activity', actorKey });
+    await cutoff(world, target);
+    const transfer = (
+      await pool.query<TransferRow>('select * from transfers where world_id=$1 and id=$2', [
+        world.worldId,
+        cmd.transferId,
+      ])
+    ).rows[0]!;
+    expect(transfer.outcome).toBe('VISITOR_LOST');
+    current = await snapshot(world, target);
+    expect(current.payload.organism?.id).toBe(before.payload.organism?.id);
+    expect(
+      (
+        await pool.query<{ status: string }>(
+          'select status from organisms where world_id=$1 and id=$2',
+          [world.worldId, cmd.childId],
+        )
+      ).rows[0]?.status,
+    ).toBe('FOSSIL');
+    expect((await snapshot(world)).payload.organism?.id).toBe(parent.id);
+    expect(
+      (
+        await pool.query(
+          'select 1 from round_participants where world_id=$1 and organism_id=$2 and resolution is not null',
+          [world.worldId, cmd.childId],
+        )
+      ).rowCount,
+    ).toBe(3);
+  }, 30000);
+  it('keeps three FIFO harbor entries, rejects overflow and promotes the oldest after an explicit decline', async () => {
+    const world = await start(),
+      target = await peer(world);
+    await acceptVisitors(world, target);
+    const sources = [world.channelId];
+    for (let n = 0; n < 4; n++) sources.push(await peer(world));
+    const raids = sources.map(() => raidCommand(target));
+    for (const [index, source] of sources.entries()) await send(world, source, raids[index]!);
+    const rows = (
+      await pool.query<TransferRow>(
+        'select * from transfers where world_id=$1 order by destination_sequence nulls last,created_at,id',
+        [world.worldId],
+      )
+    ).rows;
+    expect(rows.filter((r) => r.outcome === 'ACTIVE')).toHaveLength(1);
+    expect(rows.filter((r) => r.outcome === 'HARBOR')).toHaveLength(3);
+    expect(rows.filter((r) => r.outcome === 'HARBOR_FULL')).toHaveLength(1);
+    expect(rows.find((r) => r.outcome === 'HARBOR_FULL')?.child_id).toBeNull();
+    const active = rows.find((r) => r.outcome === 'ACTIVE')!,
+      firstWaiting = rows.find((r) => r.outcome === 'HARBOR')!;
+    await send(world, target, {
+      type: 'admission',
+      transferId: active.id,
+      transferVersion: active.version,
+      decision: 'decline',
+      roundId: randomUUID(),
+    });
+    expect(
+      (
+        await pool.query<{ organism_id: string }>(
+          "select organism_id from residencies where world_id=$1 and channel_id=$2 and role='visitor' and ended_at is null",
+          [world.worldId, target],
+        )
+      ).rows,
+    ).toEqual([{ organism_id: firstWaiting.child_id }]);
+    expect(
+      (
+        await pool.query<{ status: string }>(
+          'select status from organisms where world_id=$1 and id=$2',
+          [world.worldId, active.child_id],
+        )
+      ).rows[0]?.status,
+    ).toBe('ARCHIVED');
+    expect(
+      (
+        await pool.query(
+          "select 1 from deadlines where world_id=$1 and channel_id=$2 and job_key like 'admission-expiry:%' and status='pending'",
+          [world.worldId, target],
+        )
+      ).rowCount,
+    ).toBe(2);
+  }, 30000);
+  it('serializes a twelve-branch lineage cap across distinct reproducing parents and counts held descendants', async () => {
+    const world = await start(),
+      parentHost = await peer(world, false);
+    await acceptVisitors(world, parentHost);
+    const first = raidCommand(parentHost);
+    await send(world, world.channelId, first);
+    await cutoff(world, parentHost);
+    expect((await snapshot(world, parentHost)).payload.organism?.id).toBe(first.childId);
+    const targets: string[] = [];
+    for (let n = 0; n < 12; n++) {
+      const target = await peer(world, false);
+      await acceptVisitors(world, target);
+      targets.push(target);
+    }
+    const commands = targets.map(raidCommand);
+    await Promise.all(
+      commands.map((command, index) =>
+        acceptSyntheticCommand(
+          pool,
+          { worldId: world.worldId, channelId: index % 2 === 0 ? world.channelId : parentHost },
+          world.ownerCapability,
+          randomUUID(),
+          command,
+        ),
+      ),
+    );
+    await Promise.all(
+      Array.from({ length: 12 }, (_unused, index) =>
+        processNextInput(pool, world.worldId, index % 2 === 0 ? world.channelId : parentHost),
+      ),
+    );
+    await drain(world);
+    const founder = (
+      await pool.query<{ lineage_id: string }>(
+        'select lineage_id from organisms where world_id=$1 and id=$2',
+        [world.worldId, first.childId],
+      )
+    ).rows[0]!.lineage_id;
+    expect(
+      (
+        await pool.query(
+          "select 1 from organisms where world_id=$1 and lineage_id=$2 and status in ('ALIVE','HARBOR')",
+          [world.worldId, founder],
+        )
+      ).rowCount,
+    ).toBe(12);
+    expect(
+      (
+        await pool.query("select 1 from transfers where world_id=$1 and outcome='LINEAGE_CAP'", [
+          world.worldId,
+        ])
+      ).rowCount,
+    ).toBe(2);
+    expect(
+      (
+        await pool.query('select 1 from organisms where world_id=$1 and parent_id=$2', [
+          world.worldId,
+          first.childId,
+        ])
+      ).rowCount,
+    ).toBeGreaterThan(0);
+  }, 30000);
+});

@@ -22,6 +22,8 @@ export default defineConfig({
         extends: true,
         test: {
           name: 'integration',
+          // Database creation and the complete migration set are fixture setup, not request latency.
+          hookTimeout: 30_000,
           include: ['{packages,apps}/*/src/**/*.integration.test.ts'],
           fileParallelism: false,
         },

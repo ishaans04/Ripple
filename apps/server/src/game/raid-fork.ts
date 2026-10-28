@@ -115,7 +115,9 @@ export async function forkRaid(
     policy,
   );
   const outcome =
-    block ??
+    (parent !== undefined && command.sourceAuthorized === false
+      ? 'SOURCE_AUTHORIZATION_REVOKED'
+      : block) ??
     (destination === undefined
       ? 'NOT_ENROLLED'
       : queued.length >= policy.harborCap

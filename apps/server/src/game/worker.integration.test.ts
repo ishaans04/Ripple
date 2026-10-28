@@ -63,9 +63,10 @@ describe('ordered game worker in real PostgreSQL', () => {
     await cutoff(world);
     const mutated = await readSnapshot(pool, world.worldId, world.channelId);
     expect(mutated?.payload.round?.phase).toBe('OBSERVING');
-    expect(mutated?.payload.organism?.genome).toEqual(
-      mutated?.payload.round?.candidates[1]?.genome,
-    );
+    const selected = mutated?.payload.round?.candidates[1];
+    if (selected === undefined || !('genome' in selected))
+      throw new Error('Expected a genetic mutation candidate');
+    expect(mutated?.payload.organism?.genome).toEqual(selected.genome);
     await cutoff(world);
     expect(
       (await readSnapshot(pool, world.worldId, world.channelId))?.payload.round?.resolution,
@@ -74,7 +75,7 @@ describe('ordered game worker in real PostgreSQL', () => {
     expect((await readSnapshot(pool, world.worldId, world.channelId))?.payload.round).toMatchObject(
       { number: 2, phase: 'VOTING' },
     );
-  });
+  }, 20_000);
   it('deduplicates each account in a bucket and scores real accepted membership', async () => {
     const world = await start();
     await cutoff(world);

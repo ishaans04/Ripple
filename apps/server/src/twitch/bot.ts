@@ -23,10 +23,20 @@ export async function queueAnnouncement(
     case null:
       return;
     case 'ballot.opened':
-      if (round !== null)
-        message = `Ripple round ${round.number}: ${round.checkpoint.candidates.map((c, i) => `${i + 1}: ${c.effect} (${c.tradeOff})`).join('; ')}. Vote !ripple 1, 2 or 3 within ${Math.floor(context.timings.voteMs / 1000)} seconds. First valid vote stands; no votes means Hold.`;
+      if (round !== null) {
+        const special = round.checkpoint.specialBallot,
+          options = special?.options ?? round.checkpoint.candidates;
+        message = `Ripple ${special?.kind.toLowerCase() ?? 'mutation'} round ${round.number}: ${options.map((c, i) => `${i + 1}: ${c.effect} (${c.tradeOff})`).join('; ')}. Vote ${options.map((_c, i) => `!ripple ${i + 1}`).join(', ')} within ${Math.floor(context.timings.voteMs / 1000)} seconds. ${special === undefined ? 'No votes means Hold.' : special.kind === 'WELCOME' ? 'No votes means Conserve.' : 'No votes keeps standing preparation.'}`;
+      }
       break;
     case 'ballot.closed': {
+      if (round?.checkpoint.specialBallot !== undefined) {
+        const special = round.checkpoint.specialBallot,
+          chosen = special.options.find((c) => c.id === result.detail.choiceId);
+        if (chosen !== undefined)
+          message = `Ripple ${special.kind.toLowerCase()}: ${chosen.effect}; ${chosen.tradeOff}.`;
+        break;
+      }
       const chosen = round?.checkpoint.candidates.find((c) => c.id === result.detail.choiceId);
       message =
         chosen === undefined
@@ -41,6 +51,30 @@ export async function queueAnnouncement(
       message = explanation.success
         ? `Ripple: ${explanation.data.headline}. Energy ${organism?.health ?? 0}/100.`
         : undefined;
+      break;
+    }
+    case 'contest.resolved': {
+      const visitor = z
+        .object({
+          contest: z.object({
+            outcome: z.enum(['held', 'empty', 'visitor', 'resident', 'sheltered']),
+            moved: z.int().nonnegative(),
+          }),
+        })
+        .safeParse(result.detail.visitor);
+      if (visitor.success) {
+        const c = visitor.data.contest;
+        message =
+          c.outcome === 'held'
+            ? 'Ripple: too little confident habitat data; energy, shelter and the contest stay held.'
+            : c.outcome === 'sheltered'
+              ? `Ripple: Shelter moved ${c.moved} energy to the visitor. The contest waits for the next valid observation.`
+              : c.outcome === 'empty'
+                ? 'Ripple: both branches became fossils; the channel is empty.'
+                : c.outcome === 'visitor'
+                  ? 'Ripple: the visitor won the matched habitat comparison and is now resident. The incumbent becomes a fossil.'
+                  : 'Ripple: the incumbent remains resident; the visitor becomes a fossil. Fitness ties preserve the incumbent.';
+      }
       break;
     }
     case 'strain.fossilized':

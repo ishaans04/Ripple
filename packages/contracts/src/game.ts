@@ -52,6 +52,7 @@ export const propagationCommandSchema = z.discriminatedUnion('type', [
     arrivalRoundId: z.uuid(),
     destinationChannelId: z.uuid().nullable(),
     destinationTwitchId: z.string().min(1).max(100),
+    sourceAuthorized: z.boolean().optional(),
   }),
   z.strictObject({
     type: z.literal('arrive'),
@@ -84,6 +85,7 @@ export const propagationCommandSchema = z.discriminatedUnion('type', [
 ]);
 export type PropagationCommand = z.infer<typeof propagationCommandSchema>;
 export const gameCommandSchema = z.discriminatedUnion('type', [
+  ...propagationCommandSchema.options,
   z.strictObject({
     type: z.literal('seed'),
     organismId: z.uuid(),
