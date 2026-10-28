@@ -14,6 +14,7 @@ import {
 import { loadContext, type GameContext } from './store.ts';
 import { readSnapshot } from './snapshot.ts';
 import { chatIntentSchema } from '../twitch/chat.ts';
+import { queueAnnouncement } from '../twitch/bot.ts';
 
 async function apply(
   context: GameContext,
@@ -162,6 +163,7 @@ export async function processNextInput(
         ? effect('STALE_VERSION')
         : await apply(context, command, sequence, input.accepted_at.getTime());
     await reconcileRoundDeadline(context);
+    await queueAnnouncement(context, result, sequence);
     const record = {
       engineVersion: ENGINE_VERSION,
       rulesHash: channel.rules_hash,

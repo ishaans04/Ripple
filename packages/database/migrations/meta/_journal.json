@@ -120,6 +120,13 @@
       "when": 1793170893104,
       "tag": "0016_owner_seed_and_commands",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1793171341974,
+      "tag": "0017_bounded_bot_delivery",
+      "breakpoints": true
     }
   ]
 }

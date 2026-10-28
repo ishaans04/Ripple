@@ -96,6 +96,10 @@ export const botMessages = pgTable(
     channelId: uuid('channel_id').notNull(),
     key: text('key').notNull(),
     message: text('message').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    expiresAt: timestamp('expires_at', { withTimezone: true })
+      .notNull()
+      .default(sql`now()+interval '5 minutes'`),
     status: text('status').notNull().default('pending'),
     attemptAt: timestamp('attempt_at', { withTimezone: true }),
     errorCode: text('error_code'),

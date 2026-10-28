@@ -6,6 +6,7 @@ import { TwitchClient, TwitchError } from './client.ts';
 import { maintainGrant, type GrantRow } from './grants.ts';
 import { reconcileSubscriptions } from './subscriptions.ts';
 import { reconcileStreams } from './streams.ts';
+import { dispatchBotMessage } from './bot.ts';
 
 export async function interruptLiveInput(
   pool: pg.Pool,
@@ -58,6 +59,21 @@ export function startTwitchRuntime(
     startup = true,
     timer: ReturnType<typeof setTimeout> | undefined;
   let pending: Promise<void> = Promise.resolve();
+  let botPending: Promise<void> = Promise.resolve(),
+    botTimer: ReturnType<typeof setTimeout> | undefined;
+  function sendBot(): void {
+    botPending = dispatchBotMessage(pool, api, world)
+      .then(() => undefined)
+      .catch(() => {
+        logger.warn(
+          { code: 'BOT_DISPATCH_FAILED' },
+          'Bot delivery will be checked on the next cycle',
+        );
+      })
+      .finally(() => {
+        if (!stopped) botTimer = setTimeout(sendBot, 1000);
+      });
+  }
   function schedule(): void {
     pending = runTwitchCycle(pool, api, world, startup)
       .then(() => {
@@ -80,11 +96,14 @@ export function startTwitchRuntime(
       });
   }
   schedule();
+  sendBot();
   return {
     stop: async () => {
       stopped = true;
       clearTimeout(timer);
+      clearTimeout(botTimer);
       await pending;
+      await botPending;
     },
   };
 }
