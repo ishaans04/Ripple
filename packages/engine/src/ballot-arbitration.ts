@@ -8,12 +8,17 @@ import type { Ruleset } from './ruleset.ts';
 import type { SpecialOption } from './arrival.ts';
 
 export type ScheduledBallot = 'MUTATION' | 'WELCOME' | 'TRACE' | 'PREPARATION';
-export function nextBallot(input: {
+interface BallotScheduleInput {
   pendingWelcome: boolean;
   pendingTrace: boolean;
   preparationRequested: boolean;
   nonMutationRounds: number;
-}): ScheduledBallot {
+}
+export function nextBallot(
+  input: BallotScheduleInput & { pendingTrace: false },
+): Exclude<ScheduledBallot, 'TRACE'>;
+export function nextBallot(input: BallotScheduleInput): ScheduledBallot;
+export function nextBallot(input: BallotScheduleInput): ScheduledBallot {
   if (input.pendingWelcome) return 'WELCOME';
   if (input.nonMutationRounds >= 2) return 'MUTATION';
   if (input.pendingTrace) return 'TRACE';
