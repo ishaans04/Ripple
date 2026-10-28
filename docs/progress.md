@@ -27,7 +27,7 @@ Exit evidence:
 
 The shared mutation clock requires a completed active observation between slots. Limited-confidence but complete observation can satisfy that clock; interrupted/missing intervals cannot. Confidence separately controls health, trace, and contest progression, so small communities are not barred from ordinary genetic choices.
 
-## Phase 3 ? event backbone (complete)
+## Phase 3 — event backbone (complete)
 
 Delivered in 17 focused commits, including this exit record. The schema, durable intake and per-channel worker, round checkpoints, deadline leases, event history, outbox, snapshot-first gateway, browser recovery transport, isolated synthetic CLI, and accepted-record reconstruction are implemented.
 
@@ -45,11 +45,31 @@ Exit evidence on code commit `0a41ed4`:
 
 The local database remains intact. Custom-format backups are saved under ignored `tmp/ripple-before-phase3.dump` and `tmp/ripple-phase3-loop.dump`; this is not a backup-restore rehearsal claim. That release exercise remains Phase 10.
 
-## Phase 4 — Twitch live loop (in progress)
+## Phase 4 — Twitch live loop (implementation complete; live acceptance pending)
 
-Implement broadcaster/operator OAuth, encrypted grants, signed EventSub intake and subscription recovery, normalized local chat, stream/category lifecycle, bot announcements, setup states and Railway deployment configuration. Provide account/app/OAuth/HTTPS setup instructions. Synthetic/provider-fixture tests can proceed now; the user has deferred real Twitch and hosted acceptance until the accounts and URL exist.
+Delivered in 17 focused commits, including this exit record. Broadcaster/operator OAuth, encrypted grants, signed EventSub intake and subscription recovery, normalized local chat, stream/category lifecycle, bot announcements, controller setup states and Railway deployment configuration are implemented. Real Twitch and hosted acceptance remain pending under the user's explicit deferral.
 
 Live configuration is opt-in and fails closed on missing secrets or a non-HTTPS public origin. Grant ciphertext uses AES-256-GCM with grant-identity authenticated data; actor hashing uses a separate key. No live acceptance is claimed.
+
+Implemented: browser-bound broadcaster and separate operator-bot OAuth, per-grant refresh leases and startup/hourly validation, revocation-driven session termination, exact raw-byte webhook HMAC, subscription challenge/reconciliation and transport-key binding, conservative Shared Chat locality and semantic deduplication, per-ballot/per-observation actor keys derived by the ordered worker, independent stream/input-health commands, REST lifecycle reconciliation with stale-response fencing, versioned/idempotent owner seeding/naming/pause/recovery/policy controls, and committed bot outbox delivery with bounded rates and uncertain-send handling. The controller and read-only preview have eight additional Chrome/Edge journeys.
+
+Phase 4 policy choices: empty channels may reseed 180 seconds after their last committed seed; strain names are approved by the owner, bounded to 40 characters, reject control/bidirectional formatting characters, and render as text. Sessions expire after twelve hours and use an independent rotatable HMAC key. Subscription attempts back off for 90 seconds, reconciliation runs every 30 seconds, and bot delivery allows twelve attempts/minute globally and one/ten seconds/channel. No payment-related event or scope is enabled.
+
+The [live setup guide](twitch-setup.md) records account/application registration, exact OAuth/webhook URLs, Railway configuration, independent secrets, operator/broadcaster flows, recovery, credential rotation and the real-channel acceptance journey. No deployment or real Twitch evidence is claimed.
+
+Exit evidence on code commit `a88a53a`:
+
+- All three jobs of [CI run 40652223830](https://github.com/ishaans04/Ripple/actions/runs/40652223830) pass: lint, formatting, types, production build, 386 unit tests, 67 PostgreSQL integration tests, 20 Windows Chrome/Edge browser journeys and the production-image Compose round/HTTP/WebSocket journey.
+- Provider fixtures exercise real PostgreSQL and application routes, including browser state theft/reuse, operator/broadcaster separation, encrypted grants, serialized expired-token refresh, revoked and expired authority, CSRF/ownership/version/idempotency checks, signed raw bytes, challenge-before-create-response, semantic duplicate chat, Shared Chat exclusion, stale REST lifecycle results, clean offline/manual pause/outage recovery, and bot concurrency/uncertain delivery/global attempt limits. These fixtures are not live Twitch evidence.
+- Controller layouts were visually inspected at 1280px and 390px widths with an explicitly synthetic state. Local ignored screenshots are under `tmp/phase4-controller-*.png`. No physical-device or OBS-readability claim is made.
+- The first full local PostgreSQL run passed 66/67 tests; the migration idempotency test exceeded its five-second limit under local load. An isolated rerun passes all migration tests, and the complete CI PostgreSQL run passes 67/67 without timeout changes, retries or skipped assertions.
+- A pre-migration local backup is retained at ignored `tmp/ripple-before-phase4.dump`. This remains distinct from the Phase 10 backup/restore rehearsal.
+- The local Compose image was rebuilt, all 19 migrations applied, both services became healthy, and the installed smoke tool completed a real synthetic seed/vote/habitat/resolution plus authorized HTTP and snapshot-first WebSocket. `/api/connection` correctly reports live mode disabled without credentials.
+- All commits retain `ishaans04 <sharmaishaaan04@gmail.com>` as author and committer, with no co-author trailers.
+
+## Phase 5 — raids and lineage (next)
+
+Next implement sorted-lock transactional child creation, outgoing raid receipt, preparation and welcome ballots, all ten admission outcomes, shelter/contest/fossil transitions, resource caps/cooldowns and ballot arbitration. Only Phase 5 is next; Phase 6 work has not started. Real two-channel raid acceptance remains pending the same account/HTTPS setup.
 
 ## Live acceptance deferral requested by the user
 

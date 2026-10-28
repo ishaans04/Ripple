@@ -8,9 +8,9 @@ The full specification is in [docs/prd.md](docs/prd.md), extended by the [Cocoon
 
 ## Current status
 
-Ripple is being built phase by phase. **Phases 0–3 are complete: foundation, pure engine, studio rules and local editor, and the event backbone.** What works today:
+Ripple is being built phase by phase. **Phases 0–4 implementation is complete: foundation, pure engine, studio rules and local editor, event backbone, and Twitch live loop. Real Twitch/hosted acceptance remains pending.** What works today:
 
-The [Cocoon Studio practice](http://localhost:3000/studio) provides a complete local shell editor with hand, pointer, touch, and keyboard controls. Ordered durable intake, round processing, transactional history and public updates, leased deadlines, process-gap recovery, scoped WebSockets, and synthetic command tooling are implemented. **Phase 4, the Twitch live loop, is next.** Verification and pending live acceptance are recorded in [delivery progress](docs/progress.md).
+The [Cocoon Studio practice](http://localhost:3000/studio) provides a complete local shell editor with hand, pointer, touch, and keyboard controls. Ordered durable intake, round processing, transactional history and public updates, leased deadlines, process-gap recovery, scoped WebSockets, and synthetic command tooling are implemented. **Phase 5, raids and lineage, is next.** Verification and pending live acceptance are recorded in [delivery progress](docs/progress.md).
 
 - The application service (Fastify on Node.js 24) with structured, correlated JSON logs, a uniform error contract, security headers, and graceful shutdown
 - PostgreSQL 18 with versioned migrations under an advisory lock, world-scoped game records, immutable ancestry/rules, and database-enforced genome bounds
@@ -19,7 +19,7 @@ The [Cocoon Studio practice](http://localhost:3000/studio) provides a complete l
 - One-command local startup with Docker Compose, and CI covering lint, types, unit tests, integration tests on real PostgreSQL, the build, and a Compose smoke test
 - The deterministic game rules as a tested library (`@ripple/engine`; see [Game engine](#game-engine)), reproducing the PRD's worked journey (section 25.4) exactly
 
-The engine processes persisted rounds with synthetic inputs. **Phase 4 implementation is in progress:** broadcaster/operator OAuth, encrypted grants, signed EventSub intake, subscription reconciliation, stream recovery, owner commands and bounded bot output have landed. The controller and read-only preview are being verified. Real Twitch and hosted acceptance remain pending; the connected studio, raids, full overlay and judge sandbox remain later-phase work. See the [plan](docs/plan.md).
+The engine processes persisted rounds with synthetic inputs. The configured Twitch adapter supports broadcaster/operator OAuth, encrypted grants, signed EventSub intake, subscription reconciliation, local chat voting/activity, stream recovery and bounded bot output. `/controller` provides connection steps, named seeding, pause/recovery, visitor policy and read-only preview links. These integrations pass provider-fixture and PostgreSQL checks; **no real Twitch or hosted acceptance is claimed**. Connected raids, novel mechanics, the full broadcast surfaces, connected Studio and judge sandbox remain in the [plan](docs/plan.md).
 
 ### Twitch setup
 
