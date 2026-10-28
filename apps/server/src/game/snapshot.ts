@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import type { PublicUpdate } from '@ripple/contracts';
+import type { PropagationView, PublicUpdate } from '@ripple/contracts';
 import type {
   CommittedAppearance,
   Genome,
@@ -9,6 +9,7 @@ import type {
   SpecialOption,
 } from '@ripple/engine';
 import type pg from 'pg';
+import { propagationProjectionSql } from './propagation-projection.ts';
 
 export interface ChannelSnapshot {
   channelId: string;
@@ -18,6 +19,7 @@ export interface ChannelSnapshot {
   healthy: boolean;
   paused: boolean;
   rulesHash: string;
+  propagation: PropagationView;
   organism: {
     id: string;
     version: number;
@@ -57,6 +59,7 @@ export async function readSnapshot(
     paused: boolean;
     rules_hash: string;
     grace_ms: number;
+    propagation: PropagationView;
     organism: {
       id: string;
       version: number;
@@ -87,6 +90,7 @@ export async function readSnapshot(
       where r.world_id=c.world_id and r.channel_id=c.id and r.role='resident' order by (r.ended_at is null) desc,r.started_at desc limit 1) as organism,
     (select jsonb_build_object('id',r.id,'number',r.number,'kind',r.kind,'phase',r.phase,'checkpoint',r.checkpoint,'resolution',r.resolution,'explanation',r.explanation,'visitor_result',r.visitor_result)
       from rounds r where r.world_id=c.world_id and r.channel_id=c.id order by r.number desc limit 1) as round,
+    ${propagationProjectionSql} as propagation,
     date_trunc('milliseconds',clock_timestamp()) as server_time
     from channels c join worlds w on w.id=c.world_id where c.world_id=$1 and c.id=$2 and (w.expires_at is null or w.expires_at>clock_timestamp())`,
     [worldId, channelId],
@@ -106,6 +110,7 @@ export async function readSnapshot(
       healthy: row.healthy,
       paused: row.paused,
       rulesHash: row.rules_hash,
+      propagation: row.propagation,
       organism:
         organism === null
           ? null

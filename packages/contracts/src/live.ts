@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { shellPartSchema, studioGenomeSchema } from './studio.ts';
+import { propagationViewSchema } from './propagation-view.ts';
 export const channelViewSchema = z.object({
   channelId: z.uuid(),
   label: z.string(),
@@ -7,6 +8,8 @@ export const channelViewSchema = z.object({
   online: z.boolean(),
   healthy: z.boolean(),
   paused: z.boolean(),
+  // Older retained public updates predate propagation; fresh snapshots always include it.
+  propagation: propagationViewSchema.optional(),
   organism: z
     .object({
       id: z.uuid(),
@@ -31,6 +34,7 @@ export const channelViewSchema = z.object({
     .object({
       id: z.uuid(),
       number: z.int(),
+      kind: z.string().optional(),
       phase: z.string(),
       clock: z.object({
         paused: z.boolean(),

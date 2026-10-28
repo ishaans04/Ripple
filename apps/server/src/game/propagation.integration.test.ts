@@ -3,7 +3,7 @@ import pg from 'pg';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { runMigrations, scanDeadlines } from '@ripple/database';
 import { createTemporaryDatabase, type TemporaryDatabase } from '@ripple/database/testing';
-import type { GameCommand } from '@ripple/contracts';
+import { propagationViewSchema, type GameCommand } from '@ripple/contracts';
 import {
   acceptSyntheticCommand,
   createSyntheticWorld,
@@ -57,6 +57,7 @@ describe('persisted preparation, welcome and shared visitor observations', () =>
   async function snapshot(world: SyntheticWorld, channelId = world.channelId) {
     const result = await readSnapshot(pool, world.worldId, channelId);
     if (result === null) throw new Error('Missing synthetic channel');
+    expect(propagationViewSchema.safeParse(result.payload.propagation).success).toBe(true);
     return result;
   }
   async function peer(world: SyntheticWorld, seed = true) {
@@ -232,6 +233,12 @@ describe('persisted preparation, welcome and shared visitor observations', () =>
     ).rows[0]!;
     expect(transfer.outcome).toBe('VISITOR_LOST');
     current = await snapshot(world, target);
+    expect(current.payload.propagation.visitor).toBeNull();
+    expect(current.payload.propagation.lastContest).toMatchObject({
+      visitorId: cmd.childId,
+      outcome: 'resident',
+      moved: 0,
+    });
     expect(current.payload.organism?.id).toBe(before.payload.organism?.id);
     expect(
       (
@@ -269,6 +276,18 @@ describe('persisted preparation, welcome and shared visitor observations', () =>
     expect(rows.filter((r) => r.outcome === 'HARBOR')).toHaveLength(3);
     expect(rows.filter((r) => r.outcome === 'HARBOR_FULL')).toHaveLength(1);
     expect(rows.find((r) => r.outcome === 'HARBOR_FULL')?.child_id).toBeNull();
+    const projected = (await snapshot(world, target)).payload.propagation;
+    expect(projected.admissions).toHaveLength(4);
+    expect(projected.visitor?.id).toBe(raids[0]?.childId);
+    expect(projected.limits).toMatchObject({ harborCap: 3, livingLineageCap: 12 });
+    expect(projected.admissions.map((t) => t.id)).toEqual(
+      raids.slice(0, 4).map((t) => t.transferId),
+    );
+    const sourceProjection = (await snapshot(world)).payload.propagation;
+    expect(sourceProjection.resident?.livingBranches).toBe(2);
+    expect(sourceProjection.outgoing).toHaveLength(1);
+    expect(sourceProjection.outgoing[0]?.sourceChannelId).toBe(world.channelId);
+    expect(JSON.stringify(projected)).not.toMatch(/actorKey|encrypted_tokens|csrf|access_token/);
     const active = rows.find((r) => r.outcome === 'ACTIVE')!,
       firstWaiting = rows.find((r) => r.outcome === 'HARBOR')!;
     await send(world, target, {
