@@ -17,9 +17,16 @@ const validationSchema = z.object({
 });
 export type ValidatedToken = z.infer<typeof validationSchema>;
 export class TwitchError extends Error {
+  readonly status: number;
+  readonly code:
+    | 'PROVIDER_UNAVAILABLE'
+    | 'GRANT_REVOKED'
+    | 'RATE_LIMITED'
+    | 'PROVIDER_REJECTED'
+    | 'INVALID_RESPONSE';
   constructor(
-    readonly status: number,
-    readonly code:
+    status: number,
+    code:
       | 'PROVIDER_UNAVAILABLE'
       | 'GRANT_REVOKED'
       | 'RATE_LIMITED'
@@ -27,17 +34,21 @@ export class TwitchError extends Error {
       | 'INVALID_RESPONSE',
   ) {
     super(code);
+    this.status = status;
+    this.code = code;
     this.name = 'TwitchError';
   }
 }
 /** No provider response bodies, request URLs or credentials are attached to errors. */
 export class TwitchClient {
+  readonly config: TwitchConfig;
+  private readonly transport: typeof fetch;
   private cachedApp: { access: string; until: number } | undefined;
   private appPending: Promise<string> | undefined;
-  constructor(
-    readonly config: TwitchConfig,
-    private readonly transport: typeof fetch = fetch,
-  ) {}
+  constructor(config: TwitchConfig, transport: typeof fetch = fetch) {
+    this.config = config;
+    this.transport = transport;
+  }
   private async request(url: string, init: RequestInit): Promise<unknown> {
     let response: Response;
     try {
