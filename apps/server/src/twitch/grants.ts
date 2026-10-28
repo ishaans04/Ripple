@@ -119,7 +119,7 @@ export async function maintainGrant(
   const claimed = await pool.query<GrantRow>(
     `update oauth_grants set refresh_owner=$4,refresh_until=clock_timestamp()+interval '30 seconds'
     where world_id=$1 and purpose=$2 and subject=$3 and revoked_at is null and (refresh_until is null or refresh_until<clock_timestamp())
-    and ($5 or validated_at is null or validated_at<clock_timestamp()-interval '1 hour') returning *`,
+    and ($5 or validated_at is null or validated_at<clock_timestamp()-interval '1 hour' or expires_at<=clock_timestamp()) returning *`,
     [grant.world_id, grant.purpose, grant.subject, owner, force],
   );
   const current = claimed.rows[0];
@@ -174,6 +174,10 @@ export async function maintainGrant(
     );
     return saved.rowCount === 1;
   } catch (error) {
+    await pool.query(
+      'update oauth_grants set validated_at=null where world_id=$1 and purpose=$2 and subject=$3 and refresh_owner=$4',
+      [grant.world_id, grant.purpose, grant.subject, owner],
+    );
     if (error instanceof TwitchError && error.code === 'GRANT_REVOKED') {
       // A concurrent fresh sign-in supersedes this old validation attempt.
       await revokeGrant(pool, grant, owner);

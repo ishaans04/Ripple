@@ -3,6 +3,9 @@ import { buildApp } from './app.ts';
 import { ConfigError, loadConfig, type ServerConfig } from './config.ts';
 import { createShutdown } from './shutdown.ts';
 import { startGameRuntime } from './game/runtime.ts';
+import { TwitchClient } from './twitch/client.ts';
+import { ensureInstallation } from './twitch/installation.ts';
+import { interruptLiveInput, startTwitchRuntime } from './twitch/runtime.ts';
 
 function readConfig(): ServerConfig {
   try {
@@ -28,10 +31,16 @@ const database = createDatabase({
 
 const app = await buildApp({ config, pool: database.pool });
 app.addHook('onClose', () => database.close());
+// Disabling the adapter cannot leave previously persisted live channels decaying.
+if (config.twitch === undefined) await interruptLiveInput(database.pool, 'LIVE_TWITCH_DISABLED');
 const runtime = startGameRuntime(database.pool, app.log, () => {
   app.publicGateway.wake();
 });
-app.addHook('preClose', () => runtime.stop());
+let twitchRuntime: ReturnType<typeof startTwitchRuntime> | undefined;
+app.addHook('preClose', async () => {
+  await twitchRuntime?.stop();
+  await runtime.stop();
+});
 
 const shutdown = createShutdown({
   app,
@@ -53,6 +62,14 @@ process.on('unhandledRejection', (reason) => {
 
 try {
   await app.listen({ host: config.host, port: config.port });
+  if (config.twitch !== undefined) {
+    twitchRuntime = startTwitchRuntime(
+      database.pool,
+      new TwitchClient(config.twitch),
+      await ensureInstallation(database.pool, config.twitch),
+      app.log,
+    );
+  }
 } catch (error) {
   app.log.fatal({ err: error }, 'failed to start listening');
   await shutdown('listenFailed', 1);
