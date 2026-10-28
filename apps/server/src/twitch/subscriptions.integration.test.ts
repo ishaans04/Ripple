@@ -115,20 +115,20 @@ describe('subscription reconciliation', () => {
       reconcileSubscriptions(pool, api, world),
       reconcileSubscriptions(pool, api, world),
     ]);
-    expect(creates).toBe(4);
+    expect(creates).toBe(5);
     expect(
       (
         await pool.query<Record<string, unknown>>(
           "select * from twitch_subscriptions where status='enabled' and verified_at is not null",
         )
       ).rowCount,
-    ).toBe(4);
+    ).toBe(5);
     while (await processNextInput(pool, world, channel));
     expect(
       (await pool.query<Record<string, unknown>>('select healthy from channels')).rows[0]?.healthy,
     ).toBe(true);
     await reconcileSubscriptions(pool, api, world);
-    expect(creates).toBe(4);
+    expect(creates).toBe(5);
     expect(deletes).toBe(0);
   }, 20000);
 });

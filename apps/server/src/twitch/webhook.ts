@@ -3,17 +3,20 @@ import { sha256Hex } from '@ripple/engine';
 import type { FastifyInstance } from 'fastify';
 import type pg from 'pg';
 import { z } from 'zod';
+import { randomUUID } from 'node:crypto';
 import { normalizeChat } from './chat.ts';
 import type { TwitchConfig } from './security.ts';
 import { ControlError } from './sessions.ts';
 import { verifyWebhook } from './signature.ts';
 import { errorBody } from '../errors.ts';
+import { outgoingRaidDestination } from './raid.ts';
 
 export const subscriptionVersions: Readonly<Record<string, string>> = Object.freeze({
   'channel.chat.message': '1',
   'stream.online': '1',
   'stream.offline': '1',
   'channel.update': '2',
+  'channel.raid': '1',
 });
 const bodySchema = z.object({
   subscription: z.object({
@@ -171,6 +174,29 @@ export async function handleWebhook(
           messageId: chat.semanticId,
           command: chat.intent,
         });
+      return null;
+    }
+    if (sub.type === 'channel.raid') {
+      if (
+        sub.condition.from_broadcaster_user_id !== found.twitch_id ||
+        sub.condition.to_broadcaster_user_id !== undefined
+      )
+        throw new ControlError(403, 'UNKNOWN_SUBSCRIPTION');
+      const destination = outgoingRaidDestination(body.event, found.twitch_id);
+      if (destination === null) throw new ControlError(400, 'INVALID_EVENT');
+      await acceptInputInTransaction(client, {
+        ...scope,
+        provider: 'twitch-raid',
+        messageId: receipt.id,
+        command: {
+          type: 'twitch.raid',
+          transferId: randomUUID(),
+          childId: randomUUID(),
+          residencyId: randomUUID(),
+          arrivalRoundId: randomUUID(),
+          destinationTwitchId: destination,
+        },
+      });
       return null;
     }
     const event = z.object({ broadcaster_user_id: z.string() }).safeParse(body.event);

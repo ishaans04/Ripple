@@ -8,6 +8,7 @@ import { readSnapshot } from '../game/snapshot.ts';
 import { syntheticSeedCommand } from '../game/sandbox.ts';
 import { cookie, ControlError, ownerSession } from './sessions.ts';
 import { opaqueToken, type TwitchConfig } from './security.ts';
+import { subscriptionVersions } from './webhook.ts';
 
 const seedBody = z.strictObject({ expectedVersion: z.int().nonnegative(), name: strainNameSchema });
 const versionBody = z.strictObject({ expectedVersion: z.int().nonnegative() });
@@ -61,9 +62,15 @@ export function registerController(
         authorized: true,
         botAuthorized: bot,
         callbackReady: subscriptions.some((s) => s.verified_at !== null),
-        subscriptionsReady:
-          subscriptions.length === 4 &&
-          subscriptions.every((s) => s.status === 'enabled' && s.verified_at !== null),
+        subscriptionsReady: Object.entries(subscriptionVersions).every(([type, version]) =>
+          subscriptions.some(
+            (s) =>
+              s.type === type &&
+              s.version === version &&
+              s.status === 'enabled' &&
+              s.verified_at !== null,
+          ),
+        ),
         subscriptions,
         settings,
         snapshot,

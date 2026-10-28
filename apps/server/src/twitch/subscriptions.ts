@@ -108,9 +108,11 @@ export async function reconcileSubscriptions(
     }
     for (const [type, version] of Object.entries(subscriptionVersions)) {
       const condition: Record<string, string> =
-        type === 'channel.chat.message'
-          ? { broadcaster_user_id: channel.twitch_id, user_id: bot.subject }
-          : { broadcaster_user_id: channel.twitch_id };
+        type === 'channel.raid'
+          ? { from_broadcaster_user_id: channel.twitch_id }
+          : type === 'channel.chat.message'
+            ? { broadcaster_user_id: channel.twitch_id, user_id: bot.subject }
+            : { broadcaster_user_id: channel.twitch_id };
       let obsolete: string | undefined;
       let attemptAt: Date | undefined;
       const claimed = await transaction(pool, async (client) => {
@@ -249,8 +251,14 @@ export async function reconcileSubscriptions(
       const ready =
         (
           await client.query<{ ready: boolean }>(
-            "select count(*)=4 and bool_and(status='enabled' and verified_at is not null and transport_hash=$3) as ready from twitch_subscriptions where world_id=$1 and channel_id=$2",
-            [world, channel.id, transportHash],
+            "select count(*)=$4 and bool_and(status='enabled' and verified_at is not null and transport_hash=$3) as ready from twitch_subscriptions where world_id=$1 and channel_id=$2 and type=any($5::text[])",
+            [
+              world,
+              channel.id,
+              transportHash,
+              Object.keys(subscriptionVersions).length,
+              Object.keys(subscriptionVersions),
+            ],
           )
         ).rows[0]?.ready === true;
       await markHealth(client, world, channel.id, ready, ready ? null : 'SUBSCRIPTIONS_PENDING');
