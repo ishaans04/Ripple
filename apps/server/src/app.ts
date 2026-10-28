@@ -11,6 +11,7 @@ import { registerSecurityHeaders, registerWebApp } from './web.ts';
 import { TwitchClient } from './twitch/client.ts';
 import { ensureInstallation } from './twitch/installation.ts';
 import { registerOAuth } from './twitch/oauth.ts';
+import { registerWebhook } from './twitch/webhook.ts';
 
 export interface AppOptions {
   config: Pick<ServerConfig, 'logLevel' | 'webRoot' | 'twitch'>;
@@ -45,6 +46,7 @@ export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
     await app.register(async (scope) => {
       registerOAuth(scope, options.pool, api, worldId);
     });
+    await registerWebhook(app, options.pool, options.config.twitch);
   }
   if (options.config.webRoot !== undefined) {
     await registerWebApp(app, options.config.webRoot);
