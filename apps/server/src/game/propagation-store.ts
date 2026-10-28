@@ -1,11 +1,5 @@
 import type pg from 'pg';
-import {
-  parseRuleset,
-  raidPolicySchema,
-  raidPolicyHash,
-  type RaidPolicy,
-  type Ruleset,
-} from '@ripple/engine';
+import { raidPolicySchema, raidPolicyHash, type RaidPolicy } from '@ripple/engine';
 import type { CommittedAppearance, Genome } from '@ripple/engine';
 
 export interface TransferSnapshot {
@@ -33,6 +27,7 @@ export interface TransferSnapshot {
   preparation: 'shield' | 'reserve' | 'neutral';
   arrival: { health: number; spent: number; shockReduction: number } | null;
   queuedAhead: readonly string[];
+  livingBranchIds: readonly string[];
 }
 export interface TransferRow {
   world_id: string;
@@ -109,13 +104,4 @@ export async function recordTransferTransition(
     ],
   );
   return updated;
-}
-export async function loadStoredRules(client: pg.PoolClient, hash: string): Promise<Ruleset> {
-  const row = (
-    await client.query<{ canonical: string }>('select canonical from rulesets where hash=$1', [
-      hash,
-    ])
-  ).rows[0];
-  if (row === undefined) throw new Error('Missing inherited ruleset');
-  return parseRuleset(JSON.parse(row.canonical) as unknown);
 }

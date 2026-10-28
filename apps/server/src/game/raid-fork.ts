@@ -53,17 +53,16 @@ export async function forkRaid(
       channel.world_id,
       parent.lineage_id,
     ]);
-  const budget =
+  const livingBranchIds =
     parent === undefined
-      ? 0
-      : Number(
-          (
-            await client.query<{ count: string }>(
-              "select count(*) from organisms where world_id=$1 and lineage_id=$2 and status in ('ALIVE','HARBOR')",
-              [channel.world_id, parent.lineage_id],
-            )
-          ).rows[0]?.count ?? 0,
-        );
+      ? []
+      : (
+          await client.query<{ id: string }>(
+            "select id from organisms where world_id=$1 and lineage_id=$2 and status in ('ALIVE','HARBOR') order by id",
+            [channel.world_id, parent.lineage_id],
+          )
+        ).rows.map((row) => row.id);
+  const budget = livingBranchIds.length;
   const last =
     parent === undefined
       ? null
@@ -143,6 +142,7 @@ export async function forkRaid(
     preparation,
     arrival,
     queuedAhead: queued,
+    livingBranchIds,
     parent:
       parent === undefined || inherited === null
         ? null
