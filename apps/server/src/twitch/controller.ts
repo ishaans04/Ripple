@@ -1,6 +1,6 @@
 import { acceptInputInTransaction, transaction } from '@ripple/database';
 import { canonicalJson, sha256Hex } from '@ripple/engine';
-import { strainNameSchema, type GameCommand } from '@ripple/contracts';
+import { channelControlSchema, strainNameSchema, type GameCommand } from '@ripple/contracts';
 import type { FastifyInstance } from 'fastify';
 import type pg from 'pg';
 import { z } from 'zod';
@@ -9,6 +9,7 @@ import { syntheticSeedCommand } from '../game/sandbox.ts';
 import { cookie, ControlError, ownerSession } from './sessions.ts';
 import { opaqueToken, type TwitchConfig } from './security.ts';
 import { subscriptionVersions } from './webhook.ts';
+import { ownerControlCommand } from './owner-control.ts';
 
 const seedBody = z.strictObject({ expectedVersion: z.int().nonnegative(), name: strainNameSchema });
 const versionBody = z.strictObject({ expectedVersion: z.int().nonnegative() });
@@ -91,7 +92,15 @@ export function registerController(
     if (row === undefined) throw new ControlError(404, 'NOT_FOUND');
     return row;
   });
-  for (const action of ['seed', 'rename', 'pause', 'resume', 'recover', 'policy'] as const) {
+  for (const action of [
+    'seed',
+    'rename',
+    'pause',
+    'resume',
+    'recover',
+    'policy',
+    'control',
+  ] as const) {
     app.post(
       `/api/channels/:id/${action}`,
       { config: { rateLimit: { max: 30, timeWindow: '1 minute' } } },
@@ -108,7 +117,9 @@ export function registerController(
               ? renameBody
               : action === 'policy'
                 ? policyBody
-                : versionBody;
+                : action === 'control'
+                  ? channelControlSchema
+                  : versionBody;
         const parsed = schema.safeParse(request.body);
         if (!parsed.success) throw new ControlError(400, 'BAD_REQUEST');
         const body = parsed.data,
@@ -159,6 +170,8 @@ export function registerController(
             const rename = renameBody.parse(body);
             command = { type: 'rename', ...rename };
           } else if (action === 'policy') command = { type: 'policy', ...policyBody.parse(body) };
+          else if (action === 'control')
+            command = await ownerControlCommand(client, owner, channelControlSchema.parse(body));
           else
             command =
               action === 'pause'

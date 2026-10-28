@@ -77,6 +77,8 @@ Backend checks now pass for immutable transfer snapshots, rollback of child/rece
 
 The expanded PostgreSQL fixture uses a 30-second integration setup/cleanup bound for database creation and the complete migration set. The existing full-round functional journey has an explicit 20-second bound; HTTP/request assertion limits and the competing-worker assertion remain unchanged. No retry or skipped assertion establishes a phase exit.
 
+Signed outgoing raid receipt and five-subscription reconciliation are connected. The owner control endpoint now queues preparation, versioned visitor acceptance/refusal and source blocks; strict request bodies cannot inject private eligibility or generated IDs. Two additional PostgreSQL/HTTP tests pass for CSRF, channel ownership, retry identity, conflicting bodies, queued version races, transfer ownership/version and explicit archival after refusal. The local signed-raid rerun hit fixture timeout under severe memory pressure; it is not counted as passing evidence. Phase exit still requires the complete CI suite and the remaining presentation, moderation and synthetic peer journey.
+
 ## Live acceptance deferral requested by the user
 
 The two broadcaster accounts, operator bot, and public HTTPS URL are not set up. Continue sequential implementation with sandbox/synthetic verification where possible. Keep all authentic Twitch, raid, OBS, and hosted acceptance evidence explicitly pending, with no synthetic test represented as live evidence. Provide the account/application/OAuth/HTTPS setup steps when Phase 4 needs them. This user-directed deferral permits continued implementation; it does not satisfy the PRD's final release gate.
