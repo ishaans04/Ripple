@@ -67,9 +67,11 @@ Exit evidence on code commit `a88a53a`:
 - The local Compose image was rebuilt, all 19 migrations applied, both services became healthy, and the installed smoke tool completed a real synthetic seed/vote/habitat/resolution plus authorized HTTP and snapshot-first WebSocket. `/api/connection` correctly reports live mode disabled without credentials.
 - All commits retain `ishaans04 <sharmaishaaan04@gmail.com>` as author and committer, with no co-author trailers.
 
-## Phase 5 — raids and lineage (next)
+## Phase 5 — raids and lineage (in progress)
 
 Next implement sorted-lock transactional child creation, outgoing raid receipt, preparation and welcome ballots, all ten admission outcomes, shelter/contest/fossil transitions, resource caps/cooldowns and ballot arbitration. Only Phase 5 is next; Phase 6 work has not started. Real two-channel raid acceptance remains pending the same account/HTTPS setup.
+
+The propagation policy is independently versioned as `raid-policy-1` and captured with each transfer. It preserves the PRD's three-entry harbor, twelve living/held branches per lineage, depth sixteen, thirty-minute same-lineage source/destination fork cooldown and twenty-four-hour pending-admission expiry. Shield spends at most four energy for two raw-shock protection; Acclimate spends at most four for one; Shelter requires resident health at least fifty and transfers at most five. These candidate parameters need the later simulator/balance evidence. Fork creation takes sorted source/destination locks and the lineage budget lock; admission is queued through the destination's ordered inbox so pending destination commands precede it. Source history and child creation commit together; activation/residency/history/public delivery commit together in the destination worker.
 
 ## Live acceptance deferral requested by the user
 

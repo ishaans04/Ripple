@@ -13,6 +13,7 @@ import {
   type MutationSlots,
 } from './studio-slots.ts';
 import { resolveMutationBallot, type BallotVote, type TallyResult } from './tally.ts';
+import type { SpecialOption } from './arrival.ts';
 
 export interface RoundCheckpoint {
   readonly schemaVersion: 1;
@@ -22,6 +23,11 @@ export interface RoundCheckpoint {
   readonly genomeBefore: Genome;
   readonly counts: readonly number[];
   readonly shocks: readonly ShockMarker[];
+  readonly specialBallot?: {
+    readonly kind: 'WELCOME' | 'PREPARATION';
+    readonly options: readonly SpecialOption[];
+    readonly visitorId?: string;
+  };
 }
 export function openMutationRound(
   input: {
