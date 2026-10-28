@@ -99,6 +99,13 @@
       "when": 1793121577144,
       "tag": "0013_freeze_accepted_history",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1793169689642,
+      "tag": "0014_twitch_authorization",
+      "breakpoints": true
     }
   ]
 }
