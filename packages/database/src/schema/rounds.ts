@@ -39,6 +39,7 @@ export const rounds = pgTable(
     confidence: text('confidence'),
     resolution: jsonb('resolution'),
     explanation: jsonb('explanation'),
+    visitorResult: jsonb('visitor_result'),
     openedAt: timestamp('opened_at', { withTimezone: true }).notNull(),
     completedAt: timestamp('completed_at', { withTimezone: true }),
   },
