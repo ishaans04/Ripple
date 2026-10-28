@@ -19,6 +19,7 @@ describe('browser-bound broadcaster and operator OAuth', () => {
     encryptionKey: randomBytes(32).toString('base64'),
     actorKey: randomBytes(32).toString('base64'),
     operatorSecret: 'o'.repeat(40),
+    sessionSecret: Buffer.alloc(32, 19).toString('base64'),
   };
   let exchanges = 0;
   let ownerCookies: Record<string, string> = {};
@@ -218,5 +219,11 @@ describe('browser-bound broadcaster and operator OAuth', () => {
         })
       ).statusCode,
     ).toBe(401);
+    const originalKey = config.sessionSecret;
+    config.sessionSecret = Buffer.alloc(32, 22).toString('base64');
+    expect(
+      (await app.inject({ url: '/api/controller/status', cookies: ownerCookies })).statusCode,
+    ).toBe(401);
+    config.sessionSecret = originalKey;
   });
 });

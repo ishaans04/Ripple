@@ -27,6 +27,9 @@ const liveEnvironment = z.object({
   TOKEN_ENCRYPTION_KEY: key,
   ACTOR_HASH_KEY: key,
   OPERATOR_SECRET: z.string().min(32).max(256),
+  SESSION_SECRET: key,
+  TWITCH_REDIRECT_URI: z.url(),
+  RULESET_VERSION: z.literal('candidate-1').default('candidate-1'),
 });
 export interface TwitchConfig {
   origin: string;
@@ -36,6 +39,7 @@ export interface TwitchConfig {
   encryptionKey: string;
   actorKey: string;
   operatorSecret: string;
+  sessionSecret: string;
 }
 export function readTwitchConfig(
   env: Record<string, string | undefined>,
@@ -55,8 +59,10 @@ export function readTwitchConfig(
       `Invalid live configuration: ${parsed.error.issues.map((issue) => issue.path.join('.')).join(', ')}`,
     );
   const p = parsed.data;
-  if (p.TOKEN_ENCRYPTION_KEY === p.ACTOR_HASH_KEY)
-    throw new Error('TOKEN_ENCRYPTION_KEY and ACTOR_HASH_KEY must differ');
+  if (new Set([p.TOKEN_ENCRYPTION_KEY, p.ACTOR_HASH_KEY, p.SESSION_SECRET]).size !== 3)
+    throw new Error('TOKEN_ENCRYPTION_KEY, ACTOR_HASH_KEY and SESSION_SECRET must differ');
+  if (p.TWITCH_REDIRECT_URI !== `${new URL(p.PUBLIC_BASE_URL).origin}/auth/twitch/callback`)
+    throw new Error('TWITCH_REDIRECT_URI must exactly match PUBLIC_BASE_URL/auth/twitch/callback');
   return {
     origin: new URL(p.PUBLIC_BASE_URL).origin,
     clientId: p.TWITCH_CLIENT_ID,
@@ -65,6 +71,7 @@ export function readTwitchConfig(
     encryptionKey: p.TOKEN_ENCRYPTION_KEY,
     actorKey: p.ACTOR_HASH_KEY,
     operatorSecret: p.OPERATOR_SECRET,
+    sessionSecret: p.SESSION_SECRET,
   };
 }
 const envelopeSchema = z.strictObject({

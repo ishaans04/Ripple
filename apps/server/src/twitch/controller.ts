@@ -7,18 +7,22 @@ import { z } from 'zod';
 import { readSnapshot } from '../game/snapshot.ts';
 import { syntheticSeedCommand } from '../game/sandbox.ts';
 import { cookie, ControlError, ownerSession } from './sessions.ts';
-import { opaqueToken } from './security.ts';
+import { opaqueToken, type TwitchConfig } from './security.ts';
 
 const seedBody = z.strictObject({ expectedVersion: z.int().nonnegative(), name: strainNameSchema });
 const versionBody = z.strictObject({ expectedVersion: z.int().nonnegative() });
 const renameBody = seedBody.extend({ organismId: z.uuid() });
 const policyBody = versionBody.extend({ visitorPolicy: z.enum(['ask', 'accept', 'reject']) });
-export function registerController(app: FastifyInstance, pool: pg.Pool, origin: string): void {
+export function registerController(
+  app: FastifyInstance,
+  pool: pg.Pool,
+  config: TwitchConfig,
+): void {
   app.get(
     '/api/controller/status',
     { config: { rateLimit: { max: 120, timeWindow: '1 minute' } } },
     async (request) => {
-      const owner = await ownerSession(pool, request, origin);
+      const owner = await ownerSession(pool, request, config);
       const snapshot = await readSnapshot(pool, owner.world_id, owner.channel_id);
       const settings = (
         await pool.query(
@@ -57,7 +61,7 @@ export function registerController(app: FastifyInstance, pool: pg.Pool, origin: 
     },
   );
   app.get('/api/controller/commands/:key', async (request) => {
-    const owner = await ownerSession(pool, request, origin),
+    const owner = await ownerSession(pool, request, config),
       key = z.uuid().safeParse((request.params as { key: unknown }).key);
     if (!key.success) throw new ControlError(400, 'BAD_REQUEST');
     const row = (
@@ -74,7 +78,7 @@ export function registerController(app: FastifyInstance, pool: pg.Pool, origin: 
       `/api/channels/:id/${action}`,
       { config: { rateLimit: { max: 30, timeWindow: '1 minute' } } },
       async (request, reply) => {
-        const owner = await ownerSession(pool, request, origin, true);
+        const owner = await ownerSession(pool, request, config, true);
         if ((request.params as { id: string }).id !== owner.channel_id)
           throw new ControlError(403, 'NOT_OWNER');
         const key = z.uuid().safeParse(request.headers['idempotency-key']);
@@ -164,7 +168,7 @@ export function registerController(app: FastifyInstance, pool: pg.Pool, origin: 
     '/api/controller/read-capability',
     { config: { rateLimit: { max: 5, timeWindow: '1 minute' } } },
     async (request) => {
-      const owner = await ownerSession(pool, request, origin, true);
+      const owner = await ownerSession(pool, request, config, true);
       const capability = opaqueToken();
       await transaction(pool, async (client) => {
         await client.query('select id from channels where world_id=$1 and id=$2 for update', [

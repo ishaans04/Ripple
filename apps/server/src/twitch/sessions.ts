@@ -1,7 +1,6 @@
-import { sha256Hex } from '@ripple/engine';
 import type pg from 'pg';
 import type { FastifyRequest, FastifyReply } from 'fastify';
-import { equalSecret, opaqueToken } from './security.ts';
+import { equalSecret, opaqueToken, privateHash, type TwitchConfig } from './security.ts';
 
 export class ControlError extends Error {
   readonly status: number;
@@ -46,7 +45,7 @@ export interface OwnerSession {
 export async function ownerSession(
   pool: pg.Pool,
   request: FastifyRequest,
-  origin: string,
+  config: TwitchConfig,
   write = false,
 ): Promise<OwnerSession> {
   const raw = cookie(request, '__Host-ripple-session');
@@ -56,14 +55,17 @@ export async function ownerSession(
       `select s.world_id,s.channel_id,s.subject,s.csrf_hash from controller_sessions s
     join oauth_grants g on g.world_id=s.world_id and g.channel_id=s.channel_id and g.subject=s.subject and g.purpose='broadcaster'
     where s.hash=$1 and s.expires_at>clock_timestamp() and g.revoked_at is null and g.validated_at>clock_timestamp()-interval '1 hour'`,
-      [sha256Hex(raw)],
+      [privateHash(config.sessionSecret, 'session', raw)],
     )
   ).rows[0];
   if (row === undefined) throw new ControlError(401, 'SIGN_IN_REQUIRED');
   if (write) {
-    requireOrigin(request, origin);
+    requireOrigin(request, config.origin);
     const csrf = request.headers['x-csrf-token'];
-    if (typeof csrf !== 'string' || !equalSecret(sha256Hex(csrf), row.csrf_hash))
+    if (
+      typeof csrf !== 'string' ||
+      !equalSecret(privateHash(config.sessionSecret, 'csrf', csrf), row.csrf_hash)
+    )
       throw new ControlError(403, 'CSRF_FAILED');
   }
   return row;
@@ -74,12 +76,19 @@ export async function createOwnerSession(
   world: string,
   channel: string,
   subject: string,
+  secret: string,
 ): Promise<void> {
   const session = opaqueToken(),
     csrf = opaqueToken();
   await client.query(
     "insert into controller_sessions (hash,world_id,channel_id,subject,csrf_hash,expires_at) values ($1,$2,$3,$4,$5,clock_timestamp()+interval '12 hours')",
-    [sha256Hex(session), world, channel, subject, sha256Hex(csrf)],
+    [
+      privateHash(secret, 'session', session),
+      world,
+      channel,
+      subject,
+      privateHash(secret, 'csrf', csrf),
+    ],
   );
   setCookie(reply, '__Host-ripple-session', session, 43200);
   setCookie(reply, '__Host-ripple-csrf', csrf, 43200, false);

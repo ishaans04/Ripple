@@ -13,6 +13,7 @@ export const testTwitchConfig = (): TwitchConfig => ({
   encryptionKey: randomBytes(32).toString('base64'),
   actorKey: randomBytes(32).toString('base64'),
   operatorSecret: 'o'.repeat(40),
+  sessionSecret: Buffer.alloc(32, 19).toString('base64'),
 });
 describe('durable Twitch installation', () => {
   let temporary: TemporaryDatabase, pool: pg.Pool;

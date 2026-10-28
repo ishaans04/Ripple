@@ -4,6 +4,32 @@ import { decryptTokens, encryptTokens, privateHash, readTwitchConfig } from './s
 
 describe('live credential boundaries', () => {
   const key = randomBytes(32).toString('base64');
+  it('requires an exact registered redirect, independent session key and compatible ruleset', () => {
+    const env = {
+      ENABLE_LIVE_TWITCH: 'true',
+      PUBLIC_BASE_URL: 'https://ripple.example',
+      TWITCH_REDIRECT_URI: 'https://ripple.example/auth/twitch/callback',
+      TWITCH_CLIENT_ID: 'application123',
+      TWITCH_CLIENT_SECRET: 'private-client-secret',
+      TWITCH_EVENTSUB_SECRET: 's'.repeat(64),
+      TOKEN_ENCRYPTION_KEY: key,
+      ACTOR_HASH_KEY: randomBytes(32).toString('base64'),
+      SESSION_SECRET: randomBytes(32).toString('base64'),
+      OPERATOR_SECRET: 'o'.repeat(40),
+    };
+    expect(readTwitchConfig(env)?.origin).toBe('https://ripple.example');
+    expect(() => readTwitchConfig({ ...env, PUBLIC_BASE_URL: 'http://ripple.example' })).toThrow();
+    expect(() =>
+      readTwitchConfig({
+        ...env,
+        TWITCH_REDIRECT_URI: 'https://other.example/auth/twitch/callback',
+      }),
+    ).toThrow('TWITCH_REDIRECT_URI');
+    expect(() => readTwitchConfig({ ...env, SESSION_SECRET: key })).toThrow('must differ');
+    expect(() => readTwitchConfig({ ...env, RULESET_VERSION: 'unknown' })).toThrow(
+      'RULESET_VERSION',
+    );
+  });
   it('keeps local evaluation independent of Twitch secrets', () => {
     expect(readTwitchConfig({})).toBeUndefined();
     expect(() => readTwitchConfig({ ENABLE_LIVE_TWITCH: 'yes' })).toThrow();

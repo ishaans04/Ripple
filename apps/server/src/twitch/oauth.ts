@@ -7,7 +7,7 @@ import { TwitchClient, TwitchError } from './client.ts';
 import { checkIdentity, requiredScopes, storeGrant, type GrantPurpose } from './grants.ts';
 import { enrollChannel } from './installation.ts';
 import { registerController } from './controller.ts';
-import { equalSecret, opaqueToken } from './security.ts';
+import { equalSecret, opaqueToken, privateHash } from './security.ts';
 import { ControlError, cookie, createOwnerSession, requireOrigin, setCookie } from './sessions.ts';
 
 export function registerOAuth(
@@ -16,7 +16,7 @@ export function registerOAuth(
   api: TwitchClient,
   worldId: string,
 ): void {
-  registerController(app, pool, api.config.origin);
+  registerController(app, pool, api.config);
   app.addHook('onRequest', async (_request, reply) => {
     reply.header('Cache-Control', 'no-store');
   });
@@ -116,7 +116,15 @@ export function registerOAuth(
             ? await enrollChannel(client, worldId, subject, identity.login!)
             : null;
         await storeGrant(client, api.config, worldId, channel, claimed.purpose, tokens, identity);
-        if (channel !== null) await createOwnerSession(client, reply, worldId, channel, subject);
+        if (channel !== null)
+          await createOwnerSession(
+            client,
+            reply,
+            worldId,
+            channel,
+            subject,
+            api.config.sessionSecret,
+          );
       });
       return reply.redirect(
         claimed.purpose === 'bot' ? '/controller?bot=authorized' : '/controller',
@@ -127,7 +135,9 @@ export function registerOAuth(
     requireOrigin(request, api.config.origin);
     const raw = cookie(request, '__Host-ripple-session');
     if (raw !== undefined)
-      await pool.query('delete from controller_sessions where hash=$1', [sha256Hex(raw)]);
+      await pool.query('delete from controller_sessions where hash=$1', [
+        privateHash(api.config.sessionSecret, 'session', raw),
+      ]);
     setCookie(reply, '__Host-ripple-session', '', 0);
     setCookie(reply, '__Host-ripple-csrf', '', 0, false);
     return reply.code(204).send();

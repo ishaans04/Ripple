@@ -9,6 +9,7 @@ const config: TwitchConfig = {
   encryptionKey: '',
   actorKey: '',
   operatorSecret: '',
+  sessionSecret: Buffer.alloc(32, 19).toString('base64'),
 };
 describe('Twitch transport', () => {
   it('serializes app-token acquisition and renews once after 401', async () => {

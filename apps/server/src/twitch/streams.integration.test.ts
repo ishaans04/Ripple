@@ -18,6 +18,7 @@ describe('stream recovery reconciliation', () => {
     encryptionKey: randomBytes(32).toString('base64'),
     actorKey: randomBytes(32).toString('base64'),
     operatorSecret: 'o'.repeat(40),
+    sessionSecret: Buffer.alloc(32, 19).toString('base64'),
   };
   beforeAll(async () => {
     temporary = await createTemporaryDatabase();
