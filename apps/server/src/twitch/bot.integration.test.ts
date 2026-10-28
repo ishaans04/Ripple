@@ -109,5 +109,21 @@ describe('bounded bot delivery', () => {
         )
       ).rows,
     ).toEqual([{ status: 'failed', error_code: 'MESSAGE_EXPIRED' }]);
+    await pool.query("update bot_messages set attempt_at=clock_timestamp()-interval '11 seconds'");
+    await pool.query(
+      "insert into bot_messages(world_id,channel_id,key,message) values($1,$2,'third','Another message')",
+      [world, channel],
+    );
+    await pool.query(
+      'insert into bot_send_attempts(id,world_id) select gen_random_uuid(),$1 from generate_series(1,12)',
+      [world],
+    );
+    expect(await dispatchBotMessage(pool, api, world)).toBe(false);
+    expect(sends).toBe(2);
+    await pool.query(
+      "update bot_send_attempts set attempted_at=clock_timestamp()-interval '61 seconds'",
+    );
+    expect(await dispatchBotMessage(pool, api, world)).toBe(true);
+    expect(sends).toBe(3);
   });
 });

@@ -55,7 +55,7 @@ export async function ownerSession(
     await pool.query<OwnerSession>(
       `select s.world_id,s.channel_id,s.subject,s.csrf_hash from controller_sessions s
     join oauth_grants g on g.world_id=s.world_id and g.channel_id=s.channel_id and g.subject=s.subject and g.purpose='broadcaster'
-    where s.hash=$1 and s.expires_at>clock_timestamp() and g.revoked_at is null and g.validated_at>clock_timestamp()-interval '1 hour'`,
+    where s.hash=$1 and s.expires_at>clock_timestamp() and g.revoked_at is null and g.expires_at>clock_timestamp() and g.validated_at>clock_timestamp()-interval '1 hour'`,
       [privateHash(config.sessionSecret, 'session', raw)],
     )
   ).rows[0];

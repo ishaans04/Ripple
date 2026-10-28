@@ -135,3 +135,16 @@ export const controllerOperations = pgTable(
     }),
   ],
 );
+
+/** Each HTTP send attempt counts, including a retry of the same outbox row. */
+export const botSendAttempts = pgTable(
+  'bot_send_attempts',
+  {
+    id: uuid('id').primaryKey(),
+    worldId: uuid('world_id')
+      .notNull()
+      .references(() => worlds.id),
+    attemptedAt: timestamp('attempted_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index('bot_attempts_window_idx').on(t.worldId, t.attemptedAt)],
+);

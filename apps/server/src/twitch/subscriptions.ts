@@ -79,12 +79,12 @@ export async function reconcileSubscriptions(
   const listing = await listSubscriptions(api);
   const bot = (
     await pool.query<{ subject: string }>(
-      "select subject from oauth_grants where world_id=$1 and purpose='bot' and revoked_at is null and validated_at>clock_timestamp()-interval '1 hour'",
+      "select subject from oauth_grants where world_id=$1 and purpose='bot' and revoked_at is null and expires_at>clock_timestamp() and validated_at>clock_timestamp()-interval '1 hour'",
       [world],
     )
   ).rows[0];
   const channels = await pool.query<{ id: string; twitch_id: string; authorized: boolean }>(
-    `select c.id,c.twitch_id,exists(select 1 from oauth_grants g where g.world_id=c.world_id and g.channel_id=c.id and g.purpose='broadcaster' and g.revoked_at is null and g.validated_at>clock_timestamp()-interval '1 hour') as authorized from channels c join twitch_channels t on t.world_id=c.world_id and t.channel_id=c.id where c.world_id=$1 order by c.id`,
+    `select c.id,c.twitch_id,exists(select 1 from oauth_grants g where g.world_id=c.world_id and g.channel_id=c.id and g.purpose='broadcaster' and g.revoked_at is null and g.expires_at>clock_timestamp() and g.validated_at>clock_timestamp()-interval '1 hour') as authorized from channels c join twitch_channels t on t.world_id=c.world_id and t.channel_id=c.id where c.world_id=$1 order by c.id`,
     [world],
   );
   const callback = `${api.config.origin}/webhooks/twitch`,

@@ -241,5 +241,11 @@ describe('browser-bound broadcaster and operator OAuth', () => {
       (await app.inject({ url: '/api/controller/status', cookies: ownerCookies })).statusCode,
     ).toBe(401);
     config.sessionSecret = originalKey;
+    await pool.query(
+      "update oauth_grants set expires_at=clock_timestamp()-interval '1 second' where purpose='broadcaster'",
+    );
+    expect(
+      (await app.inject({ url: '/api/controller/status', cookies: ownerCookies })).statusCode,
+    ).toBe(401);
   });
 });

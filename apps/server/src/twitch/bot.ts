@@ -1,4 +1,5 @@
 import { transaction } from '@ripple/database';
+import { randomUUID } from 'node:crypto';
 import { z } from 'zod';
 import type pg from 'pg';
 import type { GameContext } from '../game/store.ts';
@@ -72,6 +73,10 @@ export async function dispatchBotMessage(
 ): Promise<boolean> {
   const claimed = await transaction(pool, async (client) => {
     await client.query('select pg_advisory_xact_lock(hashtextextended($1,0))', [`bot:${world}`]);
+    await client.query(
+      "delete from bot_send_attempts where world_id=$1 and attempted_at<clock_timestamp()-interval '1 hour'",
+      [world],
+    );
     // A process may die after Twitch accepts a message. Do not blindly resend an ambiguous attempt.
     await client.query(
       "update bot_messages set status='uncertain',error_code='SEND_OUTCOME_UNKNOWN' where world_id=$1 and status='sending' and attempt_at<clock_timestamp()-interval '30 seconds'",
@@ -83,7 +88,7 @@ export async function dispatchBotMessage(
     );
     const rate = (
       await client.query<{ count: string }>(
-        "select count(*) from bot_messages where world_id=$1 and attempt_at>clock_timestamp()-interval '1 minute'",
+        "select count(*) from bot_send_attempts where world_id=$1 and attempted_at>clock_timestamp()-interval '1 minute'",
         [world],
       )
     ).rows[0];
@@ -97,13 +102,17 @@ export async function dispatchBotMessage(
         bot_id: string;
       }>(
         `select b.channel_id,b.key,b.message,c.twitch_id,g.subject as bot_id from bot_messages b
-      join channels c on c.world_id=b.world_id and c.id=b.channel_id join oauth_grants g on g.world_id=b.world_id and g.purpose='bot' and g.revoked_at is null and g.validated_at>clock_timestamp()-interval '1 hour'
+      join channels c on c.world_id=b.world_id and c.id=b.channel_id join oauth_grants g on g.world_id=b.world_id and g.purpose='bot' and g.revoked_at is null and g.expires_at>clock_timestamp() and g.validated_at>clock_timestamp()-interval '1 hour'
       where b.world_id=$1 and b.status='pending' and c.online and c.healthy and not exists(select 1 from bot_messages recent where recent.world_id=b.world_id and recent.channel_id=b.channel_id and recent.attempt_at>clock_timestamp()-interval '10 seconds')
       order by b.created_at,b.channel_id,b.key for update of b skip locked limit 1`,
         [world],
       )
     ).rows[0];
     if (row === undefined) return undefined;
+    await client.query('insert into bot_send_attempts(id,world_id) values($1,$2)', [
+      randomUUID(),
+      world,
+    ]);
     // Superseded announcements expire rather than flooding chat after an outage.
     await client.query(
       "update bot_messages set status='sending',attempt_at=clock_timestamp() where world_id=$1 and channel_id=$2 and key=$3",

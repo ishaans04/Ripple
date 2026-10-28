@@ -50,7 +50,7 @@ export function registerController(
       const bot =
         (
           await pool.query(
-            "select 1 from oauth_grants where world_id=$1 and purpose='bot' and revoked_at is null and validated_at>clock_timestamp()-interval '1 hour'",
+            "select 1 from oauth_grants where world_id=$1 and purpose='bot' and revoked_at is null and expires_at>clock_timestamp() and validated_at>clock_timestamp()-interval '1 hour'",
             [owner.world_id],
           )
         ).rowCount === 1;
