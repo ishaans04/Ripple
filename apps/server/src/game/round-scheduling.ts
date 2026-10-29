@@ -18,6 +18,7 @@ import { captureRoundParticipants } from './visitor-observation.ts';
 import { effect, type CommandEffect } from './lifecycle.ts';
 import { genomeOf, saveCheckpoint, type GameContext, type OrganismRow } from './store.ts';
 import { loadRaidPolicy, readTransfer, recordTransferTransition } from './propagation-store.ts';
+import { offerDormantMutation } from './dormant-state.ts';
 
 /** Runs only after the previous round has committed its completion, or on an empty channel. */
 export async function openNextRound(
@@ -81,9 +82,20 @@ export async function openNextRound(
     atMs,
     timings,
   };
+  const recent = baseline.at(-1);
+  const dormant =
+    kind === 'MUTATION'
+      ? await offerDormantMutation(
+          context,
+          recent === undefined ? null : { burst: recent.burst, steadiness: 1000 - recent.burst },
+        )
+      : null;
   let checkpoint: RoundCheckpoint =
     kind === 'MUTATION'
-      ? openMutationRound(input, rules)
+      ? openMutationRound(
+          { ...input, ...(dormant === null ? {} : { dormantMove: dormant.move }) },
+          rules,
+        )
       : openSpecialRound(
           {
             ...input,
@@ -100,7 +112,6 @@ export async function openNextRound(
           rules,
         );
   if (context.mechanics.version === 1 && kind === 'MUTATION') {
-    const recent = baseline.at(-1);
     checkpoint = {
       ...checkpoint,
       choicePreview: previewMutationChoices(
@@ -119,6 +130,18 @@ export async function openNextRound(
         },
         rules,
       ),
+      ...(dormant === null
+        ? {}
+        : {
+            dormantOffer: {
+              id: dormant.row.id,
+              version: dormant.row.version,
+              sourceRoundId: dormant.row.source_round_id,
+              originChannelId: dormant.row.provenance.originChannelId,
+              supporters: dormant.row.provenance.supporters,
+              totalVotes: dormant.row.provenance.totalVotes,
+            },
+          }),
     };
   }
   const number = (

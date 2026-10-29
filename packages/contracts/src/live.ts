@@ -73,7 +73,15 @@ export const channelViewSchema = z.object({
         remainingMs: z.int(),
         deadlineAtMs: z.number().nullable(),
       }),
-      candidates: z.array(z.object({ effect: z.string(), tradeOff: z.string() })),
+      candidates: z
+        .array(
+          z.object({
+            effect: z.string(),
+            tradeOff: z.string(),
+            source: z.enum(['generated', 'dormant']).optional(),
+          }),
+        )
+        .max(3),
       choicePreview: choicePreviewSchema.optional(),
       counts: z.array(z.int().nonnegative()),
       voteCloseAtMs: z.number().nullable(),

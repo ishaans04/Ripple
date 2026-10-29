@@ -43,6 +43,7 @@ export interface ChannelSnapshot {
     explanation: OutcomeExplanation | null;
     visitorResult: unknown;
     choicePreview?: RoundCheckpoint['choicePreview'];
+    dormantOffer?: RoundCheckpoint['dormantOffer'];
   } | null;
 }
 /** A single SQL statement sees one committed MVCC snapshot, even without a transaction. */
@@ -151,6 +152,9 @@ export async function readSnapshot(
               ...(round.checkpoint.choicePreview === undefined
                 ? {}
                 : { choicePreview: round.checkpoint.choicePreview }),
+              ...(round.checkpoint.dormantOffer === undefined
+                ? {}
+                : { dormantOffer: round.checkpoint.dormantOffer }),
             },
     },
   };

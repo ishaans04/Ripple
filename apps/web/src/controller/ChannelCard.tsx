@@ -56,6 +56,11 @@ export function ChannelCard({ channel }: { channel: ChannelView }) {
                     <li key={i}>
                       <strong>{c.effect}</strong> — {c.tradeOff}. Vote !ripple {i + 1} ·{' '}
                       {round.counts[i] ?? 0} votes
+                      {c.source === 'dormant' && (
+                        <p>
+                          Minority-preserved option from an earlier ballot. This is its only offer.
+                        </p>
+                      )}
                       {estimate !== undefined && (
                         <p>
                           Estimated energy change {signed(estimate.estimatedEnergyChange)};{' '}

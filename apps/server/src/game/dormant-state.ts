@@ -1,13 +1,16 @@
 import {
   consumeValidRound,
+  evaluateDormantOffer,
   newValidRoundLifetime,
   selectDormantCapture,
   type MutationMove,
+  type HabitatProfile,
   type TallyResult,
   type ValidRoundLifetime,
 } from '@ripple/engine';
 import { operationId } from './operation-id.ts';
 import type { GameContext } from './store.ts';
+import { genomeOf } from './store.ts';
 
 export interface DormantRow {
   id: string;
@@ -27,6 +30,64 @@ export interface DormantRow {
   remaining_hops: number;
   offered: boolean;
   version: number;
+}
+
+export async function offerDormantMutation(
+  context: GameContext,
+  recentProfile: HabitatProfile | null,
+): Promise<{ row: DormantRow; move: MutationMove } | null> {
+  if (context.mechanics.version !== 1 || context.organism === null) return null;
+  const { client, channel, organism, rules } = context;
+  const row = (
+    await client.query<DormantRow>(
+      "select * from dormant_mutations where world_id=$1 and organism_id=$2 and status='active' and not offered and remaining_rounds>0",
+      [channel.world_id, organism.id],
+    )
+  ).rows[0];
+  if (row === undefined) return null;
+  const offered = evaluateDormantOffer(
+    {
+      capture: {
+        move: row.template,
+        supporters: row.provenance.supporters,
+        totalVotes: row.provenance.totalVotes,
+        captureBurst: row.provenance.captureProfile?.burst ?? null,
+      },
+      genome: genomeOf(organism),
+      recentProfile,
+    },
+    rules,
+  );
+  if (!offered.eligible) return null;
+  await client.query(
+    'update dormant_mutations set offered=true,version=version+1 where world_id=$1 and id=$2',
+    [channel.world_id, row.id],
+  );
+  return { row: { ...row, offered: true, version: row.version + 1 }, move: offered.move };
+}
+
+export async function consumeDormantOffer(
+  context: GameContext,
+  choiceId: string | null,
+  sequence: number,
+): Promise<string | null> {
+  const { round, client, channel } = context;
+  const offer = round?.checkpoint.dormantOffer;
+  if (offer === undefined || round === null) return null;
+  const card = round.checkpoint.candidates.find((candidate) => candidate.source === 'dormant');
+  if (card === undefined) throw new Error('Dormant offer has no captured ballot card.');
+  const changed = await client.query(
+    "update dormant_mutations set status='consumed',consumption=$4,version=version+1 where world_id=$1 and id=$2 and status='active' and offered and version=$3",
+    [
+      channel.world_id,
+      offer.id,
+      offer.version,
+      { reason: choiceId === card.id ? 'selected' : 'rejected', roundId: round.id, sequence },
+    ],
+  );
+  if (changed.rowCount !== 1)
+    throw new Error('Captured dormant offer changed before ballot close.');
+  return offer.id;
 }
 
 /** A qualified minority direction is inert until an eligible, explicit future ballot. */

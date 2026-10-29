@@ -2,7 +2,7 @@ import type { RoundTimings } from '@ripple/contracts';
 import { freezeBaseline, type BaselineRound, type FrozenBaseline } from './baseline.ts';
 import { generateMutationCandidates, type MutationCandidate } from './candidates.ts';
 import { explainResolution, type OutcomeExplanation } from './explanation.ts';
-import type { Genome } from './genome.ts';
+import type { Genome, MutationMove } from './genome.ts';
 import type { ActivityObservation, ShockMarker } from './habitat.ts';
 import { resolveObservation, type RoundResolution } from './resolution.ts';
 import { openRoundClock, type RoundClock } from './round-clock.ts';
@@ -27,6 +27,14 @@ export interface RoundCheckpoint {
   /** Recorded at ordinary ballot close; null is the explicit no-vote Hold. */
   readonly mutationSelection?: { readonly choiceId: string | null };
   readonly choicePreview?: ChoicePreview;
+  readonly dormantOffer?: {
+    readonly id: string;
+    readonly version: number;
+    readonly sourceRoundId: string;
+    readonly originChannelId: string;
+    readonly supporters: number;
+    readonly totalVotes: number;
+  };
   readonly specialBallot?: {
     readonly kind: 'WELCOME' | 'PREPARATION';
     readonly options: readonly SpecialOption[];
@@ -38,6 +46,7 @@ export function openMutationRound(
     readonly seed: string;
     readonly roundId: string;
     readonly genome: Genome;
+    readonly dormantMove?: MutationMove;
     readonly history: readonly BaselineRound[];
     readonly atMs: number;
     readonly timings: RoundTimings;

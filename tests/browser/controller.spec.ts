@@ -101,7 +101,7 @@ test('choice previews show uncertain recent-profile estimates and replace them w
     candidateId: `candidate-${index}`,
     effect: `Adaptation ${index + 1}`,
     tradeOff: `Trade-off ${index + 1}`,
-    source: 'generated',
+    source: index === 2 ? 'dormant' : 'generated',
     estimatedFitness: index,
     estimatedEnergyChange: index + 1,
     relativeToHold: index,
@@ -140,6 +140,9 @@ test('choice previews show uncertain recent-profile estimates and replace them w
   await expect(page.getByText('Based on recent activity.', { exact: false })).toBeVisible();
   await expect(page.getByText('Estimated energy change +2; +1 compared with Hold.')).toBeVisible();
   await expect(page.getByText('Trade-off 2.', { exact: false })).toBeVisible();
+  await expect(
+    page.getByText('Minority-preserved option from an earlier ballot. This is its only offer.'),
+  ).toBeVisible();
   await expect(
     page.getByText('Estimate only; future chat, arrivals and category changes may differ.', {
       exact: false,
