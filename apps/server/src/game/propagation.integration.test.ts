@@ -458,4 +458,88 @@ describe('persisted preparation, welcome and shared visitor observations', () =>
       ]),
     ).rejects.toMatchObject({ code: '23503' });
   }, 20000);
+  it('serializes reciprocal raids with sorted locks and retains both original residents', async () => {
+    const world = await start(),
+      peerId = await peer(world);
+    await acceptVisitors(world, world.channelId);
+    await acceptVisitors(world, peerId);
+    const residents = [
+      (await snapshot(world)).payload.organism?.id,
+      (await snapshot(world, peerId)).payload.organism?.id,
+    ];
+    const raids = [raidCommand(peerId.toUpperCase()), raidCommand(world.channelId.toUpperCase())];
+    await Promise.all(
+      [world.channelId, peerId].map((channelId, i) =>
+        acceptSyntheticCommand(
+          pool,
+          { worldId: world.worldId, channelId },
+          world.ownerCapability,
+          randomUUID(),
+          raids[i],
+        ),
+      ),
+    );
+    await Promise.all(
+      [world.channelId, peerId].map((channelId) =>
+        processNextInput(pool, world.worldId, channelId),
+      ),
+    );
+    await drain(world);
+    const views = await Promise.all([snapshot(world), snapshot(world, peerId)]);
+    expect(views.map((v) => v.payload.organism?.id)).toEqual(residents);
+    expect(views.map((v) => v.payload.propagation.visitor?.id)).toEqual([
+      raids[1]!.childId,
+      raids[0]!.childId,
+    ]);
+    expect(
+      (await pool.query('select 1 from transfers where world_id=$1', [world.worldId])).rowCount,
+    ).toBe(2);
+    expect(
+      (
+        await pool.query("select 1 from organisms where world_id=$1 and status='ALIVE'", [
+          world.worldId,
+        ])
+      ).rowCount,
+    ).toBe(4);
+  }, 20000);
+  it('dispatches pending-admission expiry while both channel clocks are paused and never revives the archived child', async () => {
+    const world = await start(),
+      target = await peer(world, false),
+      raid = raidCommand(target);
+    await send(world, target, { type: 'stream', online: false });
+    await send(world, world.channelId, raid);
+    await send(world, world.channelId, { type: 'pause', reason: 'manual' });
+    const transfer = (
+      await pool.query<TransferRow>('select * from transfers where world_id=$1 and id=$2', [
+        world.worldId,
+        raid.transferId,
+      ])
+    ).rows[0]!;
+    expect(transfer.outcome).toBe('OFFLINE_HOLD');
+    await pool.query('update worlds set clock_at=$2 where id=$1', [
+      world.worldId,
+      transfer.expires_at,
+    ]);
+    expect(await scanDeadlines(pool, randomUUID(), { worldId: world.worldId })).toBe(1);
+    await drain(world);
+    const child = (
+      await pool.query<{ status: string; health: number }>(
+        'select status,health from organisms where world_id=$1 and id=$2',
+        [world.worldId, raid.childId],
+      )
+    ).rows[0]!;
+    expect(child).toEqual({ status: 'ARCHIVED', health: transfer.snapshot.arrival?.health });
+    await send(world, target, { type: 'stream', online: true });
+    await acceptVisitors(world, target);
+    expect((await snapshot(world, target)).payload.propagation.visitor).toBeNull();
+    expect(
+      (
+        await pool.query<{ outcome: string }>(
+          'select outcome from transfers where world_id=$1 and id=$2',
+          [world.worldId, raid.transferId],
+        )
+      ).rows[0]?.outcome,
+    ).toBe('EXPIRED');
+    expect(await scanDeadlines(pool, randomUUID(), { worldId: world.worldId })).toBe(0);
+  }, 20000);
 });

@@ -32,7 +32,8 @@ export async function lockChannels(
   worldId: string,
   channelIds: readonly string[],
 ): Promise<void> {
-  for (const id of [...new Set(channelIds)].sort()) {
+  // PostgreSQL UUID equality ignores case. Lock ordering and deduplication must do the same.
+  for (const id of [...new Set(channelIds.map((value) => value.toLowerCase()))].sort()) {
     const result = await client.query(
       'select id from channels where world_id=$1 and id=$2 for update',
       [worldId, id],

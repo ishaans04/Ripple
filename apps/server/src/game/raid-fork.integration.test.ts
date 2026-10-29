@@ -187,6 +187,11 @@ describe('atomic parent snapshots and bounded child forks', () => {
     expect((await fork(empty, command(null))).detail.outcome).toBe('SOURCE_INELIGIBLE');
     const world = await seeded();
     expect((await fork(world, command(null))).detail.outcome).toBe('NOT_ENROLLED');
+    await pool.query(
+      "update organisms set health=0,status='FOSSIL',version=version+1 where world_id=$1",
+      [world.worldId],
+    );
+    expect((await fork(world, command(null))).detail.outcome).toBe('SOURCE_INELIGIBLE');
     expect(
       (await pool.query('select 1 from organisms where world_id=$1', [world.worldId])).rowCount,
     ).toBe(1);
