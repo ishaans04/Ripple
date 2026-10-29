@@ -62,18 +62,19 @@ npm run dev -w @ripple/web      # web app on http://localhost:5173 (proxies the 
 
 Sources run directly on Node's TypeScript type stripping; workspace packages resolve to their sources through the `ripple-source` export condition, and `npm run build` emits JavaScript for production.
 
-| Script                                    | Purpose                                                         |
-| ----------------------------------------- | --------------------------------------------------------------- |
-| `npm run lint`                            | ESLint with strict type-aware rules                             |
-| `npm run format` / `format:check`         | Prettier                                                        |
-| `npm run typecheck`                       | TypeScript across the root and every workspace                  |
-| `npm test`                                | Unit tests                                                      |
-| `npm run test:integration`                | Integration tests against real PostgreSQL (`TEST_DATABASE_URL`) |
-| `npm run build`                           | Compile packages and the server; bundle the web app             |
-| `npm run db:up` / `db:migrate`            | Start PostgreSQL / apply migrations                             |
-| `npm run db:generate -w @ripple/database` | Generate a migration from schema changes                        |
-| `npm run sandbox -- ...`                  | Run the isolated synthetic game adapter                         |
-| `npm run smoke:game`                      | Verify a synthetic round, HTTP snapshot, and WebSocket          |
+| Script                                    | Purpose                                                               |
+| ----------------------------------------- | --------------------------------------------------------------------- |
+| `npm run lint`                            | ESLint with strict type-aware rules                                   |
+| `npm run format` / `format:check`         | Prettier                                                              |
+| `npm run typecheck`                       | TypeScript across the root and every workspace                        |
+| `npm test`                                | Unit tests                                                            |
+| `npm run test:integration`                | Integration tests against real PostgreSQL (`TEST_DATABASE_URL`)       |
+| `npm run build`                           | Compile packages and the server; bundle the web app                   |
+| `npm run db:up` / `db:migrate`            | Start PostgreSQL / apply migrations                                   |
+| `npm run db:generate -w @ripple/database` | Generate a migration from schema changes                              |
+| `npm run sandbox -- ...`                  | Run the isolated synthetic game adapter                               |
+| `npm run smoke:game`                      | Verify a synthetic round, HTTP snapshot, and WebSocket                |
+| `npm run smoke:raids`                     | Verify a two-channel synthetic preparation, raid, welcome and contest |
 
 ## Configuration
 
@@ -123,6 +124,8 @@ Substitute actual UUIDs; `PEER_ID` is the channel ID returned by `peer`. Reusing
 Read access uses `GET /api/worlds/WORLD_ID/snapshot?channelId=CHANNEL_ID` with `Authorization: Bearer READ_CAPABILITY`. `POST /api/overlay/exchange` accepts `{ "worldId": "...", "channelId": "..." }` with the same header and returns a single-use, 30-second ticket for `/api/live?ticket=...`. WebSockets start with a current snapshot, carry complete versioned projections, reject client writes, cap buffers, check authority again, and repair missed updates from PostgreSQL independently in each gateway. Vote aggregates are limited to twice per second. These endpoints accept scoped read authority, never browser impersonation of live Twitch voters.
 
 With the stack running, `docker compose exec -T app node apps/server/dist/cli/smoke-game.js` verifies the installed command tool, a real three-account resolution, the scoped HTTP snapshot, and a snapshot-first WebSocket. It prints a public result summary and keeps generated capabilities out of its output. CI runs this journey inside the production image. For source development, `npm run smoke:game` uses the database environment and the running app at localhost:3000; set `RIPPLE_SMOKE_URL` for another app URL.
+
+`docker compose exec -T app node apps/server/dist/cli/smoke-raids.js` verifies two synthetic channels, standing Shield, duplicate raid receipts, a preserved open ballot, welcome, finite Shelter, matched contest, a fossil, the retained source parent and the receiving channel's scoped HTTP snapshot. CI runs this installed tool too. For source development use `npm run smoke:raids`. Neither smoke tool establishes live Twitch or OBS acceptance.
 
 ## Repository layout
 

@@ -16,7 +16,7 @@ Open `/controller` on the HTTPS deployment. Under **Operator bot setup**, enter 
 
 For each broadcaster, use **Connect broadcaster with Twitch** and approve `channel:bot`. Viewers keep voting in Twitch chat without authorizing Ripple. These cloud-bot grants follow [Twitch's authentication model](https://dev.twitch.tv/docs/chat/authenticating/). Access and refresh tokens are authenticated ciphertext in PostgreSQL and never returned to browsers.
 
-The controller lists broadcaster authorization, bot authorization, signed callback verification, enabled subscriptions, stream status and read-only preview connection separately. Reconciliation runs at startup and every 30 seconds; creating subscriptions have a 90-second retry backoff. A redirect alone never means the channel is ready. The four Phase 4 subscriptions are `channel.chat.message` v1, `stream.online` v1, `stream.offline` v1 and `channel.update` v2. Outgoing raid receipt is added with Phase 5.
+The controller lists broadcaster authorization, bot authorization, signed callback verification, enabled subscriptions, stream status and read-only preview connection separately. Reconciliation runs at startup and every 30 seconds; creating subscriptions have a 90-second retry backoff. A redirect alone never means the channel is ready. The required subscriptions are `channel.chat.message` v1, `stream.online` v1, `stream.offline` v1, `channel.update` v2 and the Phase 5 outgoing `channel.raid` v1 subscription.
 
 Start the broadcaster's stream, wait for healthy inputs, choose the visitor policy, enter an approved name and **Seed strain**. The founder uses `[6,6,6,6]` and the ruleset's starting health. Empty channels have a 180-second reseeding cooldown, measured from their last committed seed. Names are limited to 40 characters and rendered as text.
 
@@ -27,6 +27,16 @@ Use **Create or rotate preview link** and open the resulting read-only link. Its
 On a real broadcaster's live channel, send `!ripple 1`, then `!ripple 2` from the same viewer; the first valid vote must stand. Use another viewer for a different choice. Wait for the actual 45-second ballot plus one-second grace; verify the committed mutation and bot announcement. Observe the 120-second habitat interval and 14-second reveal, including limited-confidence behavior with fewer than three distinct accounts. Ordinary local activity is capped to one contribution/account/ten-second bucket. Ripple commands and the bot never add habitat activity.
 
 Repeat with two channels in Shared Chat: only the originating enrolled channel may count each message. Confirm stream offline freezes active time, a clean return resumes it, a manual pause remains manual, and a revoked subscription interrupts observation. Fix the indicated grant/callback step, resume a manual pause if necessary, and explicitly **Recover interrupted observation**. Recovery retains committed genes and starts a fresh observation epoch. Save dated evidence and observed results in `docs/progress.md`; fixture tests cannot satisfy this gate.
+
+## Two-channel raid acceptance to record
+
+This gate is pending real accounts and HTTPS. Connect both broadcasters in the same installation and confirm all five subscriptions are ready on each channel. Start both streams. Seed the source and, to exercise a contest, seed the destination too. Set the destination visitor policy to **Ask**.
+
+1. In the source controller, queue a preparation ballot. Finish the existing ballot/observation first, then vote for Shield in chat and verify the standing choice changes only after commitment. A raid before that commitment must use the previous choice.
+2. Initiate an actual Twitch raid from the source to the destination. Save the dated receipt/transfer identifiers without credentials or voter identities. Verify exactly one child and an unchanged living source parent. The destination must show the origin and an approval hold; its open ballot must remain unchanged.
+3. Approve the visitor in the destination controller. Verify the committed result, arrival and queued welcome. Use destination chat to select Shelter when offered. Record the actual finite energy transfer and one valid observation with the contest deferred. Then complete the next valid observation and verify the fitness comparison, incumbent tie rule, resident and fossil records. A limited-confidence interval must hold the contest and shelter.
+4. Repeat an arrival with the destination offline or manually paused, then restore it and verify a held arrival resumes through admission rather than accumulating offline decay. Exercise explicit decline separately: the child is archived with a refusal outcome, not fossilized by activity. Exercise source/lineage blocks and unblock controls.
+5. Save observed outcomes, screenshots and relevant event identifiers in the progress record. Label any accelerated/synthetic footage separately. The installed `smoke:raids` journey verifies application behavior with synthetic inputs; it does not establish this live gate. OBS readability remains a separate acceptance check.
 
 ## Credentials, retries and recovery
 
