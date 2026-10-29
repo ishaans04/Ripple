@@ -161,6 +161,8 @@ docs/                PRD, Cocoon Studio addendum, delivery plan, and archived de
 
 The ordered round scheduler persists ballots, observation, reveal, and recovery checkpoints. Admission, shelter, contests and fossils are persisted. Phase 6 has started with pure, bounded valid-observation lifetime helpers that preserve remaining counts during migration and reject duplicate consumption; persistent trace and dormant lifetimes are still being connected.
 
+The engine also evaluates rejected mutation cards against fixed recorded start energy, profile, shocks and trace, recomputing gene effects and final energy clamps. This read-only comparison validates the actual ballot and does not replay downstream branches. Its persisted/API presentation is still Phase 6 work.
+
 ## Cocoon Studio practice
 
 Start the app normally and open `/studio`, or follow the practice studio link on the landing page. Choose a legal shell trade-off, drag the white control points or use the labeled sliders, and choose a marking and palette. Undo, redo, reset, local draft recovery, and a confirmed JSON download work without an account or Twitch credentials. Local practice never submits a live proposal or changes live game state.
