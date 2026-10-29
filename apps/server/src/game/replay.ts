@@ -9,6 +9,8 @@ import { acceptInput, transaction } from '@ripple/database';
 import {
   assertCompatibleRuleset,
   canonicalJson,
+  mechanicsPolicyHash,
+  mechanicsPolicySchema,
   parseRuleset,
   rulesetHash,
   sha256Hex,
@@ -44,6 +46,9 @@ export interface ChannelReplay {
   initialOnline: boolean;
   initialHealthy: boolean;
   initialPaused: boolean;
+  /** Missing in pre-mechanics exports; those histories retain version zero. */
+  initialMechanicsVersion?: 0 | 1;
+  mechanicsPolicy?: { hash: string; canonical: string };
   checksum: string;
   records: readonly AcceptedRecord[];
 }
@@ -60,6 +65,13 @@ export function verifyAcceptedRecords(bundle: ChannelReplay): void {
   if (rulesetHash(rules) !== bundle.rulesHash)
     throw new ReplayIntegrityError('Rules hash mismatch.');
   roundTimingsSchema.parse(bundle.timings);
+  z.union([z.literal(0), z.literal(1)]).parse(bundle.initialMechanicsVersion ?? 0);
+  if (bundle.mechanicsPolicy !== undefined) {
+    const policy = mechanicsPolicySchema.parse(JSON.parse(bundle.mechanicsPolicy.canonical));
+    if (mechanicsPolicyHash(policy) !== bundle.mechanicsPolicy.hash)
+      throw new ReplayIntegrityError('Mechanics policy hash mismatch.');
+  } else if (bundle.initialMechanicsVersion === 1)
+    throw new ReplayIntegrityError('Mechanics genesis requires its frozen policy.');
   let previous = '0'.repeat(64),
     sequence = 0;
   for (const record of bundle.records) {
@@ -106,10 +118,16 @@ export async function exportAcceptedChannel(
         initial_online: boolean;
         initial_healthy: boolean;
         initial_paused: boolean;
+        initial_mechanics_version: 0 | 1;
+        mechanics_policy_hash: string;
+        mechanics_canonical: string;
         checksum: string;
         processed_sequence: number;
       }>(
-        'select c.*,r.canonical from channels c join rulesets r on r.hash=c.rules_hash where c.world_id=$1 and c.id=$2',
+        `select c.*,r.canonical,w.policy_hash as mechanics_policy_hash,m.canonical as mechanics_canonical
+         from channels c join rulesets r on r.hash=c.rules_hash
+         join world_mechanics_policies w on w.world_id=c.world_id
+         join mechanics_policies m on m.hash=w.policy_hash where c.world_id=$1 and c.id=$2`,
         [scope.worldId, scope.channelId],
       )
     ).rows[0];
@@ -142,6 +160,8 @@ export async function exportAcceptedChannel(
       initialOnline: row.initial_online,
       initialHealthy: row.initial_healthy,
       initialPaused: row.initial_paused,
+      initialMechanicsVersion: row.initial_mechanics_version,
+      mechanicsPolicy: { hash: row.mechanics_policy_hash, canonical: row.mechanics_canonical },
       checksum: row.checksum,
       records: events.rows.map((e) => ({
         engineVersion: e.engine_version,
@@ -178,8 +198,8 @@ export async function replayAcceptedChannel(
       [worldId, bundle.rulesHash],
     );
     await client.query(
-      `insert into channels (world_id,id,label,rules_hash,seed,configuration,online,healthy,paused,initial_online,initial_healthy,initial_paused)
-      values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$7,$8,$9)`,
+      `insert into channels (world_id,id,label,rules_hash,seed,configuration,online,healthy,paused,initial_online,initial_healthy,initial_paused,initial_mechanics_version)
+      values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$7,$8,$9,$10)`,
       [
         worldId,
         channelId,
@@ -190,8 +210,17 @@ export async function replayAcceptedChannel(
         bundle.initialOnline,
         bundle.initialHealthy,
         bundle.initialPaused,
+        bundle.initialMechanicsVersion ?? 0,
       ],
     );
+    const policy = (
+      await client.query<{ policy_hash: string }>(
+        'select policy_hash from world_mechanics_policies where world_id=$1',
+        [worldId],
+      )
+    ).rows[0];
+    if (bundle.mechanicsPolicy !== undefined && policy?.policy_hash !== bundle.mechanicsPolicy.hash)
+      throw new ReplayIntegrityError('Replay world mechanics policy differs from the export.');
   });
   for (const record of bundle.records) {
     await acceptInput(pool, {
@@ -219,7 +248,13 @@ export async function canonicalGameProjection(pool: pg.Pool, scope: WorldScope):
     'lineages',coalesce((select jsonb_agg(to_jsonb(l)-'world_id' order by l.id) from lineages l where l.world_id=$1 and l.origin_channel_id=$2),'[]'::jsonb),
     'rounds',coalesce((select jsonb_agg(to_jsonb(r)-'world_id' order by r.number) from rounds r where r.world_id=$1 and r.channel_id=$2),'[]'::jsonb),
     'residencies',coalesce((select jsonb_agg(to_jsonb(r)-'world_id' order by r.id) from residencies r where r.world_id=$1 and r.channel_id=$2),'[]'::jsonb),
-    'baselines',coalesce((select jsonb_agg(to_jsonb(b)-'world_id' order by b.round_id) from habitat_baselines b where b.world_id=$1 and b.channel_id=$2),'[]'::jsonb)
+    'baselines',coalesce((select jsonb_agg(to_jsonb(b)-'world_id' order by b.round_id) from habitat_baselines b where b.world_id=$1 and b.channel_id=$2),'[]'::jsonb),
+    'play',(select to_jsonb(p)-'world_id' from channel_play p where p.world_id=$1 and p.channel_id=$2),
+    'mechanicsPolicy',(select policy_hash from world_mechanics_policies where world_id=$1),
+    'dormant',coalesce((select jsonb_agg(to_jsonb(d)-'world_id' order by d.id) from dormant_mutations d where d.world_id=$1 and exists(select 1 from residencies r where r.world_id=d.world_id and r.organism_id=d.organism_id and r.channel_id=$2)),'[]'::jsonb),
+    'traces',coalesce((select jsonb_agg(to_jsonb(t)-'world_id' order by t.id) from habitat_traces t where t.world_id=$1 and t.channel_id=$2),'[]'::jsonb),
+    'qualifications',coalesce((select jsonb_agg(to_jsonb(q)-'world_id' order by q.lineage_id) from trace_qualifications q where q.world_id=$1 and q.channel_id=$2),'[]'::jsonb),
+    'ancestorTrials',coalesce((select jsonb_agg(to_jsonb(a)-'world_id' order by a.round_id,a.organism_id) from ancestor_trials a join rounds r on r.world_id=a.world_id and r.id=a.round_id where a.world_id=$1 and r.channel_id=$2),'[]'::jsonb)
     ) as projection`,
       [scope.worldId, scope.channelId],
     )

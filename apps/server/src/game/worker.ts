@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { gameCommandSchema, type GameCommand } from '@ripple/contracts';
-import { ENGINE_VERSION, canonicalJson, sha256Hex } from '@ripple/engine';
+import { ENGINE_VERSION, canonicalJson, mechanicsPolicyHash, sha256Hex } from '@ripple/engine';
 import { acceptInputInTransaction, lockChannels, transaction } from '@ripple/database';
 import type pg from 'pg';
 import { applyLifecycle, effect, type CommandEffect } from './lifecycle.ts';
@@ -404,6 +404,14 @@ export async function processNextInput(
         opened ? effect('APPLIED', 'ballot.opened') : result,
         sequence,
       );
+      if (context.mechanics.version === 1)
+        result = {
+          ...result,
+          detail: {
+            ...result.detail,
+            mechanics: { version: 1, policyHash: mechanicsPolicyHash(context.mechanics.policy) },
+          },
+        };
       const record = {
         engineVersion: ENGINE_VERSION,
         rulesHash: channel.rules_hash,

@@ -83,4 +83,53 @@ describe('accepted-record reconstruction', () => {
       verifyAcceptedRecords({ ...bundle, records: bundle.records.slice(0, -1) });
     }).toThrow('Final channel checksum');
   }, 20_000);
+  it('restores frozen mechanics genesis and accepts pre-mechanics export headers', async () => {
+    const source = await createSyntheticWorld(pool, { mechanicsVersion: 1 });
+    await acceptSyntheticCommand(
+      pool,
+      source,
+      source.ownerCapability,
+      randomUUID(),
+      syntheticSeedCommand(),
+    );
+    await settleSyntheticWorld(pool, source);
+    const bundle = await exportAcceptedChannel(pool, source);
+    expect(bundle.initialMechanicsVersion).toBe(1);
+    const replay = await replayAcceptedChannel(pool, bundle);
+    expect(
+      (
+        await pool.query(
+          'select initial_mechanics_version from channels where world_id=$1 and id=$2',
+          [replay.worldId, replay.channelId],
+        )
+      ).rows[0],
+    ).toEqual({ initial_mechanics_version: 1 });
+    expect(await canonicalGameProjection(pool, replay)).toBe(
+      await canonicalGameProjection(pool, source),
+    );
+    const edited = structuredClone(bundle);
+    edited.mechanicsPolicy!.hash = '0'.repeat(64);
+    expect(() => {
+      verifyAcceptedRecords(edited);
+    }).toThrow('Mechanics policy hash mismatch');
+    delete edited.mechanicsPolicy;
+    expect(() => {
+      verifyAcceptedRecords(edited);
+    }).toThrow('requires its frozen policy');
+    await expect(
+      replayAcceptedChannel(pool, { ...bundle, initialMechanicsVersion: 0 }),
+    ).rejects.toThrow('Replayed transition differs');
+    const legacy = await exportAcceptedChannel(pool, await journey());
+    delete legacy.initialMechanicsVersion;
+    delete legacy.mechanicsPolicy;
+    const restored = await replayAcceptedChannel(pool, legacy);
+    expect(
+      (
+        await pool.query(
+          'select mechanics_version from channel_play where world_id=$1 and channel_id=$2',
+          [restored.worldId, restored.channelId],
+        )
+      ).rows[0],
+    ).toEqual({ mechanics_version: 0 });
+  }, 20_000);
 });

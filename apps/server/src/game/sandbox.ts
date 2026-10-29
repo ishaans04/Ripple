@@ -38,7 +38,7 @@ export function capabilityMatches(capability: string, hash: string): boolean {
 }
 export async function createSyntheticWorld(
   pool: pg.Pool,
-  options: { seed?: string; timings?: RoundTimings } = {},
+  options: { seed?: string; timings?: RoundTimings; mechanicsVersion?: 0 | 1 } = {},
 ): Promise<SyntheticWorld> {
   const worldId = randomUUID(),
     channelId = randomUUID();
@@ -57,13 +57,14 @@ export async function createSyntheticWorld(
       [worldId, sha256Hex(ownerCapability), hash],
     );
     await client.query(
-      `insert into channels (world_id,id,label,rules_hash,seed,configuration,online,healthy,initial_online,initial_healthy) values ($1,$2,'Synthetic channel',$3,$4,$5,true,true,true,true)`,
+      `insert into channels (world_id,id,label,rules_hash,seed,configuration,online,healthy,initial_online,initial_healthy,initial_mechanics_version) values ($1,$2,'Synthetic channel',$3,$4,$5,true,true,true,true,$6)`,
       [
         worldId,
         channelId,
         hash,
         options.seed ?? randomBytes(16).toString('hex'),
         JSON.stringify(timings),
+        options.mechanicsVersion ?? 0,
       ],
     );
     await client.query(
