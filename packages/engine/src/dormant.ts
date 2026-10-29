@@ -18,14 +18,14 @@ export interface DormantCapture {
   /** Valid votes cast on the ballot. */
   readonly totalVotes: number;
   /** Burst of the habitat profile known when it was captured. */
-  readonly captureBurst: number;
+  readonly captureBurst: number | null;
 }
 
 export interface DormantCaptureInput {
   /** The ballot's cards in seeded order. */
   readonly candidates: readonly MutationCandidate[];
   readonly tally: TallyResult;
-  readonly captureBurst: number;
+  readonly captureBurst: number | null;
 }
 
 /**
@@ -92,7 +92,12 @@ export type DormantOfferEvaluation =
     }
   | {
       readonly eligible: false;
-      readonly reason: 'no_valid_profile' | 'profile_unchanged' | 'illegal_rebase' | 'no_fit_gain';
+      readonly reason:
+        | 'no_valid_profile'
+        | 'no_capture_profile'
+        | 'profile_unchanged'
+        | 'illegal_rebase'
+        | 'no_fit_gain';
     };
 
 /**
@@ -110,6 +115,7 @@ export function evaluateDormantOffer(
   if (recentProfile === null) {
     return { eligible: false, reason: 'no_valid_profile' };
   }
+  if (capture.captureBurst === null) return { eligible: false, reason: 'no_capture_profile' };
   const profileChange = Math.abs(recentProfile.burst - capture.captureBurst);
   if (profileChange < rules.dormant.triggerBurstChange) {
     return { eligible: false, reason: 'profile_unchanged' };

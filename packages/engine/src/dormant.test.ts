@@ -133,6 +133,19 @@ describe('evaluateDormantOffer', () => {
       reason: 'no_valid_profile',
     });
   });
+  it('preserves a first-ballot minority without inventing a capture profile or backfilling it later', () => {
+    const captured = selectDormantCapture(
+      { candidates: journeyCards, tally: tallyVotes(votesFor([3, 2, 0]), 3), captureBurst: null },
+      rules,
+    );
+    expect(captured).toMatchObject({ captureBurst: null, supporters: 2, totalVotes: 5 });
+    expect(
+      evaluateDormantOffer(
+        { capture: captured!, genome: current, recentProfile: { burst: 900, steadiness: 100 } },
+        rules,
+      ),
+    ).toEqual({ eligible: false, reason: 'no_capture_profile' });
+  });
 
   it('requires a change of at least 300 burst units in either direction', () => {
     const at = (burst: number) =>

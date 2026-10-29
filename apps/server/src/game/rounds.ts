@@ -18,6 +18,7 @@ import {
   lockParticipantLineages,
 } from './visitor-observation.ts';
 import { genomeOf, saveCheckpoint, type GameContext } from './store.ts';
+import { captureDormantMutation, ageDormantMutations } from './dormant-state.ts';
 
 export { openNextRound } from './round-scheduling.ts';
 export async function seedResident(
@@ -213,11 +214,13 @@ export async function applyRoundDeadline(
         : {}),
     });
     await captureRoundParticipants(context);
+    const dormant = await captureDormantMutation(context, closed.tally, sequence);
     return effect('APPLIED', 'ballot.closed', {
       roundId: round.id,
       choiceId: closed.choiceId,
       tally: closed.tally,
       genome: closed.genome,
+      ...(dormant === null ? {} : { dormant }),
     });
   }
   if (round.phase === 'OBSERVING') {
@@ -310,6 +313,7 @@ export async function applyRoundDeadline(
       sequence,
       atMs,
     );
+    const dormantAged = await ageDormantMutations(context, sequence);
     await saveCheckpoint(context, { ...round.checkpoint, clock });
     return effect(
       'APPLIED',
@@ -323,6 +327,7 @@ export async function applyRoundDeadline(
         resolution,
         explanation: finished.explanation,
         ...(visitorResult === null ? {} : { visitor: visitorResult }),
+        ...(dormantAged.length === 0 ? {} : { dormantAged }),
       },
     );
   }
