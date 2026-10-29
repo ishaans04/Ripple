@@ -14,7 +14,7 @@ import {
   uniqueIndex,
   uuid,
 } from 'drizzle-orm/pg-core';
-import { channels, lineages, organisms } from './game.ts';
+import { channels, lineages, organisms, rulesets } from './game.ts';
 import { rounds } from './rounds.ts';
 
 export const transfers = pgTable(
@@ -65,6 +65,9 @@ export const transfers = pgTable(
 export const dormantMutations = pgTable(
   'dormant_mutations',
   {
+    lifetime: jsonb('lifetime').notNull(),
+    version: integer('version').notNull().default(0),
+    consumption: jsonb('consumption'),
     worldId: uuid('world_id').notNull(),
     id: uuid('id').notNull(),
     organismId: uuid('organism_id').notNull(),
@@ -91,6 +94,14 @@ export const dormantMutations = pgTable(
       sql`${t.remainingHops} >= 0 and ${t.remainingRounds} >= 0`,
     ),
     check('dormant_status_valid', sql`${t.status} in ('active','consumed','expired','replaced')`),
+    check(
+      'dormant_lifetime_bounds',
+      sql`${t.remainingRounds}<=3 and ${t.remainingHops}<=16 and ${t.version}>=0`,
+    ),
+    check(
+      'dormant_lifetime_consistent',
+      sql`valid_mechanic_lifetime(${t.lifetime},${t.sourceRoundId},${t.remainingRounds})`,
+    ),
     uniqueIndex('dormant_one_active')
       .on(t.worldId, t.organismId)
       .where(sql`${t.status}='active'`),
@@ -100,6 +111,8 @@ export const dormantMutations = pgTable(
 export const habitatTraces = pgTable(
   'habitat_traces',
   {
+    lifetime: jsonb('lifetime').notNull(),
+    qualifyingRoundId: uuid('qualifying_round_id').notNull(),
     worldId: uuid('world_id').notNull(),
     id: uuid('id').notNull(),
     channelId: uuid('channel_id').notNull(),
@@ -127,6 +140,15 @@ export const habitatTraces = pgTable(
       sql`${t.status} in ('pending','active','cleared','expired','replaced','rejected')`,
     ),
     check('traces_counts_nonnegative', sql`${t.remainingRounds} >= 0 and ${t.version} >= 0`),
+    check('trace_lifetime_bounds', sql`${t.remainingRounds}<=3`),
+    check(
+      'trace_lifetime_consistent',
+      sql`valid_mechanic_lifetime(${t.lifetime},${t.qualifyingRoundId},${t.remainingRounds})`,
+    ),
+    foreignKey({
+      columns: [t.worldId, t.qualifyingRoundId],
+      foreignColumns: [rounds.worldId, rounds.id],
+    }),
     uniqueIndex('traces_one_active')
       .on(t.worldId, t.channelId)
       .where(sql`${t.status}='active'`),
@@ -136,6 +158,10 @@ export const habitatTraces = pgTable(
 export const ancestorTrials = pgTable(
   'ancestor_trials',
   {
+    rulesHash: text('rules_hash')
+      .notNull()
+      .references(() => rulesets.hash),
+    engineVersion: integer('engine_version').notNull().default(1),
     worldId: uuid('world_id').notNull(),
     roundId: uuid('round_id').notNull(),
     organismId: uuid('organism_id').notNull(),

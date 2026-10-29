@@ -34,6 +34,7 @@ export const rulesets = pgTable(
 export const channels = pgTable(
   'channels',
   {
+    initialMechanicsVersion: integer('initial_mechanics_version').notNull().default(0),
     worldId: uuid('world_id')
       .notNull()
       .references(() => worlds.id),
@@ -60,6 +61,7 @@ export const channels = pgTable(
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [
+    check('channel_initial_mechanics_valid', sql`${t.initialMechanicsVersion} in (0,1)`),
     primaryKey({ columns: [t.worldId, t.id] }),
     unique('channels_world_twitch_unique').on(t.worldId, t.twitchId),
     check(

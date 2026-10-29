@@ -1,10 +1,13 @@
 import { roundTimingsSchema, type RoundTimings } from '@ripple/contracts';
 import {
   assertCompatibleRuleset,
+  mechanicsPolicyHash,
+  mechanicsPolicySchema,
   parseRuleset,
   rulesetHash,
   type CommittedAppearance,
   type MutationSlots,
+  type MechanicsPolicy,
   type RoundCheckpoint,
   type Ruleset,
 } from '@ripple/engine';
@@ -51,6 +54,12 @@ export interface GameContext {
   round: RoundRow | null;
   rules: Ruleset;
   timings: RoundTimings;
+  mechanics: {
+    version: 0 | 1;
+    requested: boolean;
+    tracesEnabled: boolean;
+    policy: MechanicsPolicy;
+  };
 }
 export function genomeOf(organism: OrganismRow): {
   pulse: number;
@@ -81,6 +90,24 @@ export async function loadContext(
   const rules = parseRuleset(JSON.parse(stored.canonical));
   assertCompatibleRuleset(rules);
   if (rulesetHash(rules) !== channel.rules_hash) throw new Error('Stored ruleset hash mismatch.');
+  const mechanics = (
+    await client.query<{
+      mechanics_version: 0 | 1;
+      mechanics_requested: boolean;
+      traces_enabled: boolean;
+      policy_hash: string;
+      canonical: string;
+    }>(
+      `select p.mechanics_version,p.mechanics_requested,p.traces_enabled,w.policy_hash,m.canonical
+       from channel_play p join world_mechanics_policies w on w.world_id=p.world_id
+       join mechanics_policies m on m.hash=w.policy_hash where p.world_id=$1 and p.channel_id=$2`,
+      [worldId, channelId],
+    )
+  ).rows[0];
+  if (mechanics === undefined) throw new Error('Missing immutable mechanics policy.');
+  const policy = mechanicsPolicySchema.parse(JSON.parse(mechanics.canonical));
+  if (mechanicsPolicyHash(policy) !== mechanics.policy_hash)
+    throw new Error('Stored mechanics policy hash mismatch.');
   let organism =
     (
       await client.query<OrganismRow>(
@@ -111,6 +138,12 @@ export async function loadContext(
     round,
     rules,
     timings: roundTimingsSchema.parse(channel.configuration),
+    mechanics: {
+      version: mechanics.mechanics_version,
+      requested: mechanics.mechanics_requested,
+      tracesEnabled: mechanics.traces_enabled,
+      policy,
+    },
   };
 }
 export async function saveCheckpoint(

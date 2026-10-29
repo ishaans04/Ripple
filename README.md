@@ -10,7 +10,7 @@ The full specification is in [docs/prd.md](docs/prd.md), extended by the [Cocoon
 
 Ripple is being built phase by phase. **Phases 0–5 implementation is complete: foundation, pure engine, studio rules and local editor, event backbone, Twitch live loop, and raids/lineage. Real Twitch/hosted acceptance remains pending.** What works today:
 
-The [Cocoon Studio practice](http://localhost:3000/studio) provides a complete local shell editor with hand, pointer, touch, and keyboard controls. Ordered durable intake, round processing, transactional history and public updates, leased deadlines, process-gap recovery, scoped WebSockets, and synthetic command tooling are implemented. **Phase 6, novel mechanics, is next.** Verification and pending live acceptance are recorded in [delivery progress](docs/progress.md).
+The [Cocoon Studio practice](http://localhost:3000/studio) provides a complete local shell editor with hand, pointer, touch, and keyboard controls. Ordered durable intake, round processing, transactional history and public updates, leased deadlines, process-gap recovery, scoped WebSockets, and synthetic command tooling are implemented. **Phase 6, novel mechanics, is in progress.** Verification and pending live acceptance are recorded in [delivery progress](docs/progress.md).
 
 - The application service (Fastify on Node.js 24) with structured, correlated JSON logs, a uniform error contract, security headers, and graceful shutdown
 - PostgreSQL 18 with versioned migrations under an advisory lock, world-scoped game records, immutable ancestry/rules, and database-enforced genome bounds
@@ -159,7 +159,7 @@ docs/                PRD, Cocoon Studio addendum, delivery plan, and archived de
 | Explanations  | Deterministic templates: every signed contribution sums to the energy change, at most two leading causes, and the full calculation                                                                  |
 | Journey rules | Raid child health from Drift, dormant capture and offer checks, trace template and qualification, and ancestor trials under matched inputs                                                          |
 
-The ordered round scheduler persists ballots, observation, reveal, and recovery checkpoints. Admission, shelter, contests and fossils are persisted. Phase 6 has started with pure, bounded valid-observation lifetime helpers that preserve remaining counts during migration and reject duplicate consumption; persistent trace and dormant lifetimes are still being connected.
+The ordered round scheduler persists ballots, observation, reveal, and recovery checkpoints. Admission, shelter, contests and fossils are persisted. Phase 6 adds pure, bounded valid-observation lifetime helpers and database constraints against lifetime renewal, provenance edits and terminal revival. Each world pins an immutable mechanics policy; channel genesis preserves the legacy/new distinction. Automatic dormant capture and trace emission are still being connected.
 
 The engine also evaluates rejected mutation cards against fixed recorded start energy, profile, shocks and trace, recomputing gene effects and final energy clamps. This read-only comparison validates the actual ballot and does not replay downstream branches. Its persisted/API presentation is still Phase 6 work.
 

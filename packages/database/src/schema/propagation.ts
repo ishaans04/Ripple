@@ -42,6 +42,9 @@ export const worldRaidPolicies = pgTable('world_raid_policies', {
 export const channelPlay = pgTable(
   'channel_play',
   {
+    mechanicsVersion: integer('mechanics_version').notNull().default(0),
+    mechanicsRequested: boolean('mechanics_requested').notNull().default(false),
+    tracesEnabled: boolean('traces_enabled').notNull().default(true),
     worldId: uuid('world_id').notNull(),
     channelId: uuid('channel_id').notNull(),
     preparation: text('preparation').notNull().default('neutral'),
@@ -50,6 +53,7 @@ export const channelPlay = pgTable(
     rulesCompatible: boolean('rules_compatible').notNull().default(true),
   },
   (t) => [
+    check('channel_mechanics_version_valid', sql`${t.mechanicsVersion} in (0,1)`),
     primaryKey({ columns: [t.worldId, t.channelId] }),
     foreignKey({
       columns: [t.worldId, t.channelId],
