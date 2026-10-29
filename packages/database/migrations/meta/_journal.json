@@ -169,6 +169,13 @@
       "when": 1793262635515,
       "tag": "0023_mechanic_lifetimes_and_provenance",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1793293535171,
+      "tag": "0024_matched_ancestor_guards",
+      "breakpoints": true
     }
   ]
 }

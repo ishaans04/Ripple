@@ -9,6 +9,7 @@ import {
 import type { GameContext, OrganismRow } from './store.ts';
 import { genomeOf } from './store.ts';
 import { loadRaidPolicy, readTransfer, recordTransferTransition } from './propagation-store.ts';
+import { recordAncestorTrial } from './ancestor-trials.ts';
 
 /** Captures the same observation boundary for the resident and an already welcomed visitor. */
 export async function captureRoundParticipants(context: GameContext): Promise<void> {
@@ -56,6 +57,7 @@ async function saveResolution(
   organismId: string,
   resolution: RoundResolution,
   explanation: OutcomeExplanation,
+  checkpoint: RoundCheckpoint,
 ): Promise<void> {
   if (context.round === null) throw new Error('Missing participant round');
   await context.client.query(
@@ -68,6 +70,7 @@ async function saveResolution(
       JSON.stringify(explanation),
     ],
   );
+  await recordAncestorTrial(context, organismId, checkpoint, resolution);
   if (resolution.outcome === 'applied')
     await context.client.query(
       'update visitor_state set arrival_pending=false where world_id=$1 and organism_id=$2',
@@ -89,13 +92,20 @@ export async function finishVisitorObservation(
   observations: readonly ActivityObservation[],
   primaryResolution: RoundResolution,
   primaryExplanation: OutcomeExplanation,
+  primaryCheckpoint: RoundCheckpoint,
   sequence: number,
   atMs: number,
 ): Promise<Readonly<Record<string, unknown>> | null> {
   const { client, channel, round, rules } = context,
     primary = context.organism;
   if (round === null || primary === null) throw new Error('Missing primary observation');
-  await saveResolution(context, primary.id, primaryResolution, primaryExplanation);
+  await saveResolution(
+    context,
+    primary.id,
+    primaryResolution,
+    primaryExplanation,
+    primaryCheckpoint,
+  );
   const visitor = (
     await client.query<OrganismRow & { transfer_id: string; shelter_pending: boolean }>(
       `select o.*,v.transfer_id,v.shelter_pending from visitor_state v join residencies r on r.world_id=v.world_id and r.organism_id=v.organism_id join organisms o on o.world_id=v.world_id and o.id=v.organism_id
@@ -104,9 +114,10 @@ export async function finishVisitorObservation(
     )
   ).rows[0];
   if (visitor === undefined) return null;
+  const checkpoint = await participantCheckpoint(context, visitor.id, round.checkpoint);
   const finished = finishRoundObservation(
       {
-        checkpoint: await participantCheckpoint(context, visitor.id, round.checkpoint),
+        checkpoint,
         genome: genomeOf(visitor),
         health: visitor.health,
         slots: visitor.mutation_slots,
@@ -117,7 +128,7 @@ export async function finishVisitorObservation(
     resolution = finished.resolution;
   if (resolution.outcome === 'interrupted' || primaryResolution.outcome === 'interrupted')
     throw new Error('Untrustworthy interval reached visitor scoring');
-  await saveResolution(context, visitor.id, resolution, finished.explanation);
+  await saveResolution(context, visitor.id, resolution, finished.explanation, checkpoint);
   await client.query(
     'update organisms set health=$3,status=$4,mutation_slots=$5,version=version+1 where world_id=$1 and id=$2',
     [

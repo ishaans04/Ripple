@@ -40,8 +40,9 @@ export async function createSyntheticPeer(
     if (counted === undefined) throw new Error('Cannot count sandbox channels.');
     if (counted.count >= 8) throw new SandboxError('CAPACITY_FULL');
     await client.query(
-      `insert into channels(world_id,id,label,rules_hash,seed,configuration,online,healthy,initial_online,initial_healthy)
-      select world_id,$3,$4,rules_hash,$5,configuration,true,true,true,true from channels where world_id=$1 and id=$2`,
+      `insert into channels(world_id,id,label,rules_hash,seed,configuration,online,healthy,initial_online,initial_healthy,initial_mechanics_version)
+      select c.world_id,$3,$4,c.rules_hash,$5,c.configuration,true,true,true,true,p.mechanics_version
+      from channels c join channel_play p on p.world_id=c.world_id and p.channel_id=c.id where c.world_id=$1 and c.id=$2`,
       [scope.worldId, scope.channelId, channelId, label, sha256Hex(`synthetic-peer:${channelId}`)],
     );
     await client.query(

@@ -220,9 +220,10 @@ export async function applyRoundDeadline(
       'select actor_key,bucket from activity_contributions where world_id=$1 and round_id=$2 and observation_epoch=$3 order by bucket,actor_key',
       [channel.world_id, round.id, round.checkpoint.clock.observationEpoch],
     );
+    const primaryCheckpoint = await participantCheckpoint(context, organism.id, round.checkpoint);
     const finished = finishRoundObservation(
       {
-        checkpoint: await participantCheckpoint(context, organism.id, round.checkpoint),
+        checkpoint: primaryCheckpoint,
         genome: genomeOf(organism),
         health: organism.health,
         slots: organism.mutation_slots,
@@ -298,6 +299,7 @@ export async function applyRoundDeadline(
       })),
       resolution,
       finished.explanation,
+      primaryCheckpoint,
       sequence,
       atMs,
     );

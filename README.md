@@ -163,6 +163,8 @@ The ordered round scheduler persists ballots, observation, reveal, and recovery 
 
 The engine also evaluates rejected mutation cards against fixed recorded start energy, profile, shocks and trace, recomputing gene effects and final energy clamps. This read-only comparison validates the actual ballot and does not replay downstream branches. Its persisted/API presentation is still Phase 6 work.
 
+Mechanics-version-one synthetic fixtures persist ancestor trials against the lineage's founding genome using captured start energy, profile and raw shock markers. Trials are immutable, retain engine/rules identity, and compare scores before any finite Shelter settlement. Limited/interrupted intervals create no trial. Public rollout and presentation remain pending the rest of Phase 6.
+
 Pure mutation-preview rules use only a recorded recent valid profile and a known trace, label their uncertainty, and return Learning when no valid profile exists. These estimates never assume future chat, arrivals or category shocks; the server/UI connection is still in progress.
 
 ## Cocoon Studio practice
