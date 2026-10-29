@@ -103,6 +103,64 @@ describe('recorded broadcaster trace controls', () => {
     await advance(host, 3200);
     return host;
   }
+  it('rolls back trace clearing, round cancellation and deadlines together before retrying the accepted command once', async () => {
+    const host = await qualify();
+    await advance(host, 800);
+    await send(host, { type: 'vote', actorKey: 'accepted-before-failure', choice: 1 });
+    const before = await snapshot(host),
+      roundId = before.payload.round!.id,
+      savedTrace = await trace(host);
+    const deadlines = (
+      await pool.query(
+        'select id,status,command from deadlines where world_id=$1 and channel_id=$2 order by id',
+        [host.worldId, host.channelId],
+      )
+    ).rows;
+    await pool.query(`create function reject_trace_cancellation() returns trigger language plpgsql as $$ begin
+      if NEW.checkpoint ? 'traceDecisionCancelled' then raise exception 'cancellation fault'; end if; return NEW; end $$;
+      create trigger cancellation_fault before update on rounds for each row execute function reject_trace_cancellation()`);
+    try {
+      await expect(send(host, { type: 'clearTrace' })).rejects.toThrow('cancellation fault');
+      expect((await snapshot(host)).payload).toEqual(before.payload);
+      expect(await trace(host)).toEqual(savedTrace);
+      expect(
+        (
+          await pool.query(
+            'select id,status,command from deadlines where world_id=$1 and channel_id=$2 order by id',
+            [host.worldId, host.channelId],
+          )
+        ).rows,
+      ).toEqual(deadlines);
+    } finally {
+      await pool.query(
+        'drop trigger cancellation_fault on rounds; drop function reject_trace_cancellation()',
+      );
+    }
+    await settleSyntheticWorld(pool, host);
+    await settleSyntheticWorld(pool, host);
+    expect((await savedRound(host, roundId)).checkpoint.traceDecisionCancelled).toMatchObject({
+      reason: 'broadcaster-clear',
+    });
+    expect((await savedRound(host, roundId)).resolution).toBeNull();
+    expect((await trace(host)).status).toBe('cleared');
+    expect(
+      (
+        await pool.query('select 1 from votes where world_id=$1 and round_id=$2', [
+          host.worldId,
+          roundId,
+        ])
+      ).rowCount,
+    ).toBe(1);
+    expect(
+      (
+        await pool.query(
+          "select 1 from game_events where world_id=$1 and channel_id=$2 and command->>'type'='clearTrace'",
+          [host.worldId, host.channelId],
+        )
+      ).rowCount,
+    ).toBe(1);
+    expect((await snapshot(host)).payload.round!.kind).toBe('MUTATION');
+  });
   it('cancels a pending trace ballot explicitly and fences its obsolete cutoff without inventing a result', async () => {
     const host = await qualify();
     await advance(host, 800);

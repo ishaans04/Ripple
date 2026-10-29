@@ -134,6 +134,70 @@ describe('earned habitat traces and recorded Keep/Clear decisions', () => {
     expect(await traces(fixture.host)).toHaveLength(1);
     return fixture;
   }
+  it('rolls back scoring, qualification and ancestry together on ledger failure, then qualifies exactly once', async () => {
+    const { host } = await setup();
+    await advance(host, 3200);
+    await observe(host);
+    await advance(host, 800);
+    await advance(host, 3200);
+    for (const actorKey of ['a', 'b', 'c']) await send(host, { type: 'activity', actorKey });
+    const before = await snapshot(host),
+      roundId = before.round!.id;
+    await pool.query(`create function reject_trace_qualification() returns trigger language plpgsql as $$ begin raise exception 'qualification fault'; end $$;
+      create trigger qualification_fault before insert on trace_qualifications for each row execute function reject_trace_qualification()`);
+    try {
+      await expect(advance(host, 12000)).rejects.toThrow('qualification fault');
+      expect(await snapshot(host)).toEqual(before);
+      expect(await traces(host)).toEqual([]);
+      expect(
+        (
+          await pool.query('select 1 from ancestor_trials where world_id=$1 and round_id=$2', [
+            host.worldId,
+            roundId,
+          ])
+        ).rowCount,
+      ).toBe(0);
+      expect(
+        (
+          await pool.query(
+            'select completed_valid_rounds,trace_qualified from residencies where world_id=$1 and channel_id=$2 and ended_at is null',
+            [host.worldId, host.channelId],
+          )
+        ).rows,
+      ).toEqual([{ completed_valid_rounds: 1, trace_qualified: false }]);
+    } finally {
+      await pool.query(
+        'drop trigger qualification_fault on trace_qualifications; drop function reject_trace_qualification()',
+      );
+    }
+    await settleSyntheticWorld(pool, host);
+    await settleSyntheticWorld(pool, host);
+    expect(await traces(host)).toHaveLength(1);
+    expect(
+      (
+        await pool.query('select 1 from trace_qualifications where world_id=$1 and channel_id=$2', [
+          host.worldId,
+          host.channelId,
+        ])
+      ).rowCount,
+    ).toBe(1);
+    expect(
+      (
+        await pool.query('select 1 from ancestor_trials where world_id=$1 and round_id=$2', [
+          host.worldId,
+          roundId,
+        ])
+      ).rowCount,
+    ).toBe(1);
+    expect(
+      (
+        await pool.query(
+          'select completed_valid_rounds,trace_qualified from residencies where world_id=$1 and channel_id=$2 and ended_at is null',
+          [host.worldId, host.channelId],
+        )
+      ).rows,
+    ).toEqual([{ completed_valid_rounds: 2, trace_qualified: true }]);
+  });
   it.each<TraceTemplate>(['charged', 'shelter', 'recovery'])(
     'earns %s, keeps it with unchanged genes/slots and expires after exactly three valid observations',
     async (template) => {

@@ -77,6 +77,7 @@ Sources run directly on Node's TypeScript type stripping; workspace packages res
 | `npm run sandbox -- ...`                  | Run the isolated synthetic game adapter                               |
 | `npm run smoke:game`                      | Verify a synthetic round, HTTP snapshot, and WebSocket                |
 | `npm run smoke:raids`                     | Verify a two-channel synthetic preparation, raid, welcome and contest |
+| `npm run smoke:mechanics`                 | Verify earned mechanics, inherited expiry and scoped saved analysis   |
 
 ## Configuration
 
@@ -123,13 +124,17 @@ npm run sandbox -- raid WORLD_ID SOURCE_ID PEER_ID RECEIPT_UUID
 
 Substitute actual UUIDs; `PEER_ID` is the channel ID returned by `peer`. Reusing the raid receipt UUID returns the existing result. Preparation waits for a safe ballot and the raid uses its last committed choice. `policy` accepts `ask`, `accept` or `reject`; `admit`/`decline` take `WORLD CHANNEL TRANSFER VERSION`; `block-source`/`block-lineage` take `WORLD CHANNEL ID true/false`. Command output distinguishes durable acceptance, the current snapshot and whether settlement still has pending work. This is the command adapter; the complete judge interface remains Phase 9.
 
+New CLI worlds use mechanics version one. `enable-mechanics WORLD CHANNEL` requests the safe-boundary upgrade for an older world; `clear-traces WORLD CHANNEL` and `traces WORLD CHANNEL true/false` record the same real clear/preference transitions as owner controls. These commands cannot control live channels. Trace decisions still use ordinary synthetic chat votes: 1 Keep, 2 Clear, with no votes defaulting to Clear.
+
 To exercise historical adoption, choose a fresh destination UUID, run `raid-unknown WORLD SOURCE FUTURE_PEER_UUID [RECEIPT_UUID]`, then create `peer WORLD SOURCE "Later receiver" FUTURE_PEER_UUID`. Find the retained transfer ID/version in the source snapshot's outgoing raids and run `claim WORLD FUTURE_PEER_UUID TRANSFER_ID VERSION`. Claiming keeps the original invitation deadline, respects admission holds and uses the already reserved child. The CLI cannot exercise a live-world claim.
 
 Read access uses `GET /api/worlds/WORLD_ID/snapshot?channelId=CHANNEL_ID` with `Authorization: Bearer READ_CAPABILITY`. `POST /api/overlay/exchange` accepts `{ "worldId": "...", "channelId": "..." }` with the same header and returns a single-use, 30-second ticket for `/api/live?ticket=...`. WebSockets start with a current snapshot, carry complete versioned projections, reject client writes, cap buffers, check authority again, and repair missed updates from PostgreSQL independently in each gateway. Vote aggregates are limited to twice per second. These endpoints accept scoped read authority, never browser impersonation of live Twitch voters.
 
 With the stack running, `docker compose exec -T app node apps/server/dist/cli/smoke-game.js` verifies the installed command tool, a real three-account resolution, the scoped HTTP snapshot, and a snapshot-first WebSocket. It prints a public result summary and keeps generated capabilities out of its output. CI runs this journey inside the production image. For source development, `npm run smoke:game` uses the database environment and the running app at localhost:3000; set `RIPPLE_SMOKE_URL` for another app URL.
 
-`docker compose exec -T app node apps/server/dist/cli/smoke-raids.js` verifies two synthetic channels, standing Shield, duplicate raid receipts, a preserved open ballot, welcome, finite Shelter, matched contest, a fossil, the retained source parent and the receiving channel's scoped HTTP snapshot. It also checks an unenrolled raid followed by historical adoption, preserving the captured child and original expiry. CI runs this installed tool too. For source development use `npm run smoke:raids`. Neither smoke tool establishes live Twitch or OBS acceptance.
+`docker compose exec -T app node apps/server/dist/cli/smoke-raids.js` verifies two synthetic channels, standing Shield, duplicate raid receipts, a preserved open ballot, welcome, finite Shelter, matched contest, a fossil, the retained source parent and the receiving channel's scoped HTTP snapshot. It also checks an unenrolled raid followed by historical adoption, preserving the captured child and original expiry. CI runs this installed tool too. For source development use `npm run smoke:raids`.
+
+`docker compose exec -T app node apps/server/dist/cli/smoke-mechanics.js` verifies version-one creation, minority capture and exact inherited allowance, actual saved ancestor/rejected-choice records, a trace earned through two real synthetic observations, Keep, pause preservation, three-valid-observation expiry, capability-scoped analysis and immutable attribution after expiry/toggling. CI runs it in the production image; source development uses `npm run smoke:mechanics`. All three tools are synthetic verification and never establish live Twitch or OBS acceptance.
 
 ## Repository layout
 
