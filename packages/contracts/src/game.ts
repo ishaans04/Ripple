@@ -45,6 +45,10 @@ const admissionEligibility = z.strictObject({
 });
 export const propagationCommandSchema = z.discriminatedUnion('type', [
   z.strictObject({
+    type: z.literal('enableMechanics'),
+    expectedVersion: z.int().nonnegative().optional(),
+  }),
+  z.strictObject({
     type: z.literal('clearTrace'),
     expectedVersion: z.int().nonnegative().optional(),
   }),

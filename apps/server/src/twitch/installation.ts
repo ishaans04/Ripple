@@ -56,8 +56,8 @@ export async function enrollChannel(
   const channelId = randomUUID();
   const row = (
     await client.query<{ id: string }>(
-      `insert into channels (world_id,id,twitch_id,label,rules_hash,seed,configuration)
-    select id,$2,$3,$4,rules_hash,$5,$6 from worlds where id=$1 and mode='live'
+      `insert into channels (world_id,id,twitch_id,label,rules_hash,seed,configuration,initial_mechanics_version)
+    select id,$2,$3,$4,rules_hash,$5,$6,1 from worlds where id=$1 and mode='live'
     on conflict (world_id,twitch_id) do update set label=excluded.label returning id`,
       [
         worldId,

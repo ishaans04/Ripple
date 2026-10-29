@@ -162,6 +162,40 @@ describe('owner preparation and admission controls', () => {
     ).toBe(202);
     while (await processNextInput(pool, worldId, target));
   });
+  it('requires an owner, CSRF and exact versioned bodies for mechanics requests, with retry-stable acceptance', async () => {
+    const body = { action: 'enableMechanics', expectedVersion: await version() },
+      key = randomUUID();
+    const enablePost = (payload: Record<string, unknown>, receipt?: string, channel?: string) =>
+      post(payload, receipt, channel, '127.0.0.3');
+    expect((await enablePost(body, key, source)).statusCode).toBe(403);
+    expect((await enablePost({ ...body, mechanicsVersion: 1 })).statusCode).toBe(400);
+    expect(
+      (
+        await app.inject({
+          method: 'POST',
+          url: `/api/channels/${target}/control`,
+          cookies,
+          payload: body,
+          remoteAddress: '127.0.0.3',
+        })
+      ).statusCode,
+    ).toBe(403);
+    const accepted = await enablePost(body, key);
+    expect(accepted.statusCode).toBe(202);
+    expect((await enablePost(body, key)).json<{ sequence: number }>().sequence).toBe(
+      accepted.json<{ sequence: number }>().sequence,
+    );
+    while (await processNextInput(pool, worldId, target));
+    expect(
+      (await app.inject({ url: `/api/controller/commands/${key}`, cookies })).json<{
+        result: { code: string };
+      }>().result.code,
+    ).toBe('NO_CHANGE');
+    expect((await enablePost(body, key)).json<{ duplicate: boolean }>().duplicate).toBe(true);
+    expect((await enablePost({ ...body, expectedVersion: (await version()) - 1 })).statusCode).toBe(
+      409,
+    );
+  });
   it('requires owner CSRF and exact bodies, coalesces preparation, and fences queued version races', async () => {
     const payload = { action: 'prepare', expectedVersion: await version() },
       key = randomUUID();

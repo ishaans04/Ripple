@@ -15,7 +15,7 @@ import { createSyntheticPeer } from '../game/synthetic-peer.ts';
 import { operationId } from '../game/operation-id.ts';
 
 const usage =
-  'Usage: sandbox create | peer WORLD CHANNEL LABEL [PEER_UUID] | status/seed/prepare/pause/resume/offline/online/input-outage/recover WORLD CHANNEL | raid/raid-unknown WORLD SOURCE DESTINATION_UUID [RECEIPT_UUID] | policy WORLD CHANNEL ask/accept/reject | admit/decline/claim WORLD CHANNEL TRANSFER VERSION | block-source/block-lineage WORLD CHANNEL ID true/false | vote WORLD CHANNEL ACTOR CHOICE | activity WORLD CHANNEL ACTOR | advance WORLD CHANNEL MS [OPERATION_UUID]. Set RIPPLE_SANDBOX_CAPABILITY for existing worlds.';
+  'Usage: sandbox create | peer WORLD CHANNEL LABEL [PEER_UUID] | status/seed/prepare/enable-mechanics/clear-traces/pause/resume/offline/online/input-outage/recover WORLD CHANNEL | traces WORLD CHANNEL true/false | raid/raid-unknown WORLD SOURCE DESTINATION_UUID [RECEIPT_UUID] | policy WORLD CHANNEL ask/accept/reject | admit/decline/claim WORLD CHANNEL TRANSFER VERSION | block-source/block-lineage WORLD CHANNEL ID true/false | vote WORLD CHANNEL ACTOR CHOICE | activity WORLD CHANNEL ACTOR | advance WORLD CHANNEL MS [OPERATION_UUID]. Set RIPPLE_SANDBOX_CAPABILITY for existing worlds.';
 const config = loadConfig(process.env);
 const database = createDatabase({
   connectionString: config.databaseUrl,
@@ -27,7 +27,7 @@ const database = createDatabase({
 try {
   const [action, worldId, channelId, value, extra] = process.argv.slice(2);
   if (action === 'create') {
-    const world = await createSyntheticWorld(database.pool);
+    const world = await createSyntheticWorld(database.pool, { mechanicsVersion: 1 });
     await acceptSyntheticCommand(
       database.pool,
       world,
@@ -75,6 +75,18 @@ try {
           break;
         case 'prepare':
           command = { type: 'prepare' };
+          break;
+        case 'enable-mechanics':
+          command = { type: 'enableMechanics' };
+          break;
+        case 'clear-traces':
+          command = { type: 'clearTrace' };
+          break;
+        case 'traces':
+          command = {
+            type: 'setTraces',
+            enabled: z.enum(['true', 'false']).parse(value) === 'true',
+          };
           break;
         case 'raid':
         case 'raid-unknown':

@@ -1,4 +1,4 @@
-import { randomBytes } from 'node:crypto';
+import { randomBytes, randomUUID } from 'node:crypto';
 import pg from 'pg';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { runMigrations, transaction } from '@ripple/database';
@@ -48,5 +48,48 @@ describe('durable Twitch installation', () => {
         )
       ).rows,
     ).toEqual([{ online: false, healthy: false, initial_online: false, initial_healthy: false }]);
+    expect(
+      (
+        await pool.query(
+          'select initial_mechanics_version from channels where world_id=$1 and id=$2',
+          [worldId, a],
+        )
+      ).rows[0],
+    ).toEqual({ initial_mechanics_version: 1 });
+    expect(
+      (
+        await pool.query(
+          'select mechanics_version from channel_play where world_id=$1 and channel_id=$2',
+          [worldId, a],
+        )
+      ).rows[0],
+    ).toEqual({ mechanics_version: 1 });
+    const legacy = randomUUID();
+    await pool.query(
+      `insert into channels(world_id,id,twitch_id,label,rules_hash,seed,configuration)
+      select world_id,$3,'456','Legacy',rules_hash,seed,configuration from channels where world_id=$1 and id=$2`,
+      [worldId, a, legacy],
+    );
+    expect(
+      await transaction(pool, (client) =>
+        enrollChannel(client, worldId, '456', 'Legacy reauthorized'),
+      ),
+    ).toBe(legacy);
+    expect(
+      (
+        await pool.query(
+          'select initial_mechanics_version from channels where world_id=$1 and id=$2',
+          [worldId, legacy],
+        )
+      ).rows[0],
+    ).toEqual({ initial_mechanics_version: 0 });
+    expect(
+      (
+        await pool.query(
+          'select mechanics_version,mechanics_requested from channel_play where world_id=$1 and channel_id=$2',
+          [worldId, legacy],
+        )
+      ).rows[0],
+    ).toEqual({ mechanics_version: 0, mechanics_requested: false });
   });
 });

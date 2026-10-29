@@ -36,6 +36,7 @@ export function capabilityMatches(capability: string, hash: string): boolean {
   const expected = Buffer.from(hash, 'hex');
   return expected.length === candidate.length && timingSafeEqual(candidate, expected);
 }
+/** Internal versioned fixture factory; public CLI creation explicitly chooses the current genesis. */
 export async function createSyntheticWorld(
   pool: pg.Pool,
   options: { seed?: string; timings?: RoundTimings; mechanicsVersion?: 0 | 1 } = {},

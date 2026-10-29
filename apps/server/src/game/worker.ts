@@ -22,6 +22,7 @@ import { openNextRound, requestPreparation } from './round-scheduling.ts';
 import { operationId } from './operation-id.ts';
 import { claimHistoricalRaid } from './historical-adoption.ts';
 import { clearHabitatTraces, setHabitatTraces } from './trace-control.ts';
+import { requestMechanics } from './mechanics-rollout.ts';
 
 async function apply(
   context: GameContext,
@@ -31,6 +32,8 @@ async function apply(
   receiptId: string,
 ): Promise<CommandEffect> {
   switch (command.type) {
+    case 'enableMechanics':
+      return requestMechanics(context);
     case 'clearTrace':
       return clearHabitatTraces(context, sequence, atMs);
     case 'setTraces':

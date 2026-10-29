@@ -9,6 +9,8 @@ export async function ownerControlCommand(
   owner: OwnerSession,
   body: ChannelControl,
 ): Promise<GameCommand> {
+  if (body.action === 'enableMechanics')
+    return { type: 'enableMechanics', expectedVersion: body.expectedVersion };
   if (body.action === 'clearTrace')
     return { type: 'clearTrace', expectedVersion: body.expectedVersion };
   if (body.action === 'setTraces')

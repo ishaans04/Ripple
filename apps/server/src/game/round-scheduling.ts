@@ -22,6 +22,7 @@ import { genomeOf, saveCheckpoint, type GameContext, type OrganismRow } from './
 import { loadRaidPolicy, readTransfer, recordTransferTransition } from './propagation-store.ts';
 import { offerDormantMutation } from './dormant-state.ts';
 import { activeTrace, pendingTrace, traceReference, decideHabitatTrace } from './trace-state.ts';
+import { applyRequestedMechanics } from './mechanics-rollout.ts';
 
 /** Runs only after the previous round has committed its completion, or on an empty channel. */
 export async function openNextRound(
@@ -31,6 +32,7 @@ export async function openNextRound(
 ): Promise<boolean> {
   const { client, channel, rules, timings } = context;
   if (!channel.online || !channel.healthy || channel.paused) return false;
+  await applyRequestedMechanics(context);
   const actor = (
     await client.query<OrganismRow>(
       `select o.* from residencies r join organisms o on o.world_id=r.world_id and o.id=r.organism_id where r.world_id=$1 and r.channel_id=$2 and r.ended_at is null and r.role in ('resident','visitor') and o.status='ALIVE' order by case when r.role='resident' then 0 else 1 end,o.id limit 1`,

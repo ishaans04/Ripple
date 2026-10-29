@@ -535,6 +535,59 @@ test('trace controls send versioned owner requests and wait for committed settin
   expect(requests[1]).toEqual({ action: 'clearTrace', expectedVersion: 8 });
 });
 
+test('legacy mechanics enablement waits for the committed request and its safe boundary', async ({
+  page,
+}) => {
+  let requested = false,
+    enabled = false;
+  const bodies: unknown[] = [];
+  await page.route('**/api/connection', (route) => route.fulfill({ json: { liveEnabled: true } }));
+  await page.route('**/api/controller/status', (route) =>
+    route.fulfill({
+      json: {
+        ...status,
+        snapshot: {
+          version: requested ? 10 : 9,
+          payload: {
+            ...status.snapshot.payload,
+            mechanics: {
+              version: enabled ? 1 : 0,
+              enableRequested: requested && !enabled,
+              tracesEnabled: true,
+            },
+          },
+        },
+      },
+    }),
+  );
+  await page.route(`**/api/channels/${channel}/control`, (route) => {
+    bodies.push(route.request().postDataJSON() as unknown);
+    return route.fulfill({ status: 202, json: { sequence: 9 } });
+  });
+  await page.route('**/api/controller/commands/*', (route) =>
+    route.fulfill({ json: { result: requested ? { code: 'APPLIED' } : null } }),
+  );
+  await page.goto('/controller');
+  await page.getByRole('button', { name: 'Enable novel mechanics', exact: true }).click();
+  await expect(page.getByRole('status')).toContainText('Waiting for its committed result');
+  expect(bodies).toEqual([{ action: 'enableMechanics', expectedVersion: 9 }]);
+  requested = true;
+  await expect(page.getByText('Enablement requested.', { exact: false })).toBeVisible();
+  await expect(
+    page.getByRole('button', { name: 'Enable novel mechanics', exact: true }),
+  ).toBeDisabled();
+  await expect(
+    page.getByRole('button', { name: 'Disable habitat traces', exact: true }),
+  ).toHaveCount(0);
+  enabled = true;
+  await expect(
+    page.getByRole('button', { name: 'Disable habitat traces', exact: true }),
+  ).toBeEnabled();
+  await expect(
+    page.getByRole('button', { name: 'Enable novel mechanics', exact: true }),
+  ).toHaveCount(0);
+});
+
 const lineage = '33333333-3333-4333-8333-333333333333',
   transfer = '44444444-4444-4444-8444-444444444444',
   source = '55555555-5555-4555-8555-555555555555',

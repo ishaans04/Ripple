@@ -81,6 +81,14 @@ export function verifyAcceptedRecords(bundle: ChannelReplay): void {
     if (record.rulesHash !== bundle.rulesHash || record.engineVersion !== rules.engineVersion)
       throw new ReplayIntegrityError(`Incompatible context at sequence ${sequence}.`);
     gameCommandSchema.parse(record.command);
+    const mechanics = record.result.detail.mechanics;
+    if (mechanics !== undefined) {
+      const bound = z
+        .strictObject({ version: z.literal(1), policyHash: z.string() })
+        .parse(mechanics);
+      if (bundle.mechanicsPolicy?.hash !== bound.policyHash)
+        throw new ReplayIntegrityError('Recorded mechanics requires its matching frozen policy.');
+    }
     if (record.operationId !== `${record.provider}:${record.messageId}`)
       throw new ReplayIntegrityError('Receipt identity mismatch.');
     const material = {

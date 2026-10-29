@@ -12,7 +12,26 @@ export function TraceControls({
   control: (body: ChannelControl) => void;
 }) {
   const mechanics = channel.mechanics;
-  if (mechanics?.version !== 1) return null;
+  if (mechanics === undefined) return null;
+  if (mechanics.version === 0)
+    return (
+      <section className={styles.panel} aria-label="Novel mechanics settings">
+        <h2>Novel mechanics</h2>
+        <p>
+          {mechanics.enableRequested
+            ? 'Enablement requested. The current round keeps its original rules; novel mechanics begin at the next safe round opening.'
+            : 'This channel uses legacy mechanics. Enable traces, dormant possibilities and saved comparisons for future rounds.'}
+        </p>
+        <button
+          disabled={disabled || mechanics.enableRequested}
+          onClick={() => {
+            control({ action: 'enableMechanics', expectedVersion: version });
+          }}
+        >
+          Enable novel mechanics
+        </button>
+      </section>
+    );
   return (
     <section className={styles.panel} aria-label="Habitat trace controls">
       <h2>Habitat traces</h2>
