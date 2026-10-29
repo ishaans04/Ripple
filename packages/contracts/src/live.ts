@@ -1,6 +1,38 @@
 import { z } from 'zod';
 import { shellPartSchema, studioGenomeSchema } from './studio.ts';
 import { propagationViewSchema, transferViewSchema } from './propagation-view.ts';
+export const choicePreviewSchema = z
+  .object({
+    label: z.literal('Based on recent activity'),
+    uncertainty: z.literal('Estimate only; future chat, arrivals and category changes may differ.'),
+  })
+  .and(
+    z.discriminatedUnion('status', [
+      z.object({
+        status: z.literal('learning'),
+        reason: z.literal('No valid habitat profile yet'),
+        cards: z.tuple([]),
+      }),
+      z.object({
+        status: z.literal('estimate'),
+        sourceRoundId: z.uuid(),
+        exogenousHash: z.string().regex(/^[a-f0-9]{64}$/),
+        cards: z
+          .array(
+            z.object({
+              candidateId: z.string(),
+              effect: z.string(),
+              tradeOff: z.string(),
+              source: z.enum(['generated', 'dormant']),
+              estimatedFitness: z.int(),
+              estimatedEnergyChange: z.int(),
+              relativeToHold: z.int(),
+            }),
+          )
+          .length(3),
+      }),
+    ]),
+  );
 export const channelViewSchema = z.object({
   channelId: z.uuid(),
   label: z.string(),
@@ -42,6 +74,7 @@ export const channelViewSchema = z.object({
         deadlineAtMs: z.number().nullable(),
       }),
       candidates: z.array(z.object({ effect: z.string(), tradeOff: z.string() })),
+      choicePreview: choicePreviewSchema.optional(),
       counts: z.array(z.int().nonnegative()),
       voteCloseAtMs: z.number().nullable(),
       explanation: z.object({ headline: z.string() }).nullable(),

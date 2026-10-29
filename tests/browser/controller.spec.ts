@@ -94,6 +94,75 @@ test('read-only preview explains an invalid link without showing fabricated stat
   await expect(page.getByRole('button')).toHaveCount(0);
 });
 
+test('choice previews show uncertain recent-profile estimates and replace them with Learning when needed', async ({
+  page,
+}) => {
+  const cards = Array.from({ length: 3 }, (_, index) => ({
+    candidateId: `candidate-${index}`,
+    effect: `Adaptation ${index + 1}`,
+    tradeOff: `Trade-off ${index + 1}`,
+    source: 'generated',
+    estimatedFitness: index,
+    estimatedEnergyChange: index + 1,
+    relativeToHold: index,
+  }));
+  const preview = {
+    status: 'estimate',
+    label: 'Based on recent activity',
+    uncertainty: 'Estimate only; future chat, arrivals and category changes may differ.',
+    sourceRoundId: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+    exogenousHash: 'a'.repeat(64),
+    cards,
+  };
+  const payload = {
+    ...status.snapshot.payload,
+    online: true,
+    healthy: true,
+    round: {
+      id: 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',
+      number: 2,
+      kind: 'MUTATION',
+      phase: 'VOTING',
+      clock: { paused: false, remainingMs: 3000, deadlineAtMs: null },
+      candidates: cards,
+      counts: [0, 0, 0],
+      voteCloseAtMs: null,
+      explanation: null,
+      choicePreview: preview,
+    },
+  };
+  let current: unknown = payload;
+  await page.route('**/api/connection', (route) => route.fulfill({ json: { liveEnabled: true } }));
+  await page.route('**/api/controller/status', (route) =>
+    route.fulfill({ json: { ...status, snapshot: { version: 2, payload: current } } }),
+  );
+  await page.goto('/controller');
+  await expect(page.getByText('Based on recent activity.', { exact: false })).toBeVisible();
+  await expect(page.getByText('Estimated energy change +2; +1 compared with Hold.')).toBeVisible();
+  await expect(page.getByText('Trade-off 2.', { exact: false })).toBeVisible();
+  await expect(
+    page.getByText('Estimate only; future chat, arrivals and category changes may differ.', {
+      exact: false,
+    }),
+  ).toBeVisible();
+  current = {
+    ...payload,
+    round: {
+      ...payload.round,
+      choicePreview: {
+        ...preview,
+        status: 'learning',
+        reason: 'No valid habitat profile yet',
+        cards: [],
+      },
+    },
+  };
+  await expect(
+    page.getByText('Learning: No valid habitat profile yet.', { exact: false }),
+  ).toBeVisible();
+  await expect(page.getByText('Estimated energy change', { exact: false })).toHaveCount(0);
+});
+
 const lineage = '33333333-3333-4333-8333-333333333333',
   transfer = '44444444-4444-4444-8444-444444444444',
   source = '55555555-5555-4555-8555-555555555555',

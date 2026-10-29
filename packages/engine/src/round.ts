@@ -14,6 +14,7 @@ import {
 } from './studio-slots.ts';
 import { resolveMutationBallot, type BallotVote, type TallyResult } from './tally.ts';
 import type { SpecialOption } from './arrival.ts';
+import type { ChoicePreview } from './choice-preview.ts';
 
 export interface RoundCheckpoint {
   readonly schemaVersion: 1;
@@ -25,6 +26,7 @@ export interface RoundCheckpoint {
   readonly shocks: readonly ShockMarker[];
   /** Recorded at ordinary ballot close; null is the explicit no-vote Hold. */
   readonly mutationSelection?: { readonly choiceId: string | null };
+  readonly choicePreview?: ChoicePreview;
   readonly specialBallot?: {
     readonly kind: 'WELCOME' | 'PREPARATION';
     readonly options: readonly SpecialOption[];

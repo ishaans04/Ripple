@@ -4,6 +4,7 @@ import {
   openSpecialRound,
   preparationOptions,
   preparationSchema,
+  previewMutationChoices,
   resolveSpecialVote,
   welcomeArrival,
   welcomeChoiceSchema,
@@ -11,6 +12,7 @@ import {
   type BallotVote,
   type BaselineRound,
   type RoundClock,
+  type RoundCheckpoint,
 } from '@ripple/engine';
 import { captureRoundParticipants } from './visitor-observation.ts';
 import { effect, type CommandEffect } from './lifecycle.ts';
@@ -79,7 +81,7 @@ export async function openNextRound(
     atMs,
     timings,
   };
-  const checkpoint =
+  let checkpoint: RoundCheckpoint =
     kind === 'MUTATION'
       ? openMutationRound(input, rules)
       : openSpecialRound(
@@ -97,6 +99,28 @@ export async function openNextRound(
           },
           rules,
         );
+  if (context.mechanics.version === 1 && kind === 'MUTATION') {
+    const recent = baseline.at(-1);
+    checkpoint = {
+      ...checkpoint,
+      choicePreview: previewMutationChoices(
+        {
+          genome: genomeOf(actor),
+          healthBefore: actor.health,
+          candidates: checkpoint.candidates,
+          recent:
+            recent === undefined
+              ? null
+              : {
+                  roundId: recent.roundId,
+                  profile: { burst: recent.burst, steadiness: 1000 - recent.burst },
+                },
+          trace: null,
+        },
+        rules,
+      ),
+    };
+  }
   const number = (
     await client.query<{ number: number }>(
       'select coalesce(max(number),0)+1 as number from rounds where world_id=$1 and channel_id=$2',

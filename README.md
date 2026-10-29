@@ -165,7 +165,7 @@ The engine also evaluates rejected mutation cards against fixed recorded start e
 
 Mechanics-version-one synthetic fixtures persist ancestor trials against the lineage's founding genome using captured start energy, profile and raw shock markers. Trials are immutable, retain engine/rules identity, and compare scores before any finite Shelter settlement. Limited/interrupted intervals create no trial. Public rollout and presentation remain pending the rest of Phase 6.
 
-Pure mutation-preview rules use only a recorded recent valid profile and a known trace, label their uncertainty, and return Learning when no valid profile exists. These estimates never assume future chat, arrivals or category shocks; the server/UI connection is still in progress.
+Mutation-preview rules use only a recorded recent valid profile and a known trace, label their uncertainty, and return Learning when no valid profile exists. Version-one ballots freeze the preview at opening, retain its source round, and expose estimates and trade-offs in the controller/read-only preview. New observations never rewrite the displayed estimate. Public rollout remains pending the rest of Phase 6.
 
 ## Cocoon Studio practice
 

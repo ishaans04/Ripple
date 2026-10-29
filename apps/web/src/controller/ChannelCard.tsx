@@ -47,13 +47,33 @@ export function ChannelCard({ channel }: { channel: ChannelView }) {
             <>
               <p>Vote in Twitch chat. Your first valid vote stands.</p>
               <ol>
-                {round.candidates.map((c, i) => (
-                  <li key={i}>
-                    <strong>{c.effect}</strong> — {c.tradeOff}. Vote !ripple {i + 1} ·{' '}
-                    {round.counts[i] ?? 0} votes
-                  </li>
-                ))}
+                {round.candidates.map((c, i) => {
+                  const estimate =
+                    round.choicePreview?.status === 'estimate'
+                      ? round.choicePreview.cards[i]
+                      : undefined;
+                  return (
+                    <li key={i}>
+                      <strong>{c.effect}</strong> — {c.tradeOff}. Vote !ripple {i + 1} ·{' '}
+                      {round.counts[i] ?? 0} votes
+                      {estimate !== undefined && (
+                        <p>
+                          Estimated energy change {signed(estimate.estimatedEnergyChange)};{' '}
+                          {signed(estimate.relativeToHold)} compared with Hold.
+                        </p>
+                      )}
+                    </li>
+                  );
+                })}
               </ol>
+              {round.choicePreview !== undefined && (
+                <p>
+                  {round.choicePreview.status === 'learning'
+                    ? `Learning: ${round.choicePreview.reason}.`
+                    : `${round.choicePreview.label}.`}{' '}
+                  {round.choicePreview.uncertainty}
+                </p>
+              )}
               <p>
                 {round.voteCloseAtMs === null
                   ? 'Voting clock is held.'
@@ -67,4 +87,7 @@ export function ChannelCard({ channel }: { channel: ChannelView }) {
       {channel.propagation !== undefined && <PropagationCard view={channel.propagation} />}
     </section>
   );
+}
+function signed(value: number): string {
+  return value > 0 ? `+${value}` : String(value);
 }
