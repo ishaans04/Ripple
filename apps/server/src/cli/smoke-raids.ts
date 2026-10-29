@@ -103,6 +103,25 @@ assert.deepEqual(
   channelViewSchema.parse(publicUpdateSchema.parse(await response.json()).payload),
   receiver,
 );
+const laterId = randomUUID();
+command('raid-unknown', created.channelId, laterId, randomUUID());
+const invitation = status().propagation?.outgoing[0];
+assert.ok(invitation !== undefined && invitation.childId !== null);
+assert.equal(invitation.outcome, 'NOT_ENROLLED');
+assert.equal(invitation.destinationChannelId, null);
+assert.equal(status().propagation?.resident?.livingBranches, 2);
+command('peer', created.channelId, 'Later receiver', laterId);
+advance(1000);
+command('claim', laterId, invitation.id, String(invitation.version));
+const historical = status(laterId);
+assert.equal(historical.round?.kind, 'WELCOME');
+assert.equal(historical.organism, null);
+const historicalView = historical.propagation;
+assert.ok(historicalView !== undefined && historicalView.visitor !== null);
+assert.equal(historicalView.visitor.health, 28);
+assert.equal(historicalView.admissions[0]?.historical, true);
+assert.equal(historicalView.admissions[0].expiresAt, invitation.expiresAt);
+assert.equal(historicalView.admissions[0].childId, invitation.childId);
 process.stdout.write(
-  `${JSON.stringify({ synthetic: true, worldId: created.worldId, checks: ['two-channel clock', 'standing Shield', 'duplicate raid', 'unchanged open ballot', 'welcome', 'finite shelter', 'matched contest', 'fossil', 'retained source', 'scoped HTTP'] })}\n`,
+  `${JSON.stringify({ synthetic: true, worldId: created.worldId, checks: ['two-channel clock', 'standing Shield', 'duplicate raid', 'unchanged open ballot', 'welcome', 'finite shelter', 'matched contest', 'fossil', 'retained source', 'scoped HTTP', 'historical adoption', 'original invitation expiry', 'captured child'] })}\n`,
 );

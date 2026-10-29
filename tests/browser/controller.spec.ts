@@ -269,3 +269,74 @@ for (const lateResponse of ['accepted', 'disconnected'] as const)
     await expect(approve).toBeEnabled();
     await expect(page.getByRole('status')).toHaveText('Change committed.');
   });
+
+test('historical invitation preserves its label and destination-scoped request versions', async ({
+  page,
+}) => {
+  const offer = {
+    ...propagation.admissions[0],
+    version: 0,
+    outcome: 'NOT_ENROLLED',
+    destinationChannelId: null,
+    destinationLabel: null,
+  };
+  await page.route('**/api/connection', (route) => route.fulfill({ json: { liveEnabled: true } }));
+  await page.route('**/api/controller/status?claim=*', (route) => {
+    expect(new URL(route.request().url()).searchParams.get('claim')).toBe(transfer);
+    return route.fulfill({
+      json: {
+        ...status,
+        historicalOffers: [offer],
+        snapshot: {
+          version: 12,
+          payload: {
+            ...status.snapshot.payload,
+            propagation: { ...propagation, admissions: [], outgoing: [offer] },
+          },
+        },
+      },
+    });
+  });
+  await page.route('**/api/controller/blocks?*', (route) =>
+    route.fulfill({ json: { kind: 'source', items: [], next: null } }),
+  );
+  const requests: unknown[] = [];
+  await page.route(`**/api/channels/${channel}/control`, (route) => {
+    requests.push(route.request().postDataJSON() as unknown);
+    return route.fulfill({ status: 202, json: { sequence: 8 } });
+  });
+  await page.route('**/api/controller/commands/*', (route) =>
+    route.fulfill({
+      json: { result: { code: 'APPLIED', detail: { historical: true, outcome: 'OFFLINE_HOLD' } } },
+    }),
+  );
+  await page.goto(`/controller#claim=${transfer}`);
+  await expect(page.getByRole('region', { name: 'Historical raid invitations' })).toContainText(
+    'It is not a new live raid',
+  );
+  await expect(
+    page.getByRole('textbox', { name: `Historical raid invitation ${transfer}` }),
+  ).toHaveValue(`http://127.0.0.1:${new URL(page.url()).port}/controller#claim=${transfer}`);
+  await page.getByRole('button', { name: 'Request historical adoption from Tide channel' }).click();
+  await expect(page.getByRole('status')).toHaveText(
+    'Historical adoption recorded. Held while offline or paused.',
+  );
+  expect(requests).toEqual([
+    { action: 'claimRaid', expectedVersion: 12, transferId: transfer, transferVersion: 0 },
+  ]);
+});
+
+test('an unavailable historical invitation explains the account and expiry boundary without an adoption action', async ({
+  page,
+}) => {
+  await page.route('**/api/connection', (route) => route.fulfill({ json: { liveEnabled: true } }));
+  await page.route('**/api/controller/status?claim=*', (route) =>
+    route.fulfill({ json: { ...status, historicalOffers: [] } }),
+  );
+  await page.goto(`/controller#claim=${transfer}`);
+  const invitations = page.getByRole('region', { name: 'Historical raid invitations' });
+  await expect(invitations).toContainText(
+    'No unexpired historical invitation is available for this signed-in channel',
+  );
+  await expect(invitations.getByRole('button')).toHaveCount(0);
+});

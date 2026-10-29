@@ -161,7 +161,11 @@ export async function forkRaid(
             originChannelId: parent.origin_channel_id,
           },
   };
-  const childId = outcome === 'QUEUED' ? command.childId : null;
+  // Older accepted commands keep their original no-retention behavior on replay.
+  const childId =
+    outcome === 'QUEUED' || (outcome === 'NOT_ENROLLED' && command.retainUnenrolled === true)
+      ? command.childId
+      : null;
   if (childId !== null && parent !== undefined && inherited !== null && arrival !== null) {
     const g = inherited.genome;
     await client.query(
@@ -238,11 +242,13 @@ export async function forkRaid(
       command.transferId,
       destinationReceipt.sequence,
     ]);
+  }
+  if (childId !== null) {
     await client.query(
       `insert into deadlines(world_id,channel_id,id,job_key,command,due_at,remaining_ms) values($1,$2,$3,$4,$5,$6,$7) on conflict do nothing`,
       [
         channel.world_id,
-        destination.id,
+        destination?.id ?? channel.id,
         randomUUID(),
         `admission-expiry:${command.transferId}`,
         JSON.stringify({ type: 'expireAdmission', transferId: command.transferId }),

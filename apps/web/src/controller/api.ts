@@ -43,6 +43,10 @@ export const controlMessages: Readonly<Record<string, string>> = {
   NO_RESIDENT: 'There is no living resident to change.',
   RESIDENT_EXISTS: 'This channel already has a resident.',
   PAUSED: 'The channel is manually paused. Resume it first.',
+  CLAIM_NOT_AVAILABLE: 'This raid has no remaining historical invitation.',
+  NOT_CLAIM_DESTINATION: 'Only the original raid destination can adopt this descendant.',
+  CLAIM_EXPIRED: 'The retained raid invitation has expired. No descendant was activated.',
+  CLAIM_CAPACITY: 'The harbor is full. Try again before the original invitation expires.',
 };
 export function controlMessage(code: string): string {
   return controlMessages[code] ?? code.replaceAll('_', ' ');

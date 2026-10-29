@@ -53,6 +53,7 @@ export const propagationCommandSchema = z.discriminatedUnion('type', [
     destinationChannelId: z.uuid().nullable(),
     destinationTwitchId: z.string().min(1).max(100),
     sourceAuthorized: z.boolean().optional(),
+    retainUnenrolled: z.boolean().optional(),
   }),
   z.strictObject({
     type: z.literal('arrive'),
@@ -61,6 +62,15 @@ export const propagationCommandSchema = z.discriminatedUnion('type', [
     eligibility: admissionEligibility.optional(),
   }),
   z.strictObject({ type: z.literal('expireAdmission'), transferId: z.uuid() }),
+  z.strictObject({
+    type: z.literal('claimRaid'),
+    transferId: z.uuid(),
+    transferVersion: z.int().nonnegative(),
+    expectedVersion: z.int().nonnegative().optional(),
+    claimantTwitchId: z.string().min(1).max(100).optional(),
+    checkedAtMs: z.int().nonnegative().optional(),
+    eligibility: admissionEligibility.optional(),
+  }),
   z.strictObject({
     type: z.literal('admission'),
     transferId: z.uuid(),
@@ -153,6 +163,10 @@ export const gameResultCodes = [
   'PAUSED',
   'INTEGRATION_UNAVAILABLE',
   'NO_CHANGE',
+  'CLAIM_NOT_AVAILABLE',
+  'NOT_CLAIM_DESTINATION',
+  'CLAIM_EXPIRED',
+  'CLAIM_CAPACITY',
 ] as const;
 export type GameResultCode = (typeof gameResultCodes)[number];
 

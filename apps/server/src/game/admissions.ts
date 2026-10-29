@@ -280,10 +280,21 @@ export async function applyAdmissionCommand(
       command.eligibility ?? (await admissionEligibility(context)),
     );
   const transfer = await readTransfer(context.client, context.channel.world_id, command.transferId);
-  if (transfer?.destination_channel_id !== context.channel.id) return effect('NO_CHANGE');
+  if (
+    transfer === null ||
+    (transfer.destination_channel_id !== context.channel.id &&
+      !(
+        command.type === 'expireAdmission' &&
+        transfer.destination_channel_id === null &&
+        transfer.source_channel_id === context.channel.id &&
+        transfer.outcome === 'NOT_ENROLLED'
+      ))
+  )
+    return effect('NO_CHANGE');
   if (command.type === 'expireAdmission') {
     if (
-      !pendingAdmissionOutcomes.includes(transfer.outcome) ||
+      (!pendingAdmissionOutcomes.includes(transfer.outcome) &&
+        transfer.outcome !== 'NOT_ENROLLED') ||
       transfer.expires_at === null ||
       atMs < transfer.expires_at.getTime()
     )

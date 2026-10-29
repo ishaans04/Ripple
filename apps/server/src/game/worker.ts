@@ -20,6 +20,7 @@ import { forkRaid } from './raid-fork.ts';
 import { admissionEligibility, applyAdmissionCommand, pendingAdmissions } from './admissions.ts';
 import { openNextRound, requestPreparation } from './round-scheduling.ts';
 import { operationId } from './operation-id.ts';
+import { claimHistoricalRaid } from './historical-adoption.ts';
 
 async function apply(
   context: GameContext,
@@ -31,6 +32,8 @@ async function apply(
   switch (command.type) {
     case 'raid':
       return forkRaid(context, command, receiptId, sequence, atMs);
+    case 'claimRaid':
+      return claimHistoricalRaid(context, command, sequence, atMs);
     case 'arrive':
     case 'expireAdmission':
     case 'admission':
@@ -186,9 +189,16 @@ export async function processNextInput(
               [worldId, liveRaid.data.destinationTwitchId],
             )
           ).rows[0]?.id ?? null)
-        : known.success && known.data.type === 'raid'
-          ? known.data.destinationChannelId
-          : null;
+        : known.success && known.data.type === 'claimRaid'
+          ? ((
+              await client.query<{ source_channel_id: string }>(
+                'select source_channel_id from transfers where world_id=$1 and id=$2',
+                [worldId, known.data.transferId],
+              )
+            ).rows[0]?.source_channel_id ?? null)
+          : known.success && known.data.type === 'raid'
+            ? known.data.destinationChannelId
+            : null;
       const targetExists =
         target === null
           ? false
@@ -223,7 +233,11 @@ export async function processNextInput(
         liveRaid = raidIntentSchema.safeParse(next.command);
         const current = gameCommandSchema.safeParse(next.command);
         // Ordinary commands still need only this channel lock. A new raid needs a fresh sorted lock set.
-        if (liveRaid.success || (current.success && current.data.type === 'raid')) return 'RETRY';
+        if (
+          liveRaid.success ||
+          (current.success && ['raid', 'claimRaid'].includes(current.data.type))
+        )
+          return 'RETRY';
       }
       if (liveRaid.success) {
         const actual =
@@ -249,7 +263,12 @@ export async function processNextInput(
       if (input === undefined) throw new Error('The next accepted sequence is missing.');
       const intent = chatIntentSchema.safeParse(input.command);
       let command: GameCommand = liveRaid.success
-        ? { ...liveRaid.data, type: 'raid', destinationChannelId: lockedTarget }
+        ? {
+            ...liveRaid.data,
+            type: 'raid',
+            destinationChannelId: lockedTarget,
+            retainUnenrolled: true,
+          }
         : intent.success
           ? intent.data.action === 'vote'
             ? {
@@ -286,7 +305,8 @@ export async function processNextInput(
       if (
         command.type === 'arrive' ||
         command.type === 'admission' ||
-        command.type === 'admissionSweep'
+        command.type === 'admissionSweep' ||
+        command.type === 'claimRaid'
       )
         command = {
           ...command,
@@ -295,6 +315,22 @@ export async function processNextInput(
               ? command.eligibility
               : await admissionEligibility(context),
         };
+      if (command.type === 'claimRaid' && mode !== 'replay') {
+        const identity = (
+          await client.query<{ claimant: string; checked_at: Date }>(
+            `select coalesce(c.twitch_id,c.id::text) as claimant,
+          coalesce(w.clock_at,date_trunc('milliseconds',clock_timestamp())) as checked_at
+          from channels c join worlds w on w.id=c.world_id where c.world_id=$1 and c.id=$2`,
+            [worldId, channelId],
+          )
+        ).rows[0];
+        if (identity === undefined) throw new Error('Missing historical claimant channel.');
+        command = {
+          ...command,
+          claimantTwitchId: identity.claimant,
+          checkedAtMs: identity.checked_at.getTime(),
+        };
+      }
       let result =
         'expectedVersion' in command &&
         command.expectedVersion !== undefined &&

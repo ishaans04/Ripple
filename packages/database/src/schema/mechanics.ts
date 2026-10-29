@@ -32,6 +32,7 @@ export const transfers = pgTable(
     version: integer('version').notNull().default(0),
     destinationSequence: integer('destination_sequence'),
     approvedAt: timestamp('approved_at', { withTimezone: true }),
+    claimedAt: timestamp('claimed_at', { withTimezone: true }),
     outcome: text('outcome').notNull(),
     snapshot: jsonb('snapshot').notNull(),
     expiresAt: timestamp('expires_at', { withTimezone: true }),

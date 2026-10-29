@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { shellPartSchema, studioGenomeSchema } from './studio.ts';
-import { propagationViewSchema } from './propagation-view.ts';
+import { propagationViewSchema, transferViewSchema } from './propagation-view.ts';
 export const channelViewSchema = z.object({
   channelId: z.uuid(),
   label: z.string(),
@@ -66,5 +66,6 @@ export const controllerStatusSchema = z.object({
   }),
   snapshot: z.object({ version: z.int(), payload: channelViewSchema }).nullable(),
   readClients: z.int().nonnegative(),
+  historicalOffers: z.array(transferViewSchema).max(10).optional(),
 });
 export type ControllerStatus = z.infer<typeof controllerStatusSchema>;

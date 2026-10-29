@@ -87,6 +87,7 @@ export function PropagationCard({ view }: { view: PropagationView }) {
           {view.admissions.map((t) => (
             <li key={t.id}>
               From {t.sourceLabel}: {admissionLabel(t.outcome)}
+              {t.historical === true && ' · Historical adoption from an earlier raid'}
               {t.outcome !== 'ACTIVE' && t.expiresAt !== null
                 ? ` · Expires ${new Date(t.expiresAt).toLocaleString()}`
                 : ''}
@@ -117,6 +118,7 @@ export function PropagationCard({ view }: { view: PropagationView }) {
             {view.outgoing.map((t) => (
               <li key={t.id}>
                 {t.destinationLabel ?? 'Unenrolled destination'}: {admissionLabel(t.outcome)}
+                {t.historical === true && ' · Historical adoption from an earlier raid'}
               </li>
             ))}
           </ul>

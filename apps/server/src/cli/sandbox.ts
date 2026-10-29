@@ -15,7 +15,7 @@ import { createSyntheticPeer } from '../game/synthetic-peer.ts';
 import { operationId } from '../game/operation-id.ts';
 
 const usage =
-  'Usage: sandbox create | peer WORLD CHANNEL LABEL [PEER_UUID] | status/seed/prepare/pause/resume/offline/online/input-outage/recover WORLD CHANNEL | raid WORLD SOURCE DESTINATION [RECEIPT_UUID] | policy WORLD CHANNEL ask/accept/reject | admit/decline WORLD CHANNEL TRANSFER VERSION | block-source/block-lineage WORLD CHANNEL ID true/false | vote WORLD CHANNEL ACTOR CHOICE | activity WORLD CHANNEL ACTOR | advance WORLD CHANNEL MS [OPERATION_UUID]. Set RIPPLE_SANDBOX_CAPABILITY for existing worlds.';
+  'Usage: sandbox create | peer WORLD CHANNEL LABEL [PEER_UUID] | status/seed/prepare/pause/resume/offline/online/input-outage/recover WORLD CHANNEL | raid/raid-unknown WORLD SOURCE DESTINATION_UUID [RECEIPT_UUID] | policy WORLD CHANNEL ask/accept/reject | admit/decline/claim WORLD CHANNEL TRANSFER VERSION | block-source/block-lineage WORLD CHANNEL ID true/false | vote WORLD CHANNEL ACTOR CHOICE | activity WORLD CHANNEL ACTOR | advance WORLD CHANNEL MS [OPERATION_UUID]. Set RIPPLE_SANDBOX_CAPABILITY for existing worlds.';
 const config = loadConfig(process.env);
 const database = createDatabase({
   connectionString: config.databaseUrl,
@@ -77,6 +77,7 @@ try {
           command = { type: 'prepare' };
           break;
         case 'raid':
+        case 'raid-unknown':
           receiptId = extra === undefined ? randomUUID() : z.uuid().parse(extra);
           command = {
             type: 'raid',
@@ -84,8 +85,9 @@ try {
             childId: operationId(scope.channelId, 0, `${receiptId}:child`),
             residencyId: operationId(scope.channelId, 0, `${receiptId}:residency`),
             arrivalRoundId: operationId(scope.channelId, 0, `${receiptId}:welcome`),
-            destinationChannelId: z.uuid().parse(value),
-            destinationTwitchId: value,
+            destinationChannelId: action === 'raid-unknown' ? null : z.uuid().parse(value),
+            destinationTwitchId: z.uuid().parse(value).toLowerCase(),
+            retainUnenrolled: true,
           };
           break;
         case 'policy': {
@@ -106,6 +108,13 @@ try {
             transferVersion: z.coerce.number().int().nonnegative().parse(extra),
             decision: action === 'admit' ? 'accept' : 'decline',
             roundId: randomUUID(),
+          };
+          break;
+        case 'claim':
+          command = {
+            type: 'claimRaid',
+            transferId: z.uuid().parse(value),
+            transferVersion: z.coerce.number().int().nonnegative().parse(extra),
           };
           break;
         case 'block-source':

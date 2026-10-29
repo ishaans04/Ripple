@@ -5,6 +5,12 @@ const version = { expectedVersion: z.int().nonnegative() };
 export const channelControlSchema = z.discriminatedUnion('action', [
   z.strictObject({ action: z.literal('prepare'), ...version }),
   z.strictObject({
+    action: z.literal('claimRaid'),
+    ...version,
+    transferId: z.uuid(),
+    transferVersion: z.int().nonnegative(),
+  }),
+  z.strictObject({
     action: z.literal('admission'),
     ...version,
     transferId: z.uuid(),

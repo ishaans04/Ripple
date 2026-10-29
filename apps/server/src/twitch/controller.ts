@@ -11,6 +11,7 @@ import { opaqueToken, type TwitchConfig } from './security.ts';
 import { subscriptionVersions } from './webhook.ts';
 import { ownerControlCommand } from './owner-control.ts';
 import { registerOwnerBlocks } from './owner-blocks.ts';
+import { historicalOffers } from '../game/historical-adoption.ts';
 
 const seedBody = z.strictObject({ expectedVersion: z.int().nonnegative(), name: strainNameSchema });
 const versionBody = z.strictObject({ expectedVersion: z.int().nonnegative() });
@@ -27,6 +28,8 @@ export function registerController(
     { config: { rateLimit: { max: 120, timeWindow: '1 minute' } } },
     async (request) => {
       const owner = await ownerSession(pool, request, config);
+      const query = z.object({ claim: z.uuid().optional() }).safeParse(request.query);
+      if (!query.success) throw new ControlError(400, 'BAD_REQUEST');
       const snapshot = await readSnapshot(pool, owner.world_id, owner.channel_id);
       const settings = (
         await pool.query<{
@@ -78,6 +81,12 @@ export function registerController(
         settings,
         snapshot,
         readClients: app.publicGateway.connected(owner.world_id, owner.channel_id),
+        historicalOffers: await historicalOffers(
+          pool,
+          owner.world_id,
+          owner.channel_id,
+          query.data.claim,
+        ),
       };
     },
   );

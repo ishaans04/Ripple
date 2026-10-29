@@ -4,7 +4,7 @@ import pg from 'pg';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { acceptInput, runMigrations, transaction } from '@ripple/database';
 import { createTemporaryDatabase, type TemporaryDatabase } from '@ripple/database/testing';
-import type { GameCommand } from '@ripple/contracts';
+import { controllerStatusSchema, type GameCommand } from '@ripple/contracts';
 import { buildApp } from '../app.ts';
 import { processNextInput } from '../game/worker.ts';
 import { syntheticSeedCommand } from '../game/sandbox.ts';
@@ -275,4 +275,89 @@ describe('owner preparation and admission controls', () => {
       ).rowCount,
     ).toBe(0);
   });
+  it('binds historical adoption to the original Twitch destination and keeps queued acceptance distinct from activation', async () => {
+    const historicalSource = await transaction(pool, async (client) => {
+      const channelId = await enrollChannel(client, worldId, '777', 'historical source');
+      await storeGrant(
+        client,
+        config,
+        worldId,
+        channelId,
+        'broadcaster',
+        { access_token: 'access', refresh_token: 'refresh', expires_in: 3600 },
+        { client_id: config.clientId, user_id: '777', scopes: ['channel:bot'], expires_in: 3600 },
+      );
+      return channelId;
+    });
+    await send(historicalSource, { type: 'integration', online: true, healthy: true });
+    await send(historicalSource, syntheticSeedCommand());
+    const transferId = randomUUID();
+    await send(historicalSource, {
+      type: 'raid',
+      transferId,
+      childId: randomUUID(),
+      residencyId: randomUUID(),
+      arrivalRoundId: randomUUID(),
+      destinationChannelId: null,
+      destinationTwitchId: '456',
+      retainUnenrolled: true,
+    });
+    const status = controllerStatusSchema.parse(
+      (await app.inject({ url: `/api/controller/status?claim=${transferId}`, cookies })).json(),
+    );
+    expect(status.historicalOffers).toHaveLength(1);
+    const body = {
+        action: 'claimRaid',
+        expectedVersion: await version(),
+        transferId,
+        transferVersion: 0,
+      },
+      key = randomUUID();
+    expect((await post({ ...body, claimantTwitchId: '456' })).statusCode).toBe(400);
+    expect((await post({ ...body, transferVersion: 1 })).statusCode).toBe(409);
+    expect((await post(body, key, source)).statusCode).toBe(403);
+    expect(
+      (
+        await app.inject({
+          method: 'POST',
+          url: `/api/channels/${target}/control`,
+          cookies,
+          payload: body,
+        })
+      ).statusCode,
+    ).toBe(403);
+    expect((await post(body, key)).statusCode).toBe(202);
+    expect(
+      (
+        await pool.query('select outcome from transfers where world_id=$1 and id=$2', [
+          worldId,
+          transferId,
+        ])
+      ).rows,
+    ).toEqual([{ outcome: 'NOT_ENROLLED' }]);
+    expect((await post(body, key)).json<{ duplicate: boolean }>().duplicate).toBe(true);
+    while (await processNextInput(pool, worldId, target));
+    const adopted = controllerStatusSchema.parse(
+      (await app.inject({ url: '/api/controller/status', cookies })).json(),
+    );
+    expect(adopted.historicalOffers).toEqual([]);
+    expect(
+      adopted.snapshot?.payload.propagation?.admissions.find((t) => t.id === transferId),
+    ).toMatchObject({ outcome: 'ACTIVE', historical: true });
+    expect((await post(body, key)).json<{ duplicate: boolean }>().duplicate).toBe(true);
+    const unrelated = randomUUID();
+    await send(historicalSource, {
+      type: 'raid',
+      transferId: unrelated,
+      childId: randomUUID(),
+      residencyId: randomUUID(),
+      arrivalRoundId: randomUUID(),
+      destinationChannelId: null,
+      destinationTwitchId: '888',
+      retainUnenrolled: true,
+    });
+    expect(
+      (await post({ ...body, expectedVersion: await version(), transferId: unrelated })).statusCode,
+    ).toBe(404);
+  }, 20000);
 });

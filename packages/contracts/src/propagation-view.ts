@@ -21,6 +21,8 @@ export const transferViewSchema = z.object({
   destinationLabel: z.string().nullable(),
   expiresAt: z.string().nullable(),
   createdAt: z.string(),
+  historical: z.boolean().optional(),
+  claimedAt: z.string().nullable().optional(),
 });
 export const propagationViewSchema = z.object({
   preparation: z.enum(['shield', 'reserve', 'neutral']),

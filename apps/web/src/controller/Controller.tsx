@@ -4,6 +4,8 @@ import { controllerStatusSchema, type ControllerStatus } from '@ripple/contracts
 import { liveRequest, controlMessage, LiveRequestError } from './api.ts';
 import { ChannelCard } from './ChannelCard.tsx';
 import { AdmissionControls } from './AdmissionControls.tsx';
+import { HistoricalRaids } from './HistoricalRaids.tsx';
+import { admissionLabel } from './PropagationCard.tsx';
 import styles from './Controller.module.css';
 interface Pending {
   id: string;
@@ -33,7 +35,14 @@ export default function Controller() {
         setEnabled(connection.liveEnabled);
         if (connection.liveEnabled) {
           try {
-            const state = controllerStatusSchema.parse(await liveRequest('/api/controller/status'));
+            const claim = z
+              .uuid()
+              .safeParse(new URLSearchParams(location.hash.slice(1)).get('claim'));
+            const state = controllerStatusSchema.parse(
+              await liveRequest(
+                `/api/controller/status${claim.success ? `?claim=${claim.data}` : ''}`,
+              ),
+            );
             if (isActive()) {
               setStatus(state);
               setMessage((current) =>
@@ -74,14 +83,28 @@ export default function Controller() {
     async function check() {
       try {
         const operation = z
-          .object({ result: z.object({ code: z.string() }).nullable() })
+          .object({
+            result: z
+              .object({
+                code: z.string(),
+                detail: z
+                  .object({
+                    historical: z.boolean().optional(),
+                    outcome: z.string().optional(),
+                  })
+                  .optional(),
+              })
+              .nullable(),
+          })
           .parse(await liveRequest(`/api/controller/commands/${operationId}`));
         if (isActive() && operation.result !== null) {
           completedOperation.current = operationId;
           setPending(null);
           setMessage(
             operation.result.code === 'APPLIED'
-              ? 'Change committed.'
+              ? operation.result.detail?.outcome === undefined
+                ? 'Change committed.'
+                : `${operation.result.detail.historical === true ? 'Historical adoption recorded.' : 'Change committed.'} ${admissionLabel(operation.result.detail.outcome)}.`
               : controlMessage(operation.result.code),
           );
           return;
@@ -318,6 +341,17 @@ export default function Controller() {
               }}
             />
           )}
+          <HistoricalRaids
+            requested={
+              z.uuid().safeParse(new URLSearchParams(location.hash.slice(1)).get('claim')).success
+            }
+            offers={status.historicalOffers ?? []}
+            outgoing={status.snapshot?.payload.propagation?.outgoing ?? []}
+            disabled={disabled}
+            control={(body) => {
+              control('control', body);
+            }}
+          />
           <section className={styles.panel}>
             <h2>Read-only preview</h2>
             <p>This link reads game state and cannot send controls or votes. Keep it private.</p>

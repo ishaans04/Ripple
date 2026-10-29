@@ -46,6 +46,7 @@ export interface TransferRow {
   expires_at: Date | null;
   created_at: Date;
   approved_at: Date | null;
+  claimed_at: Date | null;
 }
 export async function loadRaidPolicy(client: pg.PoolClient, worldId: string): Promise<RaidPolicy> {
   const row = (
