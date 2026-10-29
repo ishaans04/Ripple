@@ -1,26 +1,15 @@
 import type { MechanicsState, TraceView } from '@ripple/contracts';
 import styles from './Controller.module.css';
+import { traceEffectText, traceTitle } from '../realtime/trace-labels.ts';
 
 function TraceDetails({ trace, rules }: { trace: TraceView; rules: MechanicsState['traceRules'] }) {
   return (
     <>
       <p>
-        <strong>
-          {trace.template === 'charged'
-            ? 'Charged habitat'
-            : trace.template === 'shelter'
-              ? 'Shelter'
-              : 'Recovery zone'}
-        </strong>{' '}
-        · {trace.remainingRounds} valid observations remaining · {trace.status}
+        <strong>{traceTitle[trace.template]}</strong> · {trace.remainingRounds} valid observations
+        remaining · {trace.status}
       </p>
-      <p>
-        {trace.template === 'charged'
-          ? `Fitness +${rules.chargedAdjustment} when burst is at least ${rules.chargedBurstThreshold}; fitness -${rules.chargedAdjustment} otherwise.`
-          : trace.template === 'shelter'
-            ? `Arrival raw shock reduced by ${rules.shelterArrivalShockReduction}; upkeep increases by ${rules.shelterUpkeep}.`
-            : `Energy delta +${rules.recoveryAdjustment} below ${rules.recoveryHealthThreshold} start energy; -${rules.recoveryAdjustment} otherwise.`}
-      </p>
+      <p>{traceEffectText(trace.template, rules)}</p>
       <p>
         Earned by {trace.emitterName} from {trace.originLabel}. Lineage{' '}
         <code>{trace.lineageId}</code>.

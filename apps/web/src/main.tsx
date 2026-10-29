@@ -8,6 +8,8 @@ if (container === null) throw new Error('Missing #root container');
 const Studio = lazy(() => import('./studio/Studio.tsx'));
 const Controller = lazy(() => import('./controller/Controller.tsx'));
 const Preview = lazy(() => import('./controller/Preview.tsx'));
+const Overlay = lazy(() => import('./overlay/Overlay.tsx'));
+if (window.location.pathname === '/overlay') document.documentElement.dataset.surface = 'overlay';
 
 createRoot(container).render(
   <StrictMode>
@@ -22,6 +24,10 @@ createRoot(container).render(
     ) : window.location.pathname === '/preview' ? (
       <Suspense fallback={<p role="status">Opening preview…</p>}>
         <Preview />
+      </Suspense>
+    ) : window.location.pathname === '/overlay' ? (
+      <Suspense fallback={<p role="status">Opening overlay…</p>}>
+        <Overlay />
       </Suspense>
     ) : (
       <Landing />

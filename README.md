@@ -10,7 +10,7 @@ The full specification is in [docs/prd.md](docs/prd.md), extended by the [Cocoon
 
 Ripple is being built phase by phase. **Phases 0–6 implementation is complete: foundation, pure engine, studio rules and local editor, event backbone, Twitch live loop, raids/lineage, and novel mechanics. Real Twitch/hosted acceptance remains pending.** What works today:
 
-The [Cocoon Studio practice](http://localhost:3000/studio) provides a complete local shell editor with hand, pointer, touch, and keyboard controls. Ordered durable intake, round processing, transactional history and public updates, leased deadlines, process-gap recovery, scoped WebSockets, and synthetic command tooling are implemented. Habitat traces, dormant possibilities, saved ancestor/alternative comparisons and recent-profile previews are connected to gameplay and scoped presentation. **Next: Phase 7, product surfaces.** Verification and pending live acceptance are recorded in [delivery progress](docs/progress.md).
+The [Cocoon Studio practice](http://localhost:3000/studio) provides a complete local shell editor with hand, pointer, touch, and keyboard controls. Ordered durable intake, round processing, transactional history and public updates, leased deadlines, process-gap recovery, scoped WebSockets, and synthetic command tooling are implemented. Habitat traces, dormant possibilities, saved ancestor/alternative comparisons and recent-profile previews are connected to gameplay and scoped presentation. **Phase 7, product surfaces, is in progress.** Its dedicated OBS overlay and controller link are implemented. Verification and pending live acceptance are recorded in [delivery progress](docs/progress.md).
 
 - The application service (Fastify on Node.js 24) with structured, correlated JSON logs, a uniform error contract, security headers, and graceful shutdown
 - PostgreSQL 18 with versioned migrations under an advisory lock, world-scoped game records, immutable ancestry/rules, and database-enforced genome bounds
@@ -177,6 +177,12 @@ Version-one raid-origin survivors can earn one trace per lineage/host after two 
 Scoped snapshots, the controller and read-only preview show earned active/pending traces, benefits and costs from the frozen channel rules, remaining valid observations, lineage/origin attribution and the eight most recent terminal trace records. Dormant summaries show aggregate support, directional trade-off, original channel, inherited allowance and whether the single offer has already been used. These records expose no voter identities and grant no hidden gameplay effects. Historical round analysis retains its own trace attribution after recent history rolls off.
 
 Mutation-preview rules use only a recorded recent valid profile and a known trace, label their uncertainty, and return Learning when no valid profile exists. Version-one ballots freeze the preview at opening, retain its source round, and expose estimates and trade-offs in the controller/read-only preview. New observations never rewrite the displayed estimate.
+
+## Broadcast overlay
+
+Create or rotate a read-only preview link in `/controller`; the same operation now provides an **OBS browser source URL** for `/overlay`. Paste it into a 1920×1080 browser source. The canvas is transparent, with the creature and a compact decision panel in the lower corner. Both links share one scoped capability; rotation revokes both. Capabilities remain in URL fragments and authorized headers, never ordinary page-query parameters. Overlay links cannot send owner controls or votes.
+
+The overlay displays actual energy, numbered choices/trade-offs, aggregate votes, server-aligned close time, trace costs/origin, dormant indicators, visitors, results and explicit pause/offline/interrupted states. Reconnecting retains the last confirmed creature while suppressing stale vote invitations; closed ballots await server confirmation. Synthetic/replay modes have persistent text labels. Chrome/Edge browser checks cover transparency, narrow layouts, capability scope, reconnection and the existing detailed preview. A real OBS capture and expanded display preferences remain Phase 7 acceptance work; browser screenshots do not establish OBS readability.
 
 ## Cocoon Studio practice
 

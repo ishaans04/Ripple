@@ -20,6 +20,10 @@ body {
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
 }
+html[data-surface='overlay'],
+html[data-surface='overlay'] body {
+  background: transparent;
+}
 
 h1,
 h2,

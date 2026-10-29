@@ -38,6 +38,15 @@ describe('web application serving', () => {
     expect(response.statusCode).toBe(200);
     expect(response.headers['cache-control']).toBe('public, max-age=31536000, immutable');
   });
+  it('serves the OBS document with read-only security headers and no camera permission', async () => {
+    const response = await app.inject({ url: '/overlay' });
+    expect(response.statusCode).toBe(200);
+    expect(response.body).toContain('<title>Ripple</title>');
+    expect(response.headers['cache-control']).toBe('no-cache');
+    expect(response.headers['permissions-policy']).toBe('camera=(), microphone=()');
+    expect(response.headers['content-security-policy']).not.toContain('wasm-unsafe-eval');
+    expect(response.headers['referrer-policy']).toBe('no-referrer');
+  });
 
   it('allows camera and WASM only on the studio document and tracking worker', async () => {
     const studio = await app.inject({ url: '/studio' });

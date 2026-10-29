@@ -358,6 +358,30 @@ test('controller explains disabled live mode without offering a broken authoriza
   await expect(page.getByRole('status')).toContainText('Live Twitch is disabled');
   await expect(page.getByRole('link', { name: 'Connect broadcaster with Twitch' })).toHaveCount(0);
 });
+test('controller creates read-only preview and OBS links under one revocable capability', async ({
+  page,
+}) => {
+  await page.route('**/api/connection', (route) => route.fulfill({ json: { liveEnabled: true } }));
+  await page.route('**/api/controller/status', (route) => route.fulfill({ json: status }));
+  await page.route('**/api/controller/read-capability', (route) => {
+    expect(route.request().method()).toBe('POST');
+    expect(route.request().headers()['x-csrf-token']).toBe('csrf-test');
+    return route.fulfill({
+      json: { worldId: world, channelId: channel, capability: 'c'.repeat(43) },
+    });
+  });
+  await page.goto('/controller');
+  await page.getByRole('button', { name: 'Create or rotate preview link' }).click();
+  const preview = await page
+    .getByRole('textbox', { name: 'Preview URL', exact: true })
+    .inputValue();
+  await expect(
+    page.getByRole('textbox', { name: 'OBS browser source URL', exact: true }),
+  ).toHaveValue(preview.replace('/preview#', '/overlay#'));
+  await expect(
+    page.getByText('It shares this read-only capability;', { exact: false }),
+  ).toBeVisible();
+});
 test('controller distinguishes sign-in from ready subscriptions and recovers from a stale owner command', async ({
   page,
 }) => {

@@ -389,6 +389,20 @@ export default function Controller() {
                 <a href={readUrl} target="_blank" rel="noreferrer">
                   Open read-only preview
                 </a>
+                <label>
+                  OBS browser source URL
+                  <input
+                    readOnly
+                    value={readUrl.replace('/preview#', '/overlay#')}
+                    onFocus={(e) => {
+                      e.target.select();
+                    }}
+                  />
+                </label>
+                <p>
+                  Paste the OBS URL into a 1920×1080 browser source. Its canvas is transparent. It
+                  shares this read-only capability; rotating the link revokes both.
+                </p>
               </>
             )}
           </section>
