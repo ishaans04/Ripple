@@ -8,9 +8,9 @@ The full specification is in [docs/prd.md](docs/prd.md), extended by the [Cocoon
 
 ## Current status
 
-Ripple is being built phase by phase. **Phases 0–4 implementation is complete: foundation, pure engine, studio rules and local editor, event backbone, and Twitch live loop. Real Twitch/hosted acceptance remains pending.** What works today:
+Ripple is being built phase by phase. **Phases 0–5 implementation is complete: foundation, pure engine, studio rules and local editor, event backbone, Twitch live loop, and raids/lineage. Real Twitch/hosted acceptance remains pending.** What works today:
 
-The [Cocoon Studio practice](http://localhost:3000/studio) provides a complete local shell editor with hand, pointer, touch, and keyboard controls. Ordered durable intake, round processing, transactional history and public updates, leased deadlines, process-gap recovery, scoped WebSockets, and synthetic command tooling are implemented. **Phase 5, raids and lineage, is in progress.** Verification and pending live acceptance are recorded in [delivery progress](docs/progress.md).
+The [Cocoon Studio practice](http://localhost:3000/studio) provides a complete local shell editor with hand, pointer, touch, and keyboard controls. Ordered durable intake, round processing, transactional history and public updates, leased deadlines, process-gap recovery, scoped WebSockets, and synthetic command tooling are implemented. **Phase 6, novel mechanics, is next.** Verification and pending live acceptance are recorded in [delivery progress](docs/progress.md).
 
 - The application service (Fastify on Node.js 24) with structured, correlated JSON logs, a uniform error contract, security headers, and graceful shutdown
 - PostgreSQL 18 with versioned migrations under an advisory lock, world-scoped game records, immutable ancestry/rules, and database-enforced genome bounds
@@ -21,7 +21,7 @@ The [Cocoon Studio practice](http://localhost:3000/studio) provides a complete l
 
 The engine processes persisted rounds with synthetic inputs. The configured Twitch adapter supports broadcaster/operator OAuth, encrypted grants, signed EventSub intake, subscription reconciliation, local chat voting/activity, stream recovery and bounded bot output. `/controller` provides connection steps, named seeding, pause/recovery, visitor policy and read-only preview links. These integrations pass provider-fixture and PostgreSQL checks; **no real Twitch or hosted acceptance is claimed**. Novel mechanics, the full broadcast surfaces, connected Studio and judge sandbox remain in the [plan](docs/plan.md).
 
-Phase 5 is in progress. The propagation backend supports bounded descendants, destination admission, preparation/welcome ballots, matched observations, shelter, contests and FIFO harbor behavior. Outgoing `channel.raid` notifications enter through signed, deduplicated EventSub receipts; viewer counts confer no game power. Owning broadcaster sessions can enqueue preparation, approve/refuse visitors and block source channels or lineages through the controller, with CSRF, an idempotency key, channel version and transfer version checks. Block lists are paginated and support unblocking. The controller and read-only preview show bounded visitor origin/generation, lineage counts, held admissions, standing preparation and the last contest; controls wait for the worker's committed result. Phase exit verification remains in progress; no real raid evidence is claimed.
+The propagation backend supports bounded descendants, destination admission, preparation/welcome ballots, matched observations, shelter, contests and FIFO harbor behavior. Outgoing `channel.raid` notifications enter through signed, deduplicated EventSub receipts; viewer counts confer no game power. Owning broadcaster sessions can enqueue preparation, approve/refuse visitors and block source channels or lineages through the controller, with CSRF, an idempotency key, channel version and transfer version checks. Block lists are paginated and support unblocking. The controller and read-only preview show bounded visitor origin/generation, lineage counts, held admissions, standing preparation and the last contest; controls wait for the worker's committed result. Phase 5 application acceptance passes in CI; no real raid evidence is claimed.
 
 New raids to an unenrolled destination can retain one inactive descendant under the normal lineage cap and pair cooldown. The source controller provides a user-copied invitation; only the original destination can request historical adoption after connecting Twitch. The captured genes, appearance, energy and original expiry are preserved. The controller labels the earlier raid and distinguishes activation, holds and refusals. Unclaimed descendants expire without simulation decay. Older accepted attempts that retained no child stay unchanged; adoption never invents offspring for those records.
 
@@ -159,7 +159,7 @@ docs/                PRD, Cocoon Studio addendum, delivery plan, and archived de
 | Explanations  | Deterministic templates: every signed contribution sums to the energy change, at most two leading causes, and the full calculation                                                                  |
 | Journey rules | Raid child health from Drift, dormant capture and offer checks, trace template and qualification, and ancestor trials under matched inputs                                                          |
 
-The ordered round scheduler persists ballots, observation, reveal, and recovery checkpoints. Trace and dormant lifetimes, admission, and contests arrive with the phases that persist those mechanics.
+The ordered round scheduler persists ballots, observation, reveal, and recovery checkpoints. Admission, shelter, contests and fossils are persisted. Trace and dormant lifetimes are connected in Phase 6.
 
 ## Cocoon Studio practice
 
