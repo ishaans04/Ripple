@@ -27,3 +27,4 @@ export * from './studio-inheritance.ts';
 export * from './studio-dormant.ts';
 export * from './round-clock.ts';
 export * from './round.ts';
+export * from './mechanic-lifetime.ts';

@@ -124,6 +124,14 @@ All Phase 5 commits are authored and committed as `ishaans04 <sharmaishaaan04@gm
 
 Next is Phase 6 only: persistent habitat traces, dormant captures/lifetimes/inheritance, matched ancestor trials, rejected-choice replay and recent-profile previews (P19–P23). Complete its lifetime, expiry, migration and zero-side-effect evidence before Phase 7.
 
+## Phase 6 — novel mechanics (in progress)
+
+Started only after Phase 5 code `469474a` passed every applicable exit check and its exit record `1d5ab54` was pushed. Phase 7 has not started. Scope is P19–P23: persisted traces and their decisions/lifetimes, dormant captures/offers/inheritance, matched founding-genome trials, fixed-input rejected-choice replay and explicitly uncertain recent-profile previews.
+
+The independent immutable `mechanics-policy-1` pins dormant, active-trace and pending-offer allowances at three valid observations without changing the existing scoring ruleset hash. Pure lifetime helpers exclude the capture round, invalid/limited intervals and duplicate closes (including nonadjacent redelivery), preserve the entire remaining allowance across migration, and retain a bounded set of counted round IDs. Four tests pass, including 1,000 generated duplicate/outage/migration sequences. Adapter persistence is not yet connected.
+
+Replay rollout decision: preserve legacy behavior for old genesis/records. New sessions will record mechanics version 1 in immutable channel genesis; an existing session will require a recorded request applied at a safe round boundary. No in-progress observation gains a modifier or genotype silently. The world is the configured season namespace for one emission per lineage/host. Confidence governs all mechanic lifetimes separately from the completed-observation mutation clock. Remaining exit checks include all persistence, expiry, migration and zero-side-effect integration evidence, actual controller/read surfaces, synthetic journeys, at least fifteen substantive focused commits and CI before Phase 7.
+
 ## Live acceptance deferral requested by the user
 
 The two broadcaster accounts, operator bot, and public HTTPS URL are not set up. Continue sequential implementation with sandbox/synthetic verification where possible. Keep all authentic Twitch, raid, OBS, and hosted acceptance evidence explicitly pending, with no synthetic test represented as live evidence. Provide the account/application/OAuth/HTTPS setup steps when Phase 4 needs them. This user-directed deferral permits continued implementation; it does not satisfy the PRD's final release gate.

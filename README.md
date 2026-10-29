@@ -159,7 +159,7 @@ docs/                PRD, Cocoon Studio addendum, delivery plan, and archived de
 | Explanations  | Deterministic templates: every signed contribution sums to the energy change, at most two leading causes, and the full calculation                                                                  |
 | Journey rules | Raid child health from Drift, dormant capture and offer checks, trace template and qualification, and ancestor trials under matched inputs                                                          |
 
-The ordered round scheduler persists ballots, observation, reveal, and recovery checkpoints. Admission, shelter, contests and fossils are persisted. Trace and dormant lifetimes are connected in Phase 6.
+The ordered round scheduler persists ballots, observation, reveal, and recovery checkpoints. Admission, shelter, contests and fossils are persisted. Phase 6 has started with pure, bounded valid-observation lifetime helpers that preserve remaining counts during migration and reject duplicate consumption; persistent trace and dormant lifetimes are still being connected.
 
 ## Cocoon Studio practice
 
