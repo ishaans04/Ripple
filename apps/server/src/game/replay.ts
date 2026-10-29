@@ -244,14 +244,14 @@ export async function canonicalGameProjection(pool: pg.Pool, scope: WorldScope):
     await pool.query<{ projection: unknown }>(
       `select jsonb_build_object(
     'channel',(select jsonb_build_object('online',online,'healthy',healthy,'paused',paused,'version',state_version,'checksum',checksum) from channels where world_id=$1 and id=$2),
-    'organisms',coalesce((select jsonb_agg(to_jsonb(o)-'world_id'-'created_at' order by o.id) from organisms o where o.world_id=$1 and exists(select 1 from residencies r where r.world_id=o.world_id and r.organism_id=o.id and r.channel_id=$2)),'[]'::jsonb),
+    'organisms',coalesce((select jsonb_agg(to_jsonb(o)-'world_id'-'created_at' order by o.id) from organisms o where o.world_id=$1 and (exists(select 1 from residencies r where r.world_id=o.world_id and r.organism_id=o.id and r.channel_id=$2) or exists(select 1 from transfers t where t.world_id=o.world_id and t.child_id=o.id and t.source_channel_id=$2))),'[]'::jsonb),
     'lineages',coalesce((select jsonb_agg(to_jsonb(l)-'world_id' order by l.id) from lineages l where l.world_id=$1 and l.origin_channel_id=$2),'[]'::jsonb),
     'rounds',coalesce((select jsonb_agg(to_jsonb(r)-'world_id' order by r.number) from rounds r where r.world_id=$1 and r.channel_id=$2),'[]'::jsonb),
     'residencies',coalesce((select jsonb_agg(to_jsonb(r)-'world_id' order by r.id) from residencies r where r.world_id=$1 and r.channel_id=$2),'[]'::jsonb),
     'baselines',coalesce((select jsonb_agg(to_jsonb(b)-'world_id' order by b.round_id) from habitat_baselines b where b.world_id=$1 and b.channel_id=$2),'[]'::jsonb),
     'play',(select to_jsonb(p)-'world_id' from channel_play p where p.world_id=$1 and p.channel_id=$2),
     'mechanicsPolicy',(select policy_hash from world_mechanics_policies where world_id=$1),
-    'dormant',coalesce((select jsonb_agg(to_jsonb(d)-'world_id' order by d.id) from dormant_mutations d where d.world_id=$1 and exists(select 1 from residencies r where r.world_id=d.world_id and r.organism_id=d.organism_id and r.channel_id=$2)),'[]'::jsonb),
+    'dormant',coalesce((select jsonb_agg(to_jsonb(d)-'world_id' order by d.id) from dormant_mutations d where d.world_id=$1 and (exists(select 1 from residencies r where r.world_id=d.world_id and r.organism_id=d.organism_id and r.channel_id=$2) or exists(select 1 from transfers t where t.world_id=d.world_id and t.child_id=d.organism_id and t.source_channel_id=$2))),'[]'::jsonb),
     'traces',coalesce((select jsonb_agg(to_jsonb(t)-'world_id' order by t.id) from habitat_traces t where t.world_id=$1 and t.channel_id=$2),'[]'::jsonb),
     'qualifications',coalesce((select jsonb_agg(to_jsonb(q)-'world_id' order by q.lineage_id) from trace_qualifications q where q.world_id=$1 and q.channel_id=$2),'[]'::jsonb),
     'ancestorTrials',coalesce((select jsonb_agg(to_jsonb(a)-'world_id' order by a.round_id,a.organism_id) from ancestor_trials a join rounds r on r.world_id=a.world_id and r.id=a.round_id where a.world_id=$1 and r.channel_id=$2),'[]'::jsonb),

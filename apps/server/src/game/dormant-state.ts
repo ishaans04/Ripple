@@ -24,6 +24,13 @@ export interface DormantRow {
     totalVotes: number;
     captureProfile: { roundId: string; burst: number; steadiness: number } | null;
     captureSequence: number;
+    inheritedFrom?: {
+      organismId: string;
+      dormantId: string;
+      version: number;
+      transferId: string;
+      sequence: number;
+    };
   };
   lifetime: ValidRoundLifetime;
   remaining_rounds: number;

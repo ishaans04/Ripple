@@ -12,6 +12,7 @@ import type { PropagationCommand } from '@ripple/contracts';
 import { effect, type CommandEffect } from './lifecycle.ts';
 import { genomeOf, type GameContext, type OrganismRow } from './store.ts';
 import { loadRaidPolicy, type TransferRow, type TransferSnapshot } from './propagation-store.ts';
+import { snapshotDormantInheritance, inheritDormantMutation } from './dormant-inheritance.ts';
 
 interface Parent extends OrganismRow {
   name: string;
@@ -132,6 +133,12 @@ export async function forkRaid(
       ? null
       : prepareArrival(parent.health, genomeOf(parent), preparation, rules, policy);
   const snapshot: TransferSnapshot = {
+    ...(context.mechanics.version !== 1
+      ? {}
+      : {
+          dormant:
+            parent === undefined ? null : await snapshotDormantInheritance(context, parent.id),
+        }),
     schemaVersion: 1,
     residencyId: command.residencyId,
     arrivalRoundId: command.arrivalRoundId,
@@ -190,6 +197,14 @@ export async function forkRaid(
         new Date(atMs),
       ],
     );
+    if (snapshot.dormant !== undefined && snapshot.dormant !== null)
+      await inheritDormantMutation(
+        context,
+        snapshot.dormant,
+        childId,
+        command.transferId,
+        sequence,
+      );
   }
   await client.query(
     `insert into transfers(world_id,id,receipt_id,source_channel_id,destination_channel_id,destination_twitch_id,source_version,parent_id,child_id,outcome,snapshot,expires_at,created_at)

@@ -1,8 +1,10 @@
 import type pg from 'pg';
+import type { DormantInheritance } from './dormant-inheritance.ts';
 import { raidPolicySchema, raidPolicyHash, type RaidPolicy } from '@ripple/engine';
 import type { CommittedAppearance, Genome } from '@ripple/engine';
 
 export interface TransferSnapshot {
+  dormant?: DormantInheritance | null;
   schemaVersion: 1;
   residencyId: string;
   arrivalRoundId: string;

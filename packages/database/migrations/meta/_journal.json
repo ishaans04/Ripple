@@ -183,6 +183,13 @@
       "when": 1793293834432,
       "tag": "0025_recorded_choice_comparisons",
       "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "7",
+      "when": 1793295062144,
+      "tag": "0026_dormant_inheritance_snapshot",
+      "breakpoints": true
     }
   ]
 }

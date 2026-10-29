@@ -133,6 +133,27 @@ describe('one explicit minority offer in an ordinary three-card ballot', () => {
       expect(
         (await readSnapshot(pool, world.worldId, world.channelId))!.payload.round!.candidates,
       ).toEqual(cards);
+      if (!selected) {
+        const childId = randomUUID();
+        await send(world, {
+          type: 'raid',
+          transferId: randomUUID(),
+          childId,
+          residencyId: randomUUID(),
+          arrivalRoundId: randomUUID(),
+          destinationChannelId: null,
+          destinationTwitchId: randomUUID(),
+          retainUnenrolled: true,
+        });
+        expect(
+          (
+            await pool.query<DormantRow>(
+              'select * from dormant_mutations where world_id=$1 and organism_id=$2',
+              [world.worldId, childId],
+            )
+          ).rows[0],
+        ).toMatchObject({ offered: true, remaining_rounds: 3 });
+      }
       const choice = selected ? 3 : 1;
       await send(world, { type: 'vote', actorKey: 'choose', choice });
       await advance(world, 3200);
