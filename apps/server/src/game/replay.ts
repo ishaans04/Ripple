@@ -254,7 +254,8 @@ export async function canonicalGameProjection(pool: pg.Pool, scope: WorldScope):
     'dormant',coalesce((select jsonb_agg(to_jsonb(d)-'world_id' order by d.id) from dormant_mutations d where d.world_id=$1 and exists(select 1 from residencies r where r.world_id=d.world_id and r.organism_id=d.organism_id and r.channel_id=$2)),'[]'::jsonb),
     'traces',coalesce((select jsonb_agg(to_jsonb(t)-'world_id' order by t.id) from habitat_traces t where t.world_id=$1 and t.channel_id=$2),'[]'::jsonb),
     'qualifications',coalesce((select jsonb_agg(to_jsonb(q)-'world_id' order by q.lineage_id) from trace_qualifications q where q.world_id=$1 and q.channel_id=$2),'[]'::jsonb),
-    'ancestorTrials',coalesce((select jsonb_agg(to_jsonb(a)-'world_id' order by a.round_id,a.organism_id) from ancestor_trials a join rounds r on r.world_id=a.world_id and r.id=a.round_id where a.world_id=$1 and r.channel_id=$2),'[]'::jsonb)
+    'ancestorTrials',coalesce((select jsonb_agg(to_jsonb(a)-'world_id' order by a.round_id,a.organism_id) from ancestor_trials a join rounds r on r.world_id=a.world_id and r.id=a.round_id where a.world_id=$1 and r.channel_id=$2),'[]'::jsonb),
+    'choiceReplays',coalesce((select jsonb_agg(to_jsonb(a)-'world_id' order by a.round_id,a.organism_id) from choice_replays a join rounds r on r.world_id=a.world_id and r.id=a.round_id where a.world_id=$1 and r.channel_id=$2),'[]'::jsonb)
     ) as projection`,
       [scope.worldId, scope.channelId],
     )

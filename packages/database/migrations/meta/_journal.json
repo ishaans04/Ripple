@@ -176,6 +176,13 @@
       "when": 1793293535171,
       "tag": "0024_matched_ancestor_guards",
       "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1793293834432,
+      "tag": "0025_recorded_choice_comparisons",
+      "breakpoints": true
     }
   ]
 }

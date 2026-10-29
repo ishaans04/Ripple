@@ -204,7 +204,14 @@ export async function applyRoundDeadline(
       round.id,
       sequence,
     ]);
-    await saveCheckpoint(context, { ...round.checkpoint, clock, counts: closed.tally.counts });
+    await saveCheckpoint(context, {
+      ...round.checkpoint,
+      clock,
+      counts: closed.tally.counts,
+      ...(context.mechanics.version === 1
+        ? { mutationSelection: { choiceId: closed.choiceId } }
+        : {}),
+    });
     await captureRoundParticipants(context);
     return effect('APPLIED', 'ballot.closed', {
       roundId: round.id,

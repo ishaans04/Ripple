@@ -23,6 +23,8 @@ export interface RoundCheckpoint {
   readonly genomeBefore: Genome;
   readonly counts: readonly number[];
   readonly shocks: readonly ShockMarker[];
+  /** Recorded at ordinary ballot close; null is the explicit no-vote Hold. */
+  readonly mutationSelection?: { readonly choiceId: string | null };
   readonly specialBallot?: {
     readonly kind: 'WELCOME' | 'PREPARATION';
     readonly options: readonly SpecialOption[];

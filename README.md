@@ -161,7 +161,7 @@ docs/                PRD, Cocoon Studio addendum, delivery plan, and archived de
 
 The ordered round scheduler persists ballots, observation, reveal, and recovery checkpoints. Admission, shelter, contests and fossils are persisted. Phase 6 adds pure, bounded valid-observation lifetime helpers and database constraints against lifetime renewal, provenance edits and terminal revival. Each world pins an immutable mechanics policy; channel genesis preserves the legacy/new distinction. Automatic dormant capture and trace emission are still being connected.
 
-The engine also evaluates rejected mutation cards against fixed recorded start energy, profile, shocks and trace, recomputing gene effects and final energy clamps. This read-only comparison validates the actual ballot and does not replay downstream branches. Its persisted/API presentation is still Phase 6 work.
+The engine also evaluates rejected mutation cards against fixed recorded start energy, profile, shocks and trace, recomputing gene effects and final energy clamps. Mechanics-version-one fixtures persist immutable comparisons of the recorded ballot, including no-vote Hold and explicitly estimated limited-data results. Reconstruction includes those records; no downstream branches change. API presentation and public rollout remain Phase 6 work.
 
 Mechanics-version-one synthetic fixtures persist ancestor trials against the lineage's founding genome using captured start energy, profile and raw shock markers. Trials are immutable, retain engine/rules identity, and compare scores before any finite Shelter settlement. Limited/interrupted intervals create no trial. Public rollout and presentation remain pending the rest of Phase 6.
 

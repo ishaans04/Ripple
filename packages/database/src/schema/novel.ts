@@ -1,7 +1,17 @@
 import { sql } from 'drizzle-orm';
-import { check, foreignKey, pgTable, primaryKey, text, unique, uuid } from 'drizzle-orm/pg-core';
+import {
+  check,
+  foreignKey,
+  integer,
+  jsonb,
+  pgTable,
+  primaryKey,
+  text,
+  unique,
+  uuid,
+} from 'drizzle-orm/pg-core';
 import { worlds } from './worlds.ts';
-import { channels, lineages, organisms, residencies } from './game.ts';
+import { channels, lineages, organisms, residencies, rulesets } from './game.ts';
 import { rounds } from './rounds.ts';
 import { habitatTraces } from './mechanics.ts';
 
@@ -66,5 +76,31 @@ export const traceQualifications = pgTable(
       columns: [t.worldId, t.traceId],
       foreignColumns: [habitatTraces.worldId, habitatTraces.id],
     }),
+  ],
+);
+
+/** A read-only single-round comparison; limited observations remain explicitly estimated. */
+export const choiceReplays = pgTable(
+  'choice_replays',
+  {
+    worldId: uuid('world_id').notNull(),
+    roundId: uuid('round_id').notNull(),
+    organismId: uuid('organism_id').notNull(),
+    rulesHash: text('rules_hash')
+      .notNull()
+      .references(() => rulesets.hash),
+    engineVersion: integer('engine_version').notNull(),
+    confidence: text('confidence').notNull(),
+    inputs: jsonb('inputs').notNull(),
+    result: jsonb('result').notNull(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.worldId, t.roundId, t.organismId] }),
+    foreignKey({ columns: [t.worldId, t.roundId], foreignColumns: [rounds.worldId, rounds.id] }),
+    foreignKey({
+      columns: [t.worldId, t.organismId],
+      foreignColumns: [organisms.worldId, organisms.id],
+    }),
+    check('choice_replay_confidence_valid', sql`${t.confidence} in ('confident','limited')`),
   ],
 );

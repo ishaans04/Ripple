@@ -10,6 +10,7 @@ import type { GameContext, OrganismRow } from './store.ts';
 import { genomeOf } from './store.ts';
 import { loadRaidPolicy, readTransfer, recordTransferTransition } from './propagation-store.ts';
 import { recordAncestorTrial } from './ancestor-trials.ts';
+import { recordChoiceReplay } from './choice-replays.ts';
 
 /** Captures the same observation boundary for the resident and an already welcomed visitor. */
 export async function captureRoundParticipants(context: GameContext): Promise<void> {
@@ -71,6 +72,7 @@ async function saveResolution(
     ],
   );
   await recordAncestorTrial(context, organismId, checkpoint, resolution);
+  await recordChoiceReplay(context, organismId, checkpoint, resolution);
   if (resolution.outcome === 'applied')
     await context.client.query(
       'update visitor_state set arrival_pending=false where world_id=$1 and organism_id=$2',
