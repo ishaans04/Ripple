@@ -14,6 +14,7 @@ import { createSyntheticPeer } from './synthetic-peer.ts';
 import { canonicalGameProjection, exportAcceptedChannel, replayAcceptedChannel } from './replay.ts';
 import type { DormantRow } from './dormant-state.ts';
 import type { TransferRow } from './propagation-store.ts';
+import { readSnapshot } from './snapshot.ts';
 
 describe('atomic dormant inheritance across raids and historical invitations', () => {
   let temporary: TemporaryDatabase, pool: pg.Pool;
@@ -88,6 +89,51 @@ describe('atomic dormant inheritance across raids and historical invitations', (
       ])
     ).rows[0]!;
   }
+  it('consumes inherited allowance during valid legacy-host observations without enabling capture, offers or scoring changes', async () => {
+    const { world, parent } = await start(),
+      channelId = randomUUID(),
+      host = { ...world, channelId };
+    await pool.query(
+      `insert into channels(world_id,id,label,rules_hash,seed,configuration,online,healthy,initial_online,initial_healthy)
+      select world_id,$3,'Legacy dormant host',rules_hash,seed,configuration,true,true,true,true from channels where world_id=$1 and id=$2`,
+      [world.worldId, world.channelId, channelId],
+    );
+    await send(host, { type: 'policy', visitorPolicy: 'accept', expectedVersion: 0 });
+    const command = raid(channelId);
+    await send(world, command);
+    expect((await dormant(world, command.childId)).remaining_rounds).toBe(parent.remaining_rounds);
+    expect(parent.remaining_rounds).toBe(2);
+    await advance(host, 3200);
+    await advance(host, 12000);
+    expect((await dormant(world, command.childId)).remaining_rounds).toBe(2);
+    for (const remaining of [1, 0]) {
+      await advance(host, 800);
+      await advance(host, 3200);
+      for (const actorKey of ['a', 'b', 'c']) await send(host, { type: 'activity', actorKey });
+      await advance(host, 12000);
+      expect((await dormant(world, command.childId)).remaining_rounds).toBe(remaining);
+      const snapshot = (await readSnapshot(pool, world.worldId, channelId))!.payload;
+      expect(snapshot.mechanics.version).toBe(0);
+      expect(snapshot.round!.choicePreview).toBeUndefined();
+      expect(snapshot.round!.analysis!.mechanicsVersion).toBe(0);
+      expect(snapshot.round!.analysis!.participants[0]!.ancestor).toBeNull();
+    }
+    expect(
+      (
+        await pool.query(
+          'select status from dormant_mutations where world_id=$1 and organism_id=$2',
+          [world.worldId, command.childId],
+        )
+      ).rows,
+    ).toEqual([{ status: 'expired' }]);
+    await send(host, { type: 'enableMechanics' });
+    await advance(host, 800);
+    expect((await readSnapshot(pool, world.worldId, channelId))!.payload.mechanics).toMatchObject({
+      version: 1,
+      state: { dormant: [] },
+    });
+    expect((await dormant(world, command.childId)).remaining_rounds).toBe(0);
+  });
   it('preserves the remaining allowance and counted IDs in an inert child despite later parent activity and receipt retry', async () => {
     const { world, seed, parent } = await start();
     const peer = await createSyntheticPeer(

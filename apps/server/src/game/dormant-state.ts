@@ -165,12 +165,11 @@ export async function captureDormantMutation(
   return { capturedId: id, replacedId: previous?.id ?? null };
 }
 
-/** Only organisms actually scored in this confident interval age; harbor and wall time never do. */
+/** Existing inherited rows also age in legacy hosts; legacy rounds still cannot capture or offer. */
 export async function ageDormantMutations(
   context: GameContext,
   sequence: number,
 ): Promise<readonly string[]> {
-  if (context.mechanics.version !== 1) return [];
   const { round, client, channel } = context;
   if (round === null) throw new Error('Missing dormant aging round.');
   const rows = (
