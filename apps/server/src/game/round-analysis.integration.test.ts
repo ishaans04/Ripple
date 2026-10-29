@@ -4,7 +4,7 @@ import type { FastifyInstance } from 'fastify';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { runMigrations } from '@ripple/database';
 import { createTemporaryDatabase, type TemporaryDatabase } from '@ripple/database/testing';
-import { roundAnalysisSchema } from '@ripple/contracts';
+import { channelViewSchema, roundAnalysisSchema } from '@ripple/contracts';
 import { buildApp } from '../app.ts';
 import {
   acceptSyntheticCommand,
@@ -198,6 +198,25 @@ describe('scoped saved round-analysis HTTP reads', () => {
   }
   it('retains immutable trace attribution and saved scores after the active effect is cleared', async () => {
     const { host, source, childId, roundId } = await earned();
+    const offered = (await readSnapshot(pool, host.worldId, host.channelId))!.payload;
+    expect(channelViewSchema.safeParse(offered).success).toBe(true);
+    expect(offered.mechanics.state).toMatchObject({
+      activeTrace: null,
+      pendingCount: 1,
+      pendingTraces: [
+        {
+          emitterId: childId,
+          originChannelId: source.channelId,
+          remainingRounds: 3,
+          status: 'pending',
+        },
+      ],
+      traceRules: { chargedBurstThreshold: 650, chargedAdjustment: 1 },
+    });
+    expect(
+      (await readSnapshot(pool, source.worldId, source.channelId))!.payload.mechanics.state
+        .pendingCount,
+    ).toBe(0);
     await send(host, { type: 'vote', actorKey: 'private-trace-voter', choice: 1 });
     await advance(host, 3200);
     await observe(host);
@@ -209,7 +228,28 @@ describe('scoped saved round-analysis HTTP reads', () => {
       template: 'charged',
     });
     expect(data.participants[0]!.actual.score.trace).toMatchObject({ template: 'charged' });
+    expect(
+      (await readSnapshot(pool, host.worldId, host.channelId))!.payload.mechanics.state,
+    ).toMatchObject({
+      activeTrace: { emitterId: childId, remainingRounds: 2, status: 'active' },
+      pendingCount: 0,
+    });
     await send(host, { type: 'clearTrace' });
+    expect(
+      (await readSnapshot(pool, host.worldId, host.channelId))!.payload.mechanics.state,
+    ).toMatchObject({
+      activeTrace: null,
+      pendingCount: 0,
+      recentTraces: [
+        {
+          emitterId: childId,
+          status: 'cleared',
+          choice: 'keep',
+          reason: 'broadcaster-clear',
+          remainingRounds: 0,
+        },
+      ],
+    });
     expect((await get(host, roundId)).body).toBe(response.body);
     expect((await get(host, roundId, source.readCapability)).statusCode).toBe(401);
   });

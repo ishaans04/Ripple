@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { roundAnalysisSchema } from '@ripple/contracts';
+import { mechanicsStateSchema, roundAnalysisSchema } from '@ripple/contracts';
 import {
   candidateRuleset as rules,
   explainResolution,
@@ -198,6 +198,157 @@ test('saved round analysis separates actual energy, ancestral shadow and rejecte
   await expect(panel).toContainText('Recorded energy 70 → 70.');
   await expect(panel).toContainText('Insufficient valid data for an ancestor trial.');
   await expect(panel).toContainText('all comparisons are estimates; actual energy was held.');
+});
+
+test('mechanic state explains pending trace costs, dormant provenance and inactive history', async ({
+  page,
+}) => {
+  const trace = {
+      id: channel,
+      version: 0,
+      emitterId: channel,
+      emitterName: 'Visiting strain',
+      lineageId: world,
+      originChannelId: channel,
+      originLabel: 'Mira channel',
+      qualifyingRoundId: world,
+      template: 'shelter',
+      status: 'pending',
+      remainingRounds: 3,
+      choice: null,
+      reason: 'awaiting-vote',
+    },
+    state = mechanicsStateSchema.parse({
+      traceRules: rules.traces,
+      activeTrace: null,
+      pendingCount: 1,
+      pendingTraces: [trace],
+      recentTraces: [],
+      dormant: [
+        {
+          id: world,
+          organismId: channel,
+          organismName: 'Inherited strain',
+          lineageId: world,
+          originChannelId: channel,
+          originLabel: 'Mira channel',
+          sourceRoundId: world,
+          template: { from: 'pulse', to: 'grit', amount: 2 },
+          supporters: 2,
+          totalVotes: 5,
+          remainingRounds: 2,
+          offered: true,
+          inherited: true,
+        },
+      ],
+    });
+  let current = state;
+  await page.route('**/api/connection', (route) => route.fulfill({ json: { liveEnabled: true } }));
+  await page.route('**/api/controller/status', (route) =>
+    route.fulfill({
+      json: {
+        ...status,
+        snapshot: {
+          version: 2,
+          payload: {
+            ...status.snapshot.payload,
+            mechanics: {
+              version: 1,
+              enableRequested: false,
+              tracesEnabled: true,
+              state: current,
+            },
+          },
+        },
+      },
+    }),
+  );
+  await page.goto('/controller');
+  const panel = page.getByRole('region', { name: 'Novel mechanics', exact: true });
+  await expect(panel).toContainText('No active trace.');
+  await expect(panel).toContainText('No effect until chat chooses 1 Keep.');
+  await expect(panel).toContainText('Arrival raw shock reduced by 2; upkeep increases by 1.');
+  await expect(panel).toContainText('Earned by Visiting strain from Mira channel.');
+  await expect(panel).toContainText(
+    'A minority in Mira channel preserved this possibility for Inherited strain',
+  );
+  await expect(panel).toContainText('2 valid observations remaining.');
+  await expect(panel).toContainText('Its one offer has been used; it cannot be offered again.');
+  current = {
+    ...state,
+    pendingCount: 0,
+    pendingTraces: [],
+    dormant: [],
+    recentTraces: [
+      mechanicsStateSchema.shape.pendingTraces.element.parse({
+        ...trace,
+        status: 'expired',
+        remainingRounds: 0,
+        choice: 'keep',
+        reason: 'valid-round-expiry',
+      }),
+    ],
+  };
+  await expect(panel.getByRole('region', { name: 'Pending habitat traces' })).toHaveCount(0);
+  await panel.getByText('Recent trace history (up to 8)', { exact: true }).click();
+  await expect(panel).toContainText('shelter · expired · Visiting strain from Mira channel');
+  await expect(panel).toContainText('no current effect.');
+  await expect(panel).toContainText('No preserved dormant option here.');
+});
+
+test('read-only preview receives recorded analysis over the scoped topic without owner controls', async ({
+  page,
+}) => {
+  const analysis = analysisFixture(),
+    state = mechanicsStateSchema.parse({
+      traceRules: rules.traces,
+      activeTrace: null,
+      pendingCount: 0,
+      pendingTraces: [],
+      recentTraces: [],
+      dormant: [],
+    });
+  await page.route('**/api/overlay/exchange', (route) => {
+    expect(route.request().headers().authorization).toBe(`Bearer ${'c'.repeat(43)}`);
+    expect(route.request().postDataJSON()).toEqual({ worldId: world, channelId: channel });
+    return route.fulfill({
+      json: { ticket: 't'.repeat(43), expiresAt: '2099-01-01T00:00:00.000Z' },
+    });
+  });
+  await page.routeWebSocket('**/api/live?*', (socket) => {
+    socket.send(
+      JSON.stringify({
+        protocolVersion: 1,
+        eventId: channel,
+        worldId: world,
+        topic: `channel:${channel}`,
+        stateVersion: 5,
+        type: 'snapshot',
+        serverTime: '2026-10-29T00:00:00.000Z',
+        payload: {
+          ...status.snapshot.payload,
+          mechanics: { version: 1, enableRequested: false, tracesEnabled: true, state },
+          round: {
+            id: analysis.roundId,
+            number: 1,
+            kind: 'MUTATION',
+            phase: 'REVEAL',
+            clock: { paused: false, remainingMs: 800, deadlineAtMs: null },
+            candidates: [],
+            counts: [],
+            voteCloseAtMs: null,
+            explanation: null,
+            analysis,
+          },
+        },
+      }),
+    );
+  });
+  await page.goto(`/preview#worldId=${world}&channelId=${channel}&capability=${'c'.repeat(43)}`);
+  await expect(page.getByRole('status')).toHaveText('Connection: connected');
+  await expect(page.getByRole('region', { name: 'Round analysis', exact: true })).toBeVisible();
+  await expect(page.getByRole('region', { name: 'Novel mechanics', exact: true })).toBeVisible();
+  await expect(page.getByRole('button')).toHaveCount(0);
 });
 test('controller explains disabled live mode without offering a broken authorization link', async ({
   page,

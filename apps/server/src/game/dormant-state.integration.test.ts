@@ -12,6 +12,7 @@ import {
 import { advanceSyntheticClock, settleSyntheticWorld } from './synthetic-clock.ts';
 import { canonicalGameProjection, exportAcceptedChannel, replayAcceptedChannel } from './replay.ts';
 import type { DormantRow } from './dormant-state.ts';
+import { readSnapshot } from './snapshot.ts';
 
 describe('dormant minority capture and valid-round expiry', () => {
   let temporary: TemporaryDatabase, pool: pg.Pool;
@@ -64,6 +65,26 @@ describe('dormant minority capture and valid-round expiry', () => {
       provenance: { supporters: 2, totalVotes: 5, captureProfile: null },
     });
     expect(JSON.stringify(captured.provenance)).not.toContain('minority-');
+    const visible = (await readSnapshot(pool, world.worldId, world.channelId))!.payload.mechanics
+      .state.dormant;
+    expect(visible).toMatchObject([
+      {
+        id: captured.id,
+        remainingRounds: 3,
+        supporters: 2,
+        totalVotes: 5,
+        originChannelId: world.channelId,
+        inherited: false,
+        offered: false,
+      },
+    ]);
+    expect(JSON.stringify(visible)).not.toMatch(
+      /minority-|actorKey|captureSequence|captureProfile/,
+    );
+    const other = await start();
+    expect(
+      (await readSnapshot(pool, other.worldId, other.channelId))!.payload.mechanics.state.dormant,
+    ).toEqual([]);
     await activity(world);
     await advance(world, 12000);
     expect((await rows(world))[0]!.remaining_rounds).toBe(3);
@@ -79,6 +100,9 @@ describe('dormant minority capture and valid-round expiry', () => {
     expect(expired.lifetime.countedRoundIds).toHaveLength(3);
     expect(expired.lifetime.countedRoundIds).not.toContain(expired.source_round_id);
     expect(expired.consumption).toMatchObject({ reason: 'valid-round-expiry' });
+    expect(
+      (await readSnapshot(pool, world.worldId, world.channelId))!.payload.mechanics.state.dormant,
+    ).toEqual([]);
     const replay = await replayAcceptedChannel(pool, await exportAcceptedChannel(pool, world));
     expect(await canonicalGameProjection(pool, replay)).toBe(
       await canonicalGameProjection(pool, world),

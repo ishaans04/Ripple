@@ -6,3 +6,4 @@ export * from './live.ts';
 export * from './control.ts';
 export * from './propagation-view.ts';
 export * from './analysis.ts';
+export * from './mechanics-view.ts';

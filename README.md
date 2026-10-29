@@ -169,6 +169,8 @@ Mechanics-version-one synthetic fixtures persist ancestor trials against the lin
 
 Version-one raid-origin survivors can earn one trace per lineage/host after two valid destination observations. Recorded two-choice Keep/Clear ballots default to Clear; Keep activates one shared host modifier and explicitly replaces any prior trace. All three templates, pending/active expiry, matched resident/visitor scoring and preserved attribution are implemented. Activation requires an earned database qualification and the recorded Keep ballot. Versioned owner controls clear or disable traces, explicitly cancel open trace decisions, preserve resolved scores and prevent re-enabling discarded offers. Public rollout remains pending.
 
+Scoped snapshots, the controller and read-only preview show earned active/pending traces, benefits and costs from the frozen channel rules, remaining valid observations, lineage/origin attribution and the eight most recent terminal trace records. Dormant summaries show aggregate support, directional trade-off, original channel, inherited allowance and whether the single offer has already been used. These records expose no voter identities and grant no hidden gameplay effects. Historical round analysis retains its own trace attribution after recent history rolls off.
+
 Mutation-preview rules use only a recorded recent valid profile and a known trace, label their uncertainty, and return Learning when no valid profile exists. Version-one ballots freeze the preview at opening, retain its source round, and expose estimates and trade-offs in the controller/read-only preview. New observations never rewrite the displayed estimate. Public rollout remains pending the rest of Phase 6.
 
 ## Cocoon Studio practice

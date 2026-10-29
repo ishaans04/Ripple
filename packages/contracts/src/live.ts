@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { shellPartSchema, studioGenomeSchema } from './studio.ts';
 import { propagationViewSchema, transferViewSchema } from './propagation-view.ts';
 import { roundAnalysisSchema } from './analysis.ts';
+import { mechanicsStateSchema } from './mechanics-view.ts';
 export const choicePreviewSchema = z
   .object({
     label: z.literal('Based on recent activity'),
@@ -46,6 +47,7 @@ export const channelViewSchema = z.object({
       version: z.union([z.literal(0), z.literal(1)]),
       enableRequested: z.boolean(),
       tracesEnabled: z.boolean(),
+      state: mechanicsStateSchema.optional(),
     })
     .optional(),
   // Older retained public updates predate propagation; fresh snapshots always include it.

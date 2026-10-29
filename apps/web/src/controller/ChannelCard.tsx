@@ -3,6 +3,7 @@ import { ShellRenderer } from '../studio/ShellRenderer.tsx';
 import styles from './Controller.module.css';
 import { PropagationCard } from './PropagationCard.tsx';
 import { RoundAnalysisCard } from './RoundAnalysisCard.tsx';
+import { MechanicsCard } from './MechanicsCard.tsx';
 export function ChannelCard({ channel }: { channel: ChannelView }) {
   const creature = channel.organism,
     round = channel.round;
@@ -98,6 +99,9 @@ export function ChannelCard({ channel }: { channel: ChannelView }) {
         </>
       )}
       {channel.propagation !== undefined && <PropagationCard view={channel.propagation} />}
+      {channel.mechanics?.version === 1 && channel.mechanics.state !== undefined && (
+        <MechanicsCard state={channel.mechanics.state} enabled={channel.mechanics.tracesEnabled} />
+      )}
     </section>
   );
 }
