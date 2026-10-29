@@ -26,7 +26,7 @@ export function nextBallot(input: BallotScheduleInput): ScheduledBallot {
 }
 export function openSpecialRound(
   input: {
-    kind: 'WELCOME' | 'PREPARATION';
+    kind: 'WELCOME' | 'PREPARATION' | 'TRACE';
     seed: string;
     roundId: string;
     genome: Genome;
@@ -35,15 +35,16 @@ export function openSpecialRound(
     timings: RoundTimings;
     options: readonly SpecialOption[];
     visitorId?: string;
+    traceOffer?: NonNullable<RoundCheckpoint['specialBallot']>['traceOffer'];
   },
   rules: Ruleset,
 ): RoundCheckpoint {
   if (input.options.length < 2 || input.options.length > 3)
     throw new Error('Special ballots need two or three choices');
-  const options = shuffle(
-    input.options,
-    generatorFromSeedMaterial([input.seed, input.roundId, input.kind]),
-  );
+  const options =
+    input.kind === 'TRACE'
+      ? [...input.options]
+      : shuffle(input.options, generatorFromSeedMaterial([input.seed, input.roundId, input.kind]));
   return {
     schemaVersion: 1,
     clock: openRoundClock(input.atMs, input.timings),
@@ -56,6 +57,7 @@ export function openSpecialRound(
       kind: input.kind,
       options,
       ...(input.visitorId === undefined ? {} : { visitorId: input.visitorId }),
+      ...(input.traceOffer === undefined ? {} : { traceOffer: input.traceOffer }),
     },
   };
 }

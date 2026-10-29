@@ -15,6 +15,7 @@ import {
 import { resolveMutationBallot, type BallotVote, type TallyResult } from './tally.ts';
 import type { SpecialOption } from './arrival.ts';
 import type { ChoicePreview } from './choice-preview.ts';
+import type { TraceTemplate } from './scoring.ts';
 
 export interface RoundCheckpoint {
   readonly schemaVersion: 1;
@@ -27,6 +28,11 @@ export interface RoundCheckpoint {
   /** Recorded at ordinary ballot close; null is the explicit no-vote Hold. */
   readonly mutationSelection?: { readonly choiceId: string | null };
   readonly choicePreview?: ChoicePreview;
+  readonly activeTrace?: {
+    readonly id: string;
+    readonly version: number;
+    readonly template: TraceTemplate;
+  } | null;
   readonly dormantOffer?: {
     readonly id: string;
     readonly version: number;
@@ -36,9 +42,14 @@ export interface RoundCheckpoint {
     readonly totalVotes: number;
   };
   readonly specialBallot?: {
-    readonly kind: 'WELCOME' | 'PREPARATION';
+    readonly kind: 'WELCOME' | 'PREPARATION' | 'TRACE';
     readonly options: readonly SpecialOption[];
     readonly visitorId?: string;
+    readonly traceOffer?: {
+      readonly id: string;
+      readonly version: number;
+      readonly template: TraceTemplate;
+    };
   };
 }
 export function openMutationRound(
@@ -111,7 +122,7 @@ export function finishRoundObservation(
       baseline: input.checkpoint.baseline,
       observation: { status: 'complete', observations: input.observations },
       shocks: input.checkpoint.shocks,
-      trace: null,
+      trace: input.checkpoint.activeTrace?.template ?? null,
     },
     rules,
   );

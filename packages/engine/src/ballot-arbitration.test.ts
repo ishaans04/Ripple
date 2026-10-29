@@ -1,8 +1,36 @@
 import { describe, expect, it } from 'vitest';
 import { nextBallot, openSpecialRound } from './ballot-arbitration.ts';
 import { candidateRuleset } from './ruleset.ts';
-import { preparationOptions, resolveSpecialVote } from './arrival.ts';
+import { preparationOptions, resolveSpecialVote, traceOptions } from './arrival.ts';
 describe('one channel-wide ballot at a safe boundary', () => {
+  it('always numbers trace Keep/Clear as one/two, defaults to Clear and rejects a third choice', () => {
+    for (const seed of ['one', 'two', 'three']) {
+      const round = openSpecialRound(
+        {
+          kind: 'TRACE',
+          seed,
+          roundId: 'trace-round',
+          genome: candidateRuleset.genome.founder,
+          history: [],
+          atMs: 0,
+          timings: { voteMs: 3000, graceMs: 200, observationMs: 12000, revealMs: 800 },
+          options: traceOptions,
+          traceOffer: { id: 'offer', version: 0, template: 'charged' },
+        },
+        candidateRuleset,
+      );
+      const options = round.specialBallot!.options;
+      expect(options.map((option) => option.id)).toEqual(['keep', 'clear']);
+      expect(resolveSpecialVote(options, [], 'clear').choice).toBe('clear');
+      expect(
+        resolveSpecialVote(options, [{ actorKey: 'invalid', choice: 3 }], 'clear').choice,
+      ).toBe('clear');
+      expect(resolveSpecialVote(options, [{ actorKey: 'yes', choice: 1 }], 'clear').choice).toBe(
+        'keep',
+      );
+      expect(round.candidates).toEqual([]);
+    }
+  });
   it('prioritizes welcome, then trace/preparation, with a mutation after two non-urgent special rounds', () => {
     const pending = {
       pendingWelcome: false,

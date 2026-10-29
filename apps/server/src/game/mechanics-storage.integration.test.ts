@@ -153,7 +153,7 @@ describe('mechanic storage provenance and allowances', () => {
       ),
     ).rejects.toMatchObject({ code: '23514' });
   });
-  it('allows one explicit trace activation allowance and freezes the original qualifying round', async () => {
+  it('rejects unearned trace activation, renewal, edited templates and terminal revival', async () => {
     const { world, seed } = await seeded(),
       id = randomUUID();
     const born = newValidRoundLifetime(seed.roundId, 3),
@@ -163,14 +163,12 @@ describe('mechanic storage provenance and allowances', () => {
        values($1,$2,$3,$4,'shelter','pending',2,0,'{}','{}',$5,$6)`,
       [world.worldId, id, world.channelId, seed.organismId, aged, seed.roundId],
     );
-    await pool.query(
-      "update habitat_traces set status='active',remaining_rounds=3,lifetime=$3,version=version+1,decision=$4 where world_id=$1 and id=$2",
-      [world.worldId, id, born, { choice: 'keep', votes: 4 }],
-    );
-    await pool.query(
-      'update habitat_traces set remaining_rounds=2,lifetime=$3,version=version+1 where world_id=$1 and id=$2',
-      [world.worldId, id, aged],
-    );
+    await expect(
+      pool.query(
+        "update habitat_traces set status='active',remaining_rounds=3,lifetime=$3,version=version+1,decision=$4 where world_id=$1 and id=$2",
+        [world.worldId, id, born, { choice: 'keep', votes: 4 }],
+      ),
+    ).rejects.toMatchObject({ code: '23514' });
     await expect(
       pool.query(
         'update habitat_traces set remaining_rounds=3,lifetime=$3,version=version+1 where world_id=$1 and id=$2',

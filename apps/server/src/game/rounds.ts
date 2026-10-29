@@ -23,6 +23,7 @@ import {
   ageDormantMutations,
   consumeDormantOffer,
 } from './dormant-state.ts';
+import { ageHabitatTraces, qualifyHabitatTraces } from './trace-state.ts';
 
 export { openNextRound } from './round-scheduling.ts';
 export async function seedResident(
@@ -320,6 +321,8 @@ export async function applyRoundDeadline(
       atMs,
     );
     const dormantAged = await ageDormantMutations(context, sequence);
+    const tracesAged = await ageHabitatTraces(context, resolution.outcome === 'applied', sequence);
+    const tracesQualified = await qualifyHabitatTraces(context, sequence);
     await saveCheckpoint(context, { ...round.checkpoint, clock });
     return effect(
       'APPLIED',
@@ -334,6 +337,8 @@ export async function applyRoundDeadline(
         explanation: finished.explanation,
         ...(visitorResult === null ? {} : { visitor: visitorResult }),
         ...(dormantAged.length === 0 ? {} : { dormantAged }),
+        ...(tracesAged.length === 0 ? {} : { tracesAged }),
+        ...(tracesQualified.length === 0 ? {} : { tracesQualified }),
       },
     );
   }

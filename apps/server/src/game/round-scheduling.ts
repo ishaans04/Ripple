@@ -6,6 +6,8 @@ import {
   preparationSchema,
   previewMutationChoices,
   resolveSpecialVote,
+  traceOptions,
+  traceChoiceSchema,
   welcomeArrival,
   welcomeChoiceSchema,
   welcomeOptions,
@@ -19,6 +21,7 @@ import { effect, type CommandEffect } from './lifecycle.ts';
 import { genomeOf, saveCheckpoint, type GameContext, type OrganismRow } from './store.ts';
 import { loadRaidPolicy, readTransfer, recordTransferTransition } from './propagation-store.ts';
 import { offerDormantMutation } from './dormant-state.ts';
+import { activeTrace, pendingTrace, traceReference, decideHabitatTrace } from './trace-state.ts';
 
 /** Runs only after the previous round has committed its completion, or on an empty channel. */
 export async function openNextRound(
@@ -58,9 +61,11 @@ export async function openNextRound(
     )
   ).rows[0];
   if (play === undefined) throw new Error('Missing channel ballot scheduler');
+  const tracePending = await pendingTrace(context);
+  const heldTrace = await activeTrace(context);
   const kind = nextBallot({
     pendingWelcome: visitor !== undefined,
-    pendingTrace: false,
+    pendingTrace: tracePending !== null,
     preparationRequested: resident !== undefined && play.preparation_requested,
     nonMutationRounds: play.non_mutation_rounds,
   });
@@ -101,16 +106,23 @@ export async function openNextRound(
             ...input,
             kind,
             options:
-              kind === 'WELCOME'
-                ? welcomeOptions(
-                    resident?.health ?? null,
-                    await loadRaidPolicy(client, channel.world_id),
-                  )
-                : preparationOptions,
+              kind === 'TRACE'
+                ? traceOptions
+                : kind === 'WELCOME'
+                  ? welcomeOptions(
+                      resident?.health ?? null,
+                      await loadRaidPolicy(client, channel.world_id),
+                    )
+                  : preparationOptions,
             ...(visitor === undefined ? {} : { visitorId: visitor.organism_id }),
+            ...(kind !== 'TRACE' || tracePending === null
+              ? {}
+              : { traceOffer: traceReference(tracePending) }),
           },
           rules,
         );
+  if (context.mechanics.version === 1)
+    checkpoint = { ...checkpoint, activeTrace: heldTrace ?? null };
   if (context.mechanics.version === 1 && kind === 'MUTATION') {
     checkpoint = {
       ...checkpoint,
@@ -126,7 +138,7 @@ export async function openNextRound(
                   roundId: recent.roundId,
                   profile: { burst: recent.burst, steadiness: 1000 - recent.burst },
                 },
-          trace: null,
+          trace: heldTrace?.template ?? null,
         },
         rules,
       ),
@@ -219,12 +231,20 @@ export async function closeSpecialBallot(
   const resolved = resolveSpecialVote(
     special.options,
     votes,
-    special.kind === 'PREPARATION' ? standing : 'conserve',
+    special.kind === 'PREPARATION' ? standing : special.kind === 'TRACE' ? 'clear' : 'conserve',
   );
+  let capturedTrace = round.checkpoint.activeTrace;
   if (special.kind === 'PREPARATION')
     await client.query(
       'update channel_play set preparation=$3 where world_id=$1 and channel_id=$2',
       [channel.world_id, channel.id, preparationSchema.parse(resolved.choice)],
+    );
+  else if (special.kind === 'TRACE')
+    capturedTrace = await decideHabitatTrace(
+      context,
+      traceChoiceSchema.parse(resolved.choice),
+      resolved.counts,
+      sequence,
     );
   else {
     const visitor = (
@@ -278,7 +298,12 @@ export async function closeSpecialBallot(
     round.id,
     sequence,
   ]);
-  await saveCheckpoint(context, { ...round.checkpoint, clock, counts: resolved.counts });
+  await saveCheckpoint(context, {
+    ...round.checkpoint,
+    clock,
+    counts: resolved.counts,
+    ...(capturedTrace === undefined ? {} : { activeTrace: capturedTrace }),
+  });
   await captureRoundParticipants(context);
   return effect('APPLIED', 'ballot.closed', {
     roundId: round.id,

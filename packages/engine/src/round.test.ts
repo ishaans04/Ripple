@@ -16,6 +16,28 @@ const checkpoint = openMutationRound(
   candidateRuleset,
 );
 describe('round checkpoints', () => {
+  it('scores only the recorded host trace and leaves the checkpoint unchanged', () => {
+    const traced = {
+      ...checkpoint,
+      activeTrace: { id: 'earned-offer', version: 1, template: 'shelter' as const },
+    };
+    const before = structuredClone(traced);
+    const finished = finishRoundObservation(
+      {
+        checkpoint: traced,
+        genome: candidateRuleset.genome.founder,
+        health: 70,
+        slots: initialMutationSlots,
+        observations: ['a', 'b', 'c'].map((actorKey) => ({ actorKey, offsetMs: 0 })),
+      },
+      candidateRuleset,
+    );
+    expect(finished.resolution).toMatchObject({
+      outcome: 'applied',
+      score: { trace: { template: 'shelter', effect: 'upkeep' } },
+    });
+    expect(traced).toEqual(before);
+  });
   it('retains Hold and consumes exactly one slot even without votes', () => {
     const closed = closeMutationRound(checkpoint, [], initialMutationSlots, 'close-1');
     expect(closed.genome).toEqual(candidateRuleset.genome.founder);

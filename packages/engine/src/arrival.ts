@@ -10,6 +10,9 @@ export const preparationSchema = z.enum(['shield', 'reserve', 'neutral']);
 export type TravelPreparation = z.infer<typeof preparationSchema>;
 export const welcomeChoiceSchema = z.enum(['acclimate', 'conserve', 'shelter']);
 export type WelcomeChoice = z.infer<typeof welcomeChoiceSchema>;
+export const traceChoiceSchema = z.enum(['keep', 'clear']);
+export type TraceChoice = z.infer<typeof traceChoiceSchema>;
+export type SpecialChoice = TravelPreparation | WelcomeChoice | TraceChoice;
 export function prepareArrival(
   parentHealth: number,
   genome: Genome,
@@ -27,7 +30,7 @@ export function prepareArrival(
   };
 }
 export interface SpecialOption {
-  readonly id: TravelPreparation | WelcomeChoice;
+  readonly id: SpecialChoice;
   readonly effect: string;
   readonly tradeOff: string;
 }
@@ -46,6 +49,18 @@ export const preparationOptions: readonly SpecialOption[] = Object.freeze([
     id: 'neutral',
     effect: 'Travel neutral',
     tradeOff: 'Use the standard inherited arrival energy and shock',
+  },
+]);
+export const traceOptions: readonly SpecialOption[] = Object.freeze([
+  {
+    id: 'keep',
+    effect: 'Keep this habitat trace',
+    tradeOff: 'Replace any active trace for three valid observations',
+  },
+  {
+    id: 'clear',
+    effect: 'Clear this offer',
+    tradeOff: 'Discard the offered trace; an existing trace keeps its own lifetime',
   },
 ]);
 export function welcomeOptions(
@@ -75,8 +90,8 @@ export function welcomeOptions(
 export function resolveSpecialVote(
   options: readonly SpecialOption[],
   votes: readonly BallotVote[],
-  fallback: TravelPreparation | WelcomeChoice,
-): { choice: TravelPreparation | WelcomeChoice; counts: readonly number[] } {
+  fallback: SpecialChoice,
+): { choice: SpecialChoice; counts: readonly number[] } {
   const tally = tallyVotes(votes, options.length);
   const choice =
     tally.winnerIndex === null ? fallback : (options[tally.winnerIndex]?.id ?? fallback);

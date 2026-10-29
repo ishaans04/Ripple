@@ -26,7 +26,7 @@ export async function queueAnnouncement(
       if (round !== null) {
         const special = round.checkpoint.specialBallot,
           options = special?.options ?? round.checkpoint.candidates;
-        message = `Ripple ${special?.kind.toLowerCase() ?? 'mutation'} round ${round.number}: ${options.map((c, i) => `${i + 1}: ${c.effect} (${c.tradeOff})`).join('; ')}. Vote ${options.map((_c, i) => `!ripple ${i + 1}`).join(', ')} within ${Math.floor(context.timings.voteMs / 1000)} seconds. ${special === undefined ? 'No votes means Hold.' : special.kind === 'WELCOME' ? 'No votes means Conserve.' : 'No votes keeps standing preparation.'}`;
+        message = `Ripple ${special?.kind.toLowerCase() ?? 'mutation'} round ${round.number}: ${options.map((c, i) => `${i + 1}: ${c.effect} (${c.tradeOff})`).join('; ')}. Vote ${options.map((_c, i) => `!ripple ${i + 1}`).join(', ')} within ${Math.floor(context.timings.voteMs / 1000)} seconds. ${special === undefined ? 'No votes means Hold.' : special.kind === 'WELCOME' ? 'No votes means Conserve.' : special.kind === 'TRACE' ? 'No votes means Clear.' : 'No votes keeps standing preparation.'}`;
       }
       break;
     case 'ballot.closed': {
