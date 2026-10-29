@@ -21,26 +21,21 @@ export interface AlternativeReplay {
 }
 const sameGenome = (a: Genome, b: Genome) => GENES.every((gene) => a[gene] === b[gene]);
 
-/** Substitute recorded rejected choices only; no downstream branch, randomness, clock or I/O. */
-export function replayRejectedChoices(
-  input: {
-    readonly genomeBefore: Genome;
-    readonly candidates: readonly MutationCandidate[];
-    readonly selectedId: string | null;
-    readonly actual: ScoreInput;
-  },
+export function assertRecordedMutationCards(
+  genomeBefore: Genome,
+  candidates: readonly MutationCandidate[],
   rules: Ruleset,
-): AlternativeReplay {
+): void {
   if (
-    input.candidates.length !== rules.ballot.mutationCandidates ||
-    new Set(input.candidates.map((c) => c.id)).size !== input.candidates.length
+    candidates.length !== rules.ballot.mutationCandidates ||
+    new Set(candidates.map((c) => c.id)).size !== candidates.length
   )
     throw new EngineError(
       'INVALID_ARGUMENT',
       'a comparison requires the distinct recorded mutation cards',
     );
-  for (const candidate of input.candidates) {
-    const rebased = applyMove(input.genomeBefore, candidate.move, rules.genome);
+  for (const candidate of candidates) {
+    const rebased = applyMove(genomeBefore, candidate.move, rules.genome);
     if (
       candidate.id !== moveId(candidate.move) ||
       rebased === null ||
@@ -51,6 +46,19 @@ export function replayRejectedChoices(
         'a recorded candidate does not match its pre-mutation genome',
       );
   }
+}
+
+/** Substitute recorded rejected choices only; no downstream branch, randomness, clock or I/O. */
+export function replayRejectedChoices(
+  input: {
+    readonly genomeBefore: Genome;
+    readonly candidates: readonly MutationCandidate[];
+    readonly selectedId: string | null;
+    readonly actual: ScoreInput;
+  },
+  rules: Ruleset,
+): AlternativeReplay {
+  assertRecordedMutationCards(input.genomeBefore, input.candidates, rules);
   const selected =
     input.selectedId === null ? undefined : input.candidates.find((c) => c.id === input.selectedId);
   if (

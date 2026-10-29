@@ -163,6 +163,8 @@ The ordered round scheduler persists ballots, observation, reveal, and recovery 
 
 The engine also evaluates rejected mutation cards against fixed recorded start energy, profile, shocks and trace, recomputing gene effects and final energy clamps. This read-only comparison validates the actual ballot and does not replay downstream branches. Its persisted/API presentation is still Phase 6 work.
 
+Pure mutation-preview rules use only a recorded recent valid profile and a known trace, label their uncertainty, and return Learning when no valid profile exists. These estimates never assume future chat, arrivals or category shocks; the server/UI connection is still in progress.
+
 ## Cocoon Studio practice
 
 Start the app normally and open `/studio`, or follow the practice studio link on the landing page. Choose a legal shell trade-off, drag the white control points or use the labeled sliders, and choose a marking and palette. Undo, redo, reset, local draft recovery, and a confirmed JSON download work without an account or Twitch credentials. Local practice never submits a live proposal or changes live game state.

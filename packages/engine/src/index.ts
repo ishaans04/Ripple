@@ -29,3 +29,4 @@ export * from './round-clock.ts';
 export * from './round.ts';
 export * from './mechanic-lifetime.ts';
 export * from './alternative-replay.ts';
+export * from './choice-preview.ts';
