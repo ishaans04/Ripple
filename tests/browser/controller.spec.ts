@@ -1,4 +1,15 @@
 import { test, expect } from '@playwright/test';
+import { roundAnalysisSchema } from '@ripple/contracts';
+import {
+  candidateRuleset as rules,
+  explainResolution,
+  freezeBaseline,
+  generateMutationCandidates,
+  replayRejectedChoices,
+  resolveObservation,
+  rulesetHash,
+  runAncestorTrial,
+} from '@ripple/engine';
 const channel = '11111111-1111-4111-8111-111111111111',
   world = '22222222-2222-4222-8222-222222222222';
 const status = {
@@ -31,6 +42,163 @@ const status = {
   },
   readClients: 0,
 };
+
+function analysisFixture(limited = false, identical = false) {
+  const roundId = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+    cards = generateMutationCandidates(
+      { seed: 'browser-analysis', roundId, genome: rules.genome.founder },
+      rules,
+    );
+  const first = cards[0];
+  if (first === undefined) throw new Error('Missing fixture card');
+  const selectedId = identical ? null : first.id,
+    genome = identical ? rules.genome.founder : first.genome,
+    resolution = resolveObservation(
+      {
+        genome,
+        healthBefore: 70,
+        observation: {
+          status: 'complete',
+          observations: limited
+            ? []
+            : ['a', 'b', 'c'].map((actorKey) => ({ actorKey, offsetMs: 0 })),
+        },
+        shocks: [],
+        trace: null,
+        baseline: freezeBaseline([], rules),
+      },
+      rules,
+    );
+  if (resolution.outcome === 'interrupted') throw new Error('Unexpected interrupted fixture');
+  const score = resolution.outcome === 'applied' ? resolution.score : resolution.estimate,
+    input = {
+      genome,
+      healthBefore: 70,
+      profile: { burst: score.burst, steadiness: score.steadiness },
+      shocks: [],
+      trace: null,
+    },
+    identity = { engineVersion: 1, rulesHash: rulesetHash(rules) };
+  return roundAnalysisSchema.parse({
+    schemaVersion: 1,
+    roundId,
+    kind: 'MUTATION',
+    rulesHash: identity.rulesHash,
+    status: 'resolved',
+    mechanicsVersion: 1,
+    modelLabel: 'Fixed-input model comparisons; downstream viewer behavior is not simulated.',
+    scoringStage: 'before-shelter-settlement',
+    participants: [
+      {
+        organismId: channel,
+        role: 'resident',
+        actual: {
+          outcome: resolution.outcome,
+          healthBefore: 70,
+          healthAfter: resolution.healthAfter,
+          score,
+          explanation: explainResolution(resolution, rules),
+        },
+        ancestor: limited
+          ? null
+          : {
+              ...identity,
+              ancestorId: channel,
+              inputs: {
+                schemaVersion: 1,
+                scoreInput: input,
+                arrival: null,
+                scoringStage: 'before-shelter-settlement',
+              },
+              result: runAncestorTrial(input, rules.genome.founder, rules),
+            },
+      },
+    ],
+    alternative: {
+      ...identity,
+      confidence: limited ? 'limited' : 'confident',
+      inputs: {
+        genomeBefore: rules.genome.founder,
+        candidates: cards,
+        selectedId,
+        actual: input,
+        actualOutcome: resolution.outcome,
+        actualHealthAfter: resolution.healthAfter,
+        scoringStage: 'before-shelter-settlement',
+      },
+      result: replayRejectedChoices(
+        { genomeBefore: rules.genome.founder, candidates: cards, selectedId, actual: input },
+        rules,
+      ),
+    },
+    settlement: null,
+    traceAttribution: null,
+    dormantOffer: null,
+    cancellation: null,
+  });
+}
+
+test('saved round analysis separates actual energy, ancestral shadow and rejected-choice models', async ({
+  page,
+}) => {
+  const analysis = analysisFixture(),
+    participant = analysis.participants[0];
+  if (participant === undefined || participant.ancestor === null)
+    throw new Error('Missing fixture comparison');
+  const actual = participant.actual;
+  let current = analysis;
+  await page.route('**/api/connection', (route) => route.fulfill({ json: { liveEnabled: true } }));
+  await page.route('**/api/controller/status', (route) =>
+    route.fulfill({
+      json: {
+        ...status,
+        snapshot: {
+          version: 5,
+          payload: {
+            ...status.snapshot.payload,
+            round: {
+              id: analysis.roundId,
+              number: 1,
+              kind: 'MUTATION',
+              phase: 'REVEAL',
+              clock: { paused: false, remainingMs: 800, deadlineAtMs: null },
+              candidates: [],
+              counts: [],
+              voteCloseAtMs: null,
+              explanation: actual.explanation,
+              analysis: current,
+            },
+          },
+        },
+      },
+    }),
+  );
+  await page.goto('/controller');
+  const panel = page.getByRole('region', { name: 'Round analysis', exact: true });
+  await expect(
+    panel.getByRole('heading', { name: 'Actual result · resident', exact: true }),
+  ).toBeVisible();
+  await expect(panel).toContainText(`Recorded energy 70 → ${actual.healthAfter}.`);
+  await expect(panel).toContainText('downstream viewer behavior is not simulated');
+  await expect(panel.getByLabel('Founding ancestor outline')).toBeVisible();
+  await expect(panel).toContainText(
+    `Shadow fitness ${participant.ancestor.result.ancestor.fitness}`,
+  );
+  await expect(
+    panel.getByRole('region', { name: 'Rejected choices', exact: true }).getByRole('listitem'),
+  ).toHaveCount(2);
+  await panel.getByText('Complete recorded calculation', { exact: true }).click();
+  for (const row of actual.explanation.calculation)
+    await expect(panel).toContainText(`${row.formula} = ${row.value}`);
+  current = analysisFixture(false, true);
+  await expect(panel).toContainText('Identical founding genome: genetic contributions are equal.');
+  await expect(panel.getByLabel('Founding ancestor outline')).toHaveCount(0);
+  current = analysisFixture(true);
+  await expect(panel).toContainText('Limited data: energy held; the score below is an estimate.');
+  await expect(panel).toContainText('Recorded energy 70 → 70.');
+  await expect(panel).toContainText('Insufficient valid data for an ancestor trial.');
+  await expect(panel).toContainText('all comparisons are estimates; actual energy was held.');
+});
 test('controller explains disabled live mode without offering a broken authorization link', async ({
   page,
 }) => {

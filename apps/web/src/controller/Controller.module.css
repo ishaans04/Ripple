@@ -59,3 +59,51 @@
 .page code {
   overflow-wrap: anywhere;
 }
+.analysis {
+  display: grid;
+  gap: 1rem;
+}
+.comparison {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(260px, 100%), 1fr));
+  gap: 1rem;
+}
+.actualResult,
+.shadowResult,
+.rejectedResult {
+  padding: 1rem;
+  border-radius: 0.5rem;
+  display: grid;
+  align-content: start;
+  gap: 0.75rem;
+  overflow-wrap: anywhere;
+}
+.actualResult {
+  border: 2px solid #56d6c5;
+}
+.shadowResult {
+  border: 1px dashed #a7bcc4;
+}
+.rejectedResult {
+  border-left: 3px solid #f0bd68;
+  background: #101820;
+}
+.ancestorOutline {
+  width: min(120px, 100%);
+  opacity: 0.5;
+  filter: grayscale(1);
+}
+.ancestorOutline svg path,
+.ancestorOutline svg ellipse {
+  fill: none;
+  stroke: #a7bcc4;
+}
+.analysis summary {
+  cursor: pointer;
+}
+.analysis dt {
+  font-weight: 600;
+}
+.analysis dd {
+  margin: 0 0 0.75rem;
+}

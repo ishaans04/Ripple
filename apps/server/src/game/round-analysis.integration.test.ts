@@ -96,6 +96,9 @@ describe('scoped saved round-analysis HTTP reads', () => {
     expect(data.alternative!.result).toEqual(savedChoice.result);
     expect(data.alternative!.inputs).toEqual(savedChoice.inputs);
     expect(data.participants[0]!.actual.score).toEqual(data.alternative!.result.actual);
+    expect(
+      (await readSnapshot(pool, world.worldId, world.channelId))!.payload.round!.analysis,
+    ).toEqual(data);
     expect(response.body).not.toMatch(
       /actorKey|private-actor|private-winning-voter|private-channel-seed/,
     );

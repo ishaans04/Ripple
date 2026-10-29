@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { shellPartSchema, studioGenomeSchema } from './studio.ts';
 import { propagationViewSchema, transferViewSchema } from './propagation-view.ts';
+import { roundAnalysisSchema } from './analysis.ts';
 export const choicePreviewSchema = z
   .object({
     label: z.literal('Based on recent activity'),
@@ -96,6 +97,7 @@ export const channelViewSchema = z.object({
       counts: z.array(z.int().nonnegative()),
       voteCloseAtMs: z.number().nullable(),
       explanation: z.object({ headline: z.string() }).nullable(),
+      analysis: roundAnalysisSchema.nullable().optional(),
     })
     .nullable(),
 });

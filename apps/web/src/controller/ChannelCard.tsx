@@ -2,6 +2,7 @@ import type { ChannelView } from '@ripple/contracts';
 import { ShellRenderer } from '../studio/ShellRenderer.tsx';
 import styles from './Controller.module.css';
 import { PropagationCard } from './PropagationCard.tsx';
+import { RoundAnalysisCard } from './RoundAnalysisCard.tsx';
 export function ChannelCard({ channel }: { channel: ChannelView }) {
   const creature = channel.organism,
     round = channel.round;
@@ -89,7 +90,11 @@ export function ChannelCard({ channel }: { channel: ChannelView }) {
               </p>
             </>
           )}
-          {round.explanation !== null && <p>{round.explanation.headline}</p>}
+          {round.analysis !== undefined && round.analysis !== null ? (
+            <RoundAnalysisCard analysis={round.analysis} />
+          ) : round.explanation !== null ? (
+            <p>{round.explanation.headline}</p>
+          ) : null}
         </>
       )}
       {channel.propagation !== undefined && <PropagationCard view={channel.propagation} />}

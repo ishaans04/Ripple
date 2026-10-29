@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import type { PropagationView, PublicUpdate } from '@ripple/contracts';
+import type { PropagationView, PublicUpdate, RoundAnalysis } from '@ripple/contracts';
 import type {
   CommittedAppearance,
   Genome,
@@ -10,6 +10,7 @@ import type {
 } from '@ripple/engine';
 import type pg from 'pg';
 import { propagationProjectionSql } from './propagation-projection.ts';
+import { parseSavedRoundAnalysis, roundAnalysisProjectionSql } from './round-analysis.ts';
 
 export interface ChannelSnapshot {
   channelId: string;
@@ -46,6 +47,7 @@ export interface ChannelSnapshot {
     choicePreview?: RoundCheckpoint['choicePreview'];
     dormantOffer?: RoundCheckpoint['dormantOffer'];
     traceCleared?: RoundCheckpoint['traceCleared'];
+    analysis: RoundAnalysis | null;
   } | null;
 }
 /** A single SQL statement sees one committed MVCC snapshot, even without a transaction. */
@@ -86,6 +88,7 @@ export async function readSnapshot(
       resolution: RoundResolution | null;
       explanation: OutcomeExplanation | null;
       visitor_result: unknown;
+      analysis: unknown;
     } | null;
     server_time: Date;
   }>(
@@ -93,7 +96,7 @@ export async function readSnapshot(
     (select jsonb_build_object('id',o.id,'version',o.version,'name',o.name,'pulse',o.pulse,'calm',o.calm,'grit',o.grit,'drift',o.drift,'health',o.health,'status',o.status,'appearance',o.appearance)
       from residencies r join organisms o on o.world_id=r.world_id and o.id=r.organism_id
       where r.world_id=c.world_id and r.channel_id=c.id and r.role='resident' order by (r.ended_at is null) desc,r.started_at desc limit 1) as organism,
-    (select jsonb_build_object('id',r.id,'number',r.number,'kind',r.kind,'phase',r.phase,'checkpoint',r.checkpoint,'resolution',r.resolution,'explanation',r.explanation,'visitor_result',r.visitor_result)
+    (select jsonb_build_object('id',r.id,'number',r.number,'kind',r.kind,'phase',r.phase,'checkpoint',r.checkpoint,'resolution',r.resolution,'explanation',r.explanation,'visitor_result',r.visitor_result,'analysis',${roundAnalysisProjectionSql})
       from rounds r where r.world_id=c.world_id and r.channel_id=c.id order by r.number desc limit 1) as round,
     ${propagationProjectionSql} as propagation,
     jsonb_build_object('version',cp.mechanics_version,'enableRequested',cp.mechanics_requested,'tracesEnabled',cp.traces_enabled) as mechanics,
@@ -154,6 +157,7 @@ export async function readSnapshot(
               resolution: round.resolution,
               explanation: round.explanation,
               visitorResult: round.visitor_result,
+              analysis: round.analysis === null ? null : parseSavedRoundAnalysis(round.analysis),
               ...(round.checkpoint.choicePreview === undefined
                 ? {}
                 : { choicePreview: round.checkpoint.choicePreview }),
