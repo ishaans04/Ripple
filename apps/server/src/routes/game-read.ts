@@ -5,8 +5,27 @@ import type pg from 'pg';
 import { ApiError } from '../errors.ts';
 import { authorizeRead, bearer, exchangeReadCapability } from '../game/read-access.ts';
 import { snapshotEnvelope } from '../game/snapshot.ts';
+import { readRoundAnalysis } from '../game/round-analysis.ts';
 
 export function registerGameReadRoutes(app: FastifyInstance, pool: pg.Pool): void {
+  app.get(
+    '/api/rounds/:id/explanation',
+    { config: { rateLimit: { max: 120, timeWindow: '1 minute' } } },
+    async (request, reply) => {
+      const params = z.strictObject({ id: z.uuid() }).safeParse(request.params),
+        query = readScopeSchema.safeParse(request.query);
+      if (!params.success || !query.success)
+        throw new ApiError('BAD_REQUEST', 400, 'Specify the round, world and channel.');
+      await authorizeRead(pool, query.data, bearer(request.headers.authorization));
+      const result = await readRoundAnalysis(pool, query.data, params.data.id);
+      if (!result.found)
+        throw new ApiError('NOT_FOUND', 404, 'Round is unavailable in this channel.');
+      if (result.analysis === null)
+        throw new ApiError('ROUND_UNRESOLVED', 409, 'This observation has not resolved.');
+      reply.header('cache-control', 'no-store');
+      return result.analysis;
+    },
+  );
   app.post(
     '/api/overlay/exchange',
     { config: { rateLimit: { max: 60, timeWindow: '1 minute' } } },
