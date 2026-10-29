@@ -240,6 +240,7 @@ test('touch drag and narrow layout keep the same bounded controls', async ({ pag
   if (box === null) throw new Error('Missing shell handle');
   const x = box.x + box.width / 2;
   const y = box.y + box.height / 2;
+  const endX = Math.min(x + 100, (page.viewportSize()?.width ?? 390) - 1);
   // Raw CDP touch dispatch does not perform Playwright's hit-target checks.
   expect(
     await page.evaluate(
@@ -255,9 +256,10 @@ test('touch drag and narrow layout keep the same bounded controls', async ({ pag
   });
   await session.send('Input.dispatchTouchEvent', {
     type: 'touchMove',
-    touchPoints: [{ x: x + 100, y, id: 1 }],
+    touchPoints: [{ x: endX, y, id: 1 }],
   });
   await session.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+  await expect(page).toHaveURL(/\/studio$/);
   await expect(page.getByRole('slider', { name: 'Shell width', exact: true })).toHaveValue('850');
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(
     true,

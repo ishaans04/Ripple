@@ -90,6 +90,7 @@
   width: 100%;
   height: auto;
   overflow: visible;
+  touch-action: none;
 }
 .handle {
   cursor: grab;

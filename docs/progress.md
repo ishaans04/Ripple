@@ -89,6 +89,25 @@ All 28 Windows Chrome/Edge browser journeys pass, including both command-respons
 
 The synthetic adapter now creates at most eight owner-authorized peer channels with retry-stable IDs/read capabilities, settles every peer on the shared world clock, and leaves even overdue jobs in other worlds untouched. CLI actions cover peer seeding, preparation, raid retry, admission, policy and source/lineage blocks; bounded settlement is explicitly reported. A fresh Compose production-image build is healthy with all 22 migrations applied. Both installed smoke tools pass: the round/HTTP/WebSocket journey and the two-channel Shield/duplicate-raid/unchanged-ballot/welcome/Shelter/contest/fossil/retained-source/scoped-HTTP journey. These are explicitly synthetic checks. An ignored pre-migration backup is retained at `tmp/ripple-before-phase5-exit.dump`; no restore-rehearsal claim is made. GitHub CI and the phase exit record remain pending.
 
+Phase 5 admission coverage (application/PostgreSQL evidence, not live Twitch acceptance):
+
+| PRD 10.3 condition | Evidence |
+| --- | --- |
+| Enrolled, online, auto-accept, free slot | Admission integration fixture and installed two-channel smoke |
+| Approval required | Admission and owner-control fixtures; browser sends both current versions and waits for commitment |
+| Offline | Inert hold, exact expiry and non-revival fixtures; paused-world expiry dispatch |
+| Visitor slot busy | FIFO harbor fixture preserves the active visitor and promotes the oldest waiting child |
+| Harbor full | Fourth waiting arrival is rejected without silently evicting or fabricating another active child |
+| Not enrolled | Fork fixture records the source attempt and creates no descendant |
+| Authorization revoked | Admission fixture holds activation; signed-raid fixture also checks source authority |
+| Source absent or dead | Fork fixture checks both absent and fossil sources and creates no child |
+| Same raid retried | Fork, signed-raid and installed CLI duplicate-receipt checks |
+| Incompatible rules | Admission fixture holds with an explicit rules-version outcome |
+
+Additional bounds include the twelve-branch lineage cap under competing parents, generation/cooldown properties, source/lineage moderation, rollback after job persistence failure, interrupted/limited shelter preservation, matched fitness with incumbent ties, finite energy transfer and immutable ancestry/transfer snapshots. Original foundation and engine history and the recorded Phase 2–4 gates were retained; no earlier phase was restarted or omitted.
+
+CI run `40831878825` passes checks (397 unit tests and all 91 PostgreSQL tests) and Compose, but fails the Edge touch journey after 27 browser successes. Its retained trace shows a drag navigating from `/studio` to `about:blank`. Touch policy is now declared on the rendered SVG editing surface, and the injected touch endpoint stays inside the viewport with an explicit no-navigation assertion; the original maximum-width assertion is unchanged. The web build and eight consecutive touch journeys in each Windows browser pass after the fix. No timeout, retry or skipped assertion was used to establish this evidence. The final PRD cross-check also found historical adoption/claim handling missing for unenrolled destinations (PRD 5.3, 10.3 and 21.1); Phase 5 remains open while that flow is completed and verified. Phase 6 has not started.
+
 ## Live acceptance deferral requested by the user
 
 The two broadcaster accounts, operator bot, and public HTTPS URL are not set up. Continue sequential implementation with sandbox/synthetic verification where possible. Keep all authentic Twitch, raid, OBS, and hosted acceptance evidence explicitly pending, with no synthetic test represented as live evidence. Provide the account/application/OAuth/HTTPS setup steps when Phase 4 needs them. This user-directed deferral permits continued implementation; it does not satisfy the PRD's final release gate.
