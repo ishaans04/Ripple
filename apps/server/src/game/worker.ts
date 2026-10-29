@@ -21,6 +21,7 @@ import { admissionEligibility, applyAdmissionCommand, pendingAdmissions } from '
 import { openNextRound, requestPreparation } from './round-scheduling.ts';
 import { operationId } from './operation-id.ts';
 import { claimHistoricalRaid } from './historical-adoption.ts';
+import { clearHabitatTraces, setHabitatTraces } from './trace-control.ts';
 
 async function apply(
   context: GameContext,
@@ -30,6 +31,10 @@ async function apply(
   receiptId: string,
 ): Promise<CommandEffect> {
   switch (command.type) {
+    case 'clearTrace':
+      return clearHabitatTraces(context, sequence, atMs);
+    case 'setTraces':
+      return setHabitatTraces(context, command.enabled, sequence, atMs);
     case 'raid':
       return forkRaid(context, command, receiptId, sequence, atMs);
     case 'claimRaid':

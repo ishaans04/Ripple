@@ -3,6 +3,7 @@ import fc from 'fast-check';
 import { liveRoundTimings } from '@ripple/contracts';
 import {
   activeElapsed,
+  cancelRoundClock,
   advanceRoundClock,
   interruptRoundClock,
   openRoundClock,
@@ -13,6 +14,26 @@ import {
 
 const timings = liveRoundTimings;
 describe('active round clock', () => {
+  it('cancels a held or interrupted ballot without manufacturing an observation or permitting recovery', () => {
+    for (const held of [
+      openRoundClock(0, timings),
+      pauseRoundClock(openRoundClock(0, timings), 1000),
+      interruptRoundClock(openRoundClock(0, timings), 1000, timings),
+    ]) {
+      const cancelled = cancelRoundClock(held, 2000);
+      expect(cancelled).toMatchObject({
+        phase: 'COMPLETE',
+        paused: false,
+        deadlineAtMs: null,
+        remainingMs: 0,
+        interruptedPhase: null,
+        observationEpoch: 0,
+      });
+      expect(resumeRoundClock(cancelled, 10000)).toBe(cancelled);
+      expect(recoverRoundClock(cancelled, 10000)).toBe(cancelled);
+      expect(cancelRoundClock(cancelled, 10000)).toBe(cancelled);
+    }
+  });
   it('consumes only active time across arbitrarily long offline gaps', () => {
     fc.assert(
       fc.property(

@@ -3,6 +3,8 @@ import { z } from 'zod';
 const version = { expectedVersion: z.int().nonnegative() };
 /** Owner requests carry versions, never eligibility flags or generated game identifiers. */
 export const channelControlSchema = z.discriminatedUnion('action', [
+  z.strictObject({ action: z.literal('clearTrace'), ...version }),
+  z.strictObject({ action: z.literal('setTraces'), enabled: z.boolean(), ...version }),
   z.strictObject({ action: z.literal('prepare'), ...version }),
   z.strictObject({
     action: z.literal('claimRaid'),

@@ -166,6 +166,56 @@ test('choice previews show uncertain recent-profile estimates and replace them w
   await expect(page.getByText('Estimated energy change', { exact: false })).toHaveCount(0);
 });
 
+test('trace controls send versioned owner requests and wait for committed settings', async ({
+  page,
+}) => {
+  let committed = false;
+  const requests: Record<string, unknown>[] = [];
+  await page.route('**/api/connection', (route) => route.fulfill({ json: { liveEnabled: true } }));
+  await page.route('**/api/controller/status', (route) =>
+    route.fulfill({
+      json: {
+        ...status,
+        snapshot: {
+          version: committed ? 8 : 7,
+          payload: {
+            ...status.snapshot.payload,
+            mechanics: { version: 1, enableRequested: false, tracesEnabled: !committed },
+          },
+        },
+      },
+    }),
+  );
+  await page.route(`**/api/channels/${channel}/control`, async (route) => {
+    requests.push(JSON.parse(route.request().postData() ?? '{}') as Record<string, unknown>);
+    expect(route.request().headers()['x-csrf-token']).toBe('csrf-test');
+    expect(route.request().headers()['idempotency-key']).toMatch(/^[0-9a-f-]{36}$/);
+    await route.fulfill({ status: 202, json: { sequence: requests.length } });
+  });
+  await page.route('**/api/controller/commands/*', (route) =>
+    route.fulfill({
+      json: { result: committed ? { code: requests.length > 1 ? 'NO_CHANGE' : 'APPLIED' } : null },
+    }),
+  );
+  await page.goto('/controller');
+  await page.getByRole('button', { name: 'Disable habitat traces', exact: true }).click();
+  await expect(page.getByRole('status')).toContainText('Waiting for its committed result');
+  await expect(
+    page.getByRole('button', { name: 'Disable habitat traces', exact: true }),
+  ).toBeDisabled();
+  expect(requests[0]).toEqual({ action: 'setTraces', enabled: false, expectedVersion: 7 });
+  committed = true;
+  await expect(
+    page.getByRole('button', { name: 'Enable habitat traces', exact: true }),
+  ).toBeEnabled();
+  await expect(
+    page.getByText('Traces disabled. Cleared offers stay cleared when you enable traces again.'),
+  ).toBeVisible();
+  await page.getByRole('button', { name: 'Clear habitat traces', exact: true }).click();
+  await expect.poll(() => requests.length).toBe(2);
+  expect(requests[1]).toEqual({ action: 'clearTrace', expectedVersion: 8 });
+});
+
 const lineage = '33333333-3333-4333-8333-333333333333',
   transfer = '44444444-4444-4444-8444-444444444444',
   source = '55555555-5555-4555-8555-555555555555',

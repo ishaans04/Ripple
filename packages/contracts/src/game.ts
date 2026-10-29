@@ -45,6 +45,15 @@ const admissionEligibility = z.strictObject({
 });
 export const propagationCommandSchema = z.discriminatedUnion('type', [
   z.strictObject({
+    type: z.literal('clearTrace'),
+    expectedVersion: z.int().nonnegative().optional(),
+  }),
+  z.strictObject({
+    type: z.literal('setTraces'),
+    enabled: z.boolean(),
+    expectedVersion: z.int().nonnegative().optional(),
+  }),
+  z.strictObject({
     type: z.literal('raid'),
     transferId: z.uuid(),
     childId: z.uuid(),

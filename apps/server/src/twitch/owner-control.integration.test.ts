@@ -104,8 +104,14 @@ describe('owner preparation and admission controls', () => {
       )
     ).rows[0]!.state_version;
   }
-  async function post(payload: Record<string, unknown>, key = randomUUID(), channel = target) {
+  async function post(
+    payload: Record<string, unknown>,
+    key: string = randomUUID(),
+    channel = target,
+    remoteAddress = '127.0.0.1',
+  ) {
     return await app.inject({
+      remoteAddress,
       method: 'POST',
       url: `/api/channels/${channel}/control`,
       cookies,
@@ -113,6 +119,49 @@ describe('owner preparation and admission controls', () => {
       payload,
     });
   }
+  it('records scoped trace settings with owner CSRF, strict fields, versions and retry-stable receipts', async () => {
+    // This independent client has its own real route budget; production limits stay unchanged.
+    const tracePost = (payload: Record<string, unknown>, key?: string, channel?: string) =>
+      post(payload, key, channel, '127.0.0.2');
+    const body = { action: 'setTraces', enabled: false, expectedVersion: await version() },
+      key = randomUUID();
+    expect((await tracePost(body, key, source)).statusCode).toBe(403);
+    expect((await tracePost({ ...body, template: 'shelter' })).statusCode).toBe(400);
+    expect(
+      (
+        await app.inject({
+          method: 'POST',
+          url: `/api/channels/${target}/control`,
+          cookies,
+          payload: body,
+          remoteAddress: '127.0.0.2',
+        })
+      ).statusCode,
+    ).toBe(403);
+    const accepted = await tracePost(body, key);
+    expect(accepted.statusCode).toBe(202);
+    expect((await tracePost(body, key)).json<{ sequence: number }>().sequence).toBe(
+      accepted.json<{ sequence: number }>().sequence,
+    );
+    while (await processNextInput(pool, worldId, target));
+    expect(
+      (
+        await pool.query(
+          'select traces_enabled from channel_play where world_id=$1 and channel_id=$2',
+          [worldId, target],
+        )
+      ).rows[0],
+    ).toEqual({ traces_enabled: false });
+    const committed = await app.inject({ url: `/api/controller/commands/${key}`, cookies });
+    expect(committed.json<{ result: { code: string } }>().result.code).toBe('APPLIED');
+    expect((await tracePost(body, key)).json<{ duplicate: boolean }>().duplicate).toBe(true);
+    expect((await tracePost({ ...body, enabled: true })).statusCode).toBe(409);
+    await send(target, { type: 'setTraces', enabled: true });
+    expect(
+      (await tracePost({ action: 'clearTrace', expectedVersion: await version() })).statusCode,
+    ).toBe(202);
+    while (await processNextInput(pool, worldId, target));
+  });
   it('requires owner CSRF and exact bodies, coalesces preparation, and fences queued version races', async () => {
     const payload = { action: 'prepare', expectedVersion: await version() },
       key = randomUUID();

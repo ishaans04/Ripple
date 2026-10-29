@@ -40,6 +40,13 @@ export const channelViewSchema = z.object({
   online: z.boolean(),
   healthy: z.boolean(),
   paused: z.boolean(),
+  mechanics: z
+    .object({
+      version: z.union([z.literal(0), z.literal(1)]),
+      enableRequested: z.boolean(),
+      tracesEnabled: z.boolean(),
+    })
+    .optional(),
   // Older retained public updates predate propagation; fresh snapshots always include it.
   propagation: propagationViewSchema.optional(),
   organism: z
@@ -83,6 +90,9 @@ export const channelViewSchema = z.object({
         )
         .max(3),
       choicePreview: choicePreviewSchema.optional(),
+      traceCleared: z
+        .object({ id: z.uuid(), sequence: z.int().nonnegative(), reason: z.string() })
+        .optional(),
       counts: z.array(z.int().nonnegative()),
       voteCloseAtMs: z.number().nullable(),
       explanation: z.object({ headline: z.string() }).nullable(),

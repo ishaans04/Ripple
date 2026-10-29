@@ -9,6 +9,10 @@ export async function ownerControlCommand(
   owner: OwnerSession,
   body: ChannelControl,
 ): Promise<GameCommand> {
+  if (body.action === 'clearTrace')
+    return { type: 'clearTrace', expectedVersion: body.expectedVersion };
+  if (body.action === 'setTraces')
+    return { type: 'setTraces', enabled: body.enabled, expectedVersion: body.expectedVersion };
   if (body.action === 'claimRaid') {
     const transfer = (
       await client.query<{ version: number }>(

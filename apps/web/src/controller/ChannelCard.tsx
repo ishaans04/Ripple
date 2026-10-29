@@ -79,6 +79,9 @@ export function ChannelCard({ channel }: { channel: ChannelView }) {
                   {round.choicePreview.uncertainty}
                 </p>
               )}
+              {round.traceCleared !== undefined && (
+                <p>The habitat trace was cleared after these estimates were made.</p>
+              )}
               <p>
                 {round.voteCloseAtMs === null
                   ? 'Voting clock is held.'

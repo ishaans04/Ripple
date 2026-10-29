@@ -5,6 +5,7 @@ import { liveRequest, controlMessage, LiveRequestError } from './api.ts';
 import { ChannelCard } from './ChannelCard.tsx';
 import { AdmissionControls } from './AdmissionControls.tsx';
 import { HistoricalRaids } from './HistoricalRaids.tsx';
+import { TraceControls } from './TraceControls.tsx';
 import { admissionLabel } from './PropagationCard.tsx';
 import styles from './Controller.module.css';
 interface Pending {
@@ -334,6 +335,16 @@ export default function Controller() {
           {status.snapshot?.payload.propagation !== undefined && (
             <AdmissionControls
               view={status.snapshot.payload.propagation}
+              version={status.snapshot.version}
+              disabled={disabled}
+              control={(body) => {
+                control('control', body);
+              }}
+            />
+          )}
+          {status.snapshot !== null && (
+            <TraceControls
+              channel={status.snapshot.payload}
               version={status.snapshot.version}
               disabled={disabled}
               control={(body) => {

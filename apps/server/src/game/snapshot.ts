@@ -20,6 +20,7 @@ export interface ChannelSnapshot {
   paused: boolean;
   rulesHash: string;
   propagation: PropagationView;
+  mechanics: { version: 0 | 1; enableRequested: boolean; tracesEnabled: boolean };
   organism: {
     id: string;
     version: number;
@@ -44,6 +45,7 @@ export interface ChannelSnapshot {
     visitorResult: unknown;
     choicePreview?: RoundCheckpoint['choicePreview'];
     dormantOffer?: RoundCheckpoint['dormantOffer'];
+    traceCleared?: RoundCheckpoint['traceCleared'];
   } | null;
 }
 /** A single SQL statement sees one committed MVCC snapshot, even without a transaction. */
@@ -62,6 +64,7 @@ export async function readSnapshot(
     rules_hash: string;
     grace_ms: number;
     propagation: PropagationView;
+    mechanics: ChannelSnapshot['mechanics'];
     organism: {
       id: string;
       version: number;
@@ -93,8 +96,9 @@ export async function readSnapshot(
     (select jsonb_build_object('id',r.id,'number',r.number,'kind',r.kind,'phase',r.phase,'checkpoint',r.checkpoint,'resolution',r.resolution,'explanation',r.explanation,'visitor_result',r.visitor_result)
       from rounds r where r.world_id=c.world_id and r.channel_id=c.id order by r.number desc limit 1) as round,
     ${propagationProjectionSql} as propagation,
+    jsonb_build_object('version',cp.mechanics_version,'enableRequested',cp.mechanics_requested,'tracesEnabled',cp.traces_enabled) as mechanics,
     date_trunc('milliseconds',clock_timestamp()) as server_time
-    from channels c join worlds w on w.id=c.world_id where c.world_id=$1 and c.id=$2 and (w.expires_at is null or w.expires_at>clock_timestamp())`,
+    from channels c join worlds w on w.id=c.world_id join channel_play cp on cp.world_id=c.world_id and cp.channel_id=c.id where c.world_id=$1 and c.id=$2 and (w.expires_at is null or w.expires_at>clock_timestamp())`,
     [worldId, channelId],
   );
   const row = result.rows[0];
@@ -113,6 +117,7 @@ export async function readSnapshot(
       paused: row.paused,
       rulesHash: row.rules_hash,
       propagation: row.propagation,
+      mechanics: row.mechanics,
       organism:
         organism === null
           ? null
@@ -155,6 +160,9 @@ export async function readSnapshot(
               ...(round.checkpoint.dormantOffer === undefined
                 ? {}
                 : { dormantOffer: round.checkpoint.dormantOffer }),
+              ...(round.checkpoint.traceCleared === undefined
+                ? {}
+                : { traceCleared: round.checkpoint.traceCleared }),
             },
     },
   };

@@ -18,6 +18,22 @@ function time(atMs: number): void {
   if (!Number.isSafeInteger(atMs) || atMs < 0)
     throw new EngineError('INVALID_ARGUMENT', 'Clock time must be a nonnegative safe integer.');
 }
+/** An explicit administrative cancellation consumes no observation and cannot resume. */
+export function cancelRoundClock(clock: RoundClock, atMs: number): RoundClock {
+  time(atMs);
+  if (clock.phase === 'COMPLETE') return clock;
+  return {
+    ...clock,
+    phase: 'COMPLETE',
+    interruptedPhase: null,
+    paused: false,
+    revision: clock.revision + 1,
+    deadlineAtMs: null,
+    remainingMs: 0,
+    elapsedMs: activeElapsed(clock, atMs),
+    segmentStartedAtMs: atMs,
+  };
+}
 export function phaseDuration(phase: ActiveRoundPhase, timings: RoundTimings): number {
   switch (phase) {
     case 'VOTING':

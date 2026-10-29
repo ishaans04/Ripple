@@ -28,6 +28,12 @@ export interface RoundCheckpoint {
   /** Recorded at ordinary ballot close; null is the explicit no-vote Hold. */
   readonly mutationSelection?: { readonly choiceId: string | null };
   readonly choicePreview?: ChoicePreview;
+  readonly traceCleared?: {
+    readonly id: string;
+    readonly sequence: number;
+    readonly reason: string;
+  };
+  readonly traceDecisionCancelled?: { readonly sequence: number; readonly reason: string };
   readonly activeTrace?: {
     readonly id: string;
     readonly version: number;
