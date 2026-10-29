@@ -93,3 +93,179 @@ test('read-only preview explains an invalid link without showing fabricated stat
   await expect(page.getByRole('status')).toContainText('link or renderer state is unsupported');
   await expect(page.getByRole('button')).toHaveCount(0);
 });
+
+const lineage = '33333333-3333-4333-8333-333333333333',
+  transfer = '44444444-4444-4444-8444-444444444444',
+  source = '55555555-5555-4555-8555-555555555555',
+  child = '66666666-6666-4666-8666-666666666666';
+const propagation = {
+  preparation: 'shield',
+  preparationRequested: false,
+  resident: null,
+  visitor: null,
+  admissions: [
+    {
+      id: transfer,
+      version: 3,
+      outcome: 'PENDING_APPROVAL',
+      childId: child,
+      lineageId: lineage,
+      sourceChannelId: source,
+      sourceLabel: 'Tide channel',
+      destinationChannelId: channel,
+      destinationLabel: 'Receiver',
+      expiresAt: '2026-10-29T00:00:00Z',
+      createdAt: '2026-10-28T00:00:00Z',
+    },
+  ],
+  outgoing: [],
+  limits: {
+    livingLineageCap: 12,
+    harborCap: 3,
+    generationCap: 16,
+    forkCooldownMs: 1800000,
+    admissionTtlMs: 86400000,
+  },
+  lastContest: null,
+};
+test('visitor approval submits current transfer and channel versions and waits for the committed result', async ({
+  page,
+}) => {
+  await page.route('**/api/connection', (route) => route.fulfill({ json: { liveEnabled: true } }));
+  await page.route('**/api/controller/status', (route) =>
+    route.fulfill({
+      json: {
+        ...status,
+        snapshot: { version: 12, payload: { ...status.snapshot.payload, propagation } },
+      },
+    }),
+  );
+  await page.route('**/api/controller/blocks?*', (route) =>
+    route.fulfill({ json: { kind: 'source', items: [], next: null } }),
+  );
+  const bodies: unknown[] = [];
+  let committed = false;
+  await page.route(`**/api/channels/${channel}/control`, async (route) => {
+    bodies.push(route.request().postDataJSON() as unknown);
+    await route.fulfill({ status: 202, json: { operationId: 'queued', sequence: 8 } });
+  });
+  await page.route('**/api/controller/commands/*', (route) =>
+    route.fulfill({ json: { result: committed ? { code: 'APPLIED' } : null } }),
+  );
+  await page.goto('/controller');
+  await expect(page.getByRole('region', { name: 'Raids and lineage' })).toContainText(
+    'Standing travel choice: shield',
+  );
+  await expect(page.getByRole('button', { name: 'Queue preparation ballot' })).toBeDisabled();
+  await page.getByRole('button', { name: 'Approve visitor from Tide channel' }).click();
+  await expect(page.getByRole('status')).toContainText('Waiting for its committed result');
+  await expect(
+    page.getByRole('button', { name: 'Decline visitor from Tide channel' }),
+  ).toBeDisabled();
+  expect(bodies).toEqual([
+    {
+      action: 'admission',
+      expectedVersion: 12,
+      transferId: transfer,
+      transferVersion: 3,
+      decision: 'accept',
+    },
+  ]);
+  committed = true;
+  await expect(page.getByRole('status')).toHaveText('Change committed.');
+});
+test('lineage moderation is separate from visitor refusal and paginates source blocks', async ({
+  page,
+}) => {
+  await page.route('**/api/connection', (route) => route.fulfill({ json: { liveEnabled: true } }));
+  await page.route('**/api/controller/status', (route) =>
+    route.fulfill({
+      json: {
+        ...status,
+        snapshot: { version: 12, payload: { ...status.snapshot.payload, propagation } },
+      },
+    }),
+  );
+  await page.route('**/api/controller/blocks?*', (route) => {
+    const query = new URL(route.request().url()).searchParams;
+    return route.fulfill({
+      json: {
+        kind: query.get('kind'),
+        items: query.has('after')
+          ? [{ id: source, label: 'Second page source' }]
+          : [{ id: channel, label: 'First page source' }],
+        next: query.has('after') ? null : channel,
+      },
+    });
+  });
+  const bodies: unknown[] = [];
+  await page.route(`**/api/channels/${channel}/control`, async (route) => {
+    bodies.push(route.request().postDataJSON() as unknown);
+    await route.fulfill({ status: 202, json: { sequence: 9 } });
+  });
+  await page.route('**/api/controller/commands/*', (route) =>
+    route.fulfill({ json: { result: { code: 'APPLIED' } } }),
+  );
+  await page.goto('/controller');
+  await page.getByRole('button', { name: 'Block this lineage' }).click();
+  await expect(page.getByRole('status')).toHaveText('Change committed.');
+  expect(bodies[0]).toEqual({
+    action: 'blockLineage',
+    expectedVersion: 12,
+    lineageId: lineage,
+    blocked: true,
+  });
+  await page.getByRole('button', { name: 'Next blocks' }).click();
+  await page.getByRole('button', { name: 'Unblock Second page source' }).click();
+  await expect(page.getByRole('status')).toHaveText('Change committed.');
+  expect(bodies[1]).toEqual({
+    action: 'blockSource',
+    sourceChannelId: source,
+    expectedVersion: 12,
+    blocked: false,
+  });
+  await expect(page.getByRole('button', { name: 'First page' })).toBeVisible();
+});
+
+for (const lateResponse of ['accepted', 'disconnected'] as const)
+  test(`a late ${lateResponse} response cannot overwrite an already committed visitor decision`, async ({
+    page,
+  }) => {
+    await page.route('**/api/connection', (route) =>
+      route.fulfill({ json: { liveEnabled: true } }),
+    );
+    await page.route('**/api/controller/status', (route) =>
+      route.fulfill({
+        json: {
+          ...status,
+          snapshot: { version: 12, payload: { ...status.snapshot.payload, propagation } },
+        },
+      }),
+    );
+    await page.route('**/api/controller/blocks?*', (route) =>
+      route.fulfill({ json: { kind: 'source', items: [], next: null } }),
+    );
+    let release: (() => void) | undefined;
+    const accepted = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    await page.route(`**/api/channels/${channel}/control`, async (route) => {
+      await accepted;
+      if (lateResponse === 'accepted') await route.fulfill({ status: 202, json: { sequence: 8 } });
+      else await route.abort('failed');
+    });
+    await page.route('**/api/controller/commands/*', (route) =>
+      route.fulfill({ json: { result: { code: 'APPLIED' } } }),
+    );
+    await page.goto('/controller');
+    const approve = page.getByRole('button', { name: 'Approve visitor from Tide channel' });
+    await approve.click();
+    try {
+      await expect(page.getByRole('status')).toHaveText('Change committed.');
+      await expect(approve).toBeDisabled();
+    } finally {
+      release?.();
+    }
+    await expect(approve).toBeEnabled();
+    await expect(page.getByRole('status')).toHaveText('Change committed.');
+  });

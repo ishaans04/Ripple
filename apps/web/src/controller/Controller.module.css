@@ -56,3 +56,6 @@
 .page li {
   margin-block: 0.5rem;
 }
+.page code {
+  overflow-wrap: anywhere;
+}

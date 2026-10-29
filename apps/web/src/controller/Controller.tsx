@@ -1,8 +1,9 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { z } from 'zod';
 import { controllerStatusSchema, type ControllerStatus } from '@ripple/contracts';
 import { liveRequest, controlMessage, LiveRequestError } from './api.ts';
 import { ChannelCard } from './ChannelCard.tsx';
+import { AdmissionControls } from './AdmissionControls.tsx';
 import styles from './Controller.module.css';
 interface Pending {
   id: string;
@@ -10,6 +11,7 @@ interface Pending {
   payload: Record<string, unknown>;
 }
 export default function Controller() {
+  const completedOperation = useRef<string | null>(null);
   const [enabled, setEnabled] = useState<boolean | null>(null),
     [status, setStatus] = useState<ControllerStatus | null>(null),
     [message, setMessage] = useState('Checking connection…'),
@@ -75,6 +77,7 @@ export default function Controller() {
           .object({ result: z.object({ code: z.string() }).nullable() })
           .parse(await liveRequest(`/api/controller/commands/${operationId}`));
         if (isActive() && operation.result !== null) {
+          completedOperation.current = operationId;
           setPending(null);
           setMessage(
             operation.result.code === 'APPLIED'
@@ -111,10 +114,13 @@ export default function Controller() {
         },
         body: JSON.stringify(command.payload),
       });
-      setMessage('Command accepted. Waiting for its committed result.');
+      if (completedOperation.current !== command.id)
+        setMessage('Command accepted. Waiting for its committed result.');
     } catch (error) {
-      if (error instanceof LiveRequestError && error.status < 500) setPending(null);
-      setMessage(controlMessage(error instanceof Error ? error.message : 'REQUEST_FAILED'));
+      if (completedOperation.current !== command.id) {
+        if (error instanceof LiveRequestError && error.status < 500) setPending(null);
+        setMessage(controlMessage(error instanceof Error ? error.message : 'REQUEST_FAILED'));
+      }
     } finally {
       setBusy(false);
     }
@@ -302,6 +308,16 @@ export default function Controller() {
               </button>
             )}
           </section>
+          {status.snapshot?.payload.propagation !== undefined && (
+            <AdmissionControls
+              view={status.snapshot.payload.propagation}
+              version={status.snapshot.version}
+              disabled={disabled}
+              control={(body) => {
+                control('control', body);
+              }}
+            />
+          )}
           <section className={styles.panel}>
             <h2>Read-only preview</h2>
             <p>This link reads game state and cannot send controls or votes. Keep it private.</p>

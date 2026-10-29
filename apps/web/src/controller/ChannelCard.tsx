@@ -1,6 +1,7 @@
 import type { ChannelView } from '@ripple/contracts';
 import { ShellRenderer } from '../studio/ShellRenderer.tsx';
 import styles from './Controller.module.css';
+import { PropagationCard } from './PropagationCard.tsx';
 export function ChannelCard({ channel }: { channel: ChannelView }) {
   const creature = channel.organism,
     round = channel.round;
@@ -37,7 +38,7 @@ export function ChannelCard({ channel }: { channel: ChannelView }) {
       {round !== null && (
         <>
           <h3>
-            Round {round.number} · {round.phase}
+            Round {round.number} · {round.kind ?? 'MUTATION'} · {round.phase}
           </h3>
           {round.clock.paused && (
             <p>Clock held. Committed genes stay; incomplete observations do not change energy.</p>
@@ -63,6 +64,7 @@ export function ChannelCard({ channel }: { channel: ChannelView }) {
           {round.explanation !== null && <p>{round.explanation.headline}</p>}
         </>
       )}
+      {channel.propagation !== undefined && <PropagationCard view={channel.propagation} />}
     </section>
   );
 }
