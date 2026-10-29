@@ -109,6 +109,17 @@ The stored synthetic timings are 3 seconds voting, 200 milliseconds acceptance g
 
 `pause`, `resume`, `offline`, `online`, `input-outage`, and `recover` take the same world/channel arguments. Clean pauses retain active time. Returning online requires an explicit resume; an input outage requires healthy integration followed by explicit recovery and a fresh observation. Limited-confidence complete rounds permit mutations but hold energy.
 
+`peer WORLD SOURCE "Receiver" [PEER_UUID]` adds an empty receiving channel in the same synthetic world and returns its channel ID and scoped read capability. Supply the same peer UUID and label to retry creation; a world holds at most eight channels. The owner's existing capability controls every channel in that world. Use `seed WORLD PEER` to give it a resident, or leave it empty for a two-choice welcome. `advance` moves the shared world clock and processes every peer, while leaving other worlds untouched.
+
+```powershell
+npm run sandbox -- peer WORLD_ID SOURCE_ID "Receiver" PEER_UUID
+npm run sandbox -- policy WORLD_ID PEER_ID accept
+npm run sandbox -- prepare WORLD_ID SOURCE_ID
+npm run sandbox -- raid WORLD_ID SOURCE_ID PEER_ID RECEIPT_UUID
+```
+
+Substitute actual UUIDs; `PEER_ID` is the channel ID returned by `peer`. Reusing the raid receipt UUID returns the existing result. Preparation waits for a safe ballot and the raid uses its last committed choice. `policy` accepts `ask`, `accept` or `reject`; `admit`/`decline` take `WORLD CHANNEL TRANSFER VERSION`; `block-source`/`block-lineage` take `WORLD CHANNEL ID true/false`. Command output distinguishes durable acceptance, the current snapshot and whether settlement still has pending work. This is the command adapter; the complete judge interface remains Phase 9.
+
 Read access uses `GET /api/worlds/WORLD_ID/snapshot?channelId=CHANNEL_ID` with `Authorization: Bearer READ_CAPABILITY`. `POST /api/overlay/exchange` accepts `{ "worldId": "...", "channelId": "..." }` with the same header and returns a single-use, 30-second ticket for `/api/live?ticket=...`. WebSockets start with a current snapshot, carry complete versioned projections, reject client writes, cap buffers, check authority again, and repair missed updates from PostgreSQL independently in each gateway. Vote aggregates are limited to twice per second. These endpoints accept scoped read authority, never browser impersonation of live Twitch voters.
 
 With the stack running, `docker compose exec -T app node apps/server/dist/cli/smoke-game.js` verifies the installed command tool, a real three-account resolution, the scoped HTTP snapshot, and a snapshot-first WebSocket. It prints a public result summary and keeps generated capabilities out of its output. CI runs this journey inside the production image. For source development, `npm run smoke:game` uses the database environment and the running app at localhost:3000; set `RIPPLE_SMOKE_URL` for another app URL.

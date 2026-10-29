@@ -19,19 +19,28 @@ export async function settleSyntheticWorld(
   if (world.expired) throw new SandboxError('WORLD_EXPIRED');
   let processed = 0;
   for (let batch = 0; batch < 1000; batch++) {
-    const delivered = await scanDeadlines(pool, randomUUID(), scope);
+    const delivered = await scanDeadlines(pool, randomUUID(), { worldId: scope.worldId });
     let count = 0;
-    for (; count < 100; count++) {
-      if ((await processNextInput(pool, scope.worldId, scope.channelId)) === null) break;
-      processed++;
+    const channels = (
+      await pool.query<{ id: string }>(
+        'select id from channels where world_id=$1 and processed_sequence<intake_sequence order by id',
+        [scope.worldId],
+      )
+    ).rows;
+    for (const channel of channels) {
+      for (let turn = 0; turn < 100; turn++) {
+        if ((await processNextInput(pool, scope.worldId, channel.id)) === null) break;
+        count++;
+        processed++;
+      }
     }
     if (delivered === 0 && count === 0) {
       const outstanding = (
         await pool.query<{ pending: boolean }>(
           `select
-        exists(select 1 from deadlines d join worlds w on w.id=d.world_id where d.world_id=$1 and d.channel_id=$2 and d.status in ('pending','leased') and d.due_at<=w.clock_at)
-        or exists(select 1 from channels where world_id=$1 and id=$2 and processed_sequence<intake_sequence) as pending`,
-          [scope.worldId, scope.channelId],
+        exists(select 1 from deadlines d join worlds w on w.id=d.world_id where d.world_id=$1 and d.status in ('pending','leased') and d.due_at<=w.clock_at)
+        or exists(select 1 from channels where world_id=$1 and processed_sequence<intake_sequence) as pending`,
+          [scope.worldId],
         )
       ).rows[0]?.pending;
       if (!outstanding) return { processed, pending: false };

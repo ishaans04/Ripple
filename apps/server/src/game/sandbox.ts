@@ -24,7 +24,7 @@ export const syntheticTimings: RoundTimings = Object.freeze({
   revealMs: 800,
 });
 export class SandboxError extends Error {
-  readonly code: 'UNAUTHORIZED' | 'WRONG_WORLD_MODE' | 'WORLD_EXPIRED';
+  readonly code: 'UNAUTHORIZED' | 'WRONG_WORLD_MODE' | 'WORLD_EXPIRED' | 'CAPACITY_FULL';
   constructor(code: SandboxError['code']) {
     super(code);
     this.name = 'SandboxError';

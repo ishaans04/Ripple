@@ -11,9 +11,11 @@ import {
 } from '../game/sandbox.ts';
 import { advanceSyntheticClock, settleSyntheticWorld } from '../game/synthetic-clock.ts';
 import { snapshotEnvelope } from '../game/snapshot.ts';
+import { createSyntheticPeer } from '../game/synthetic-peer.ts';
+import { operationId } from '../game/operation-id.ts';
 
 const usage =
-  'Usage: sandbox create | status WORLD CHANNEL | vote WORLD CHANNEL ACTOR CHOICE | activity WORLD CHANNEL ACTOR | advance WORLD CHANNEL MS [OPERATION_UUID] | pause/resume/offline/online/input-outage/recover WORLD CHANNEL. Set RIPPLE_SANDBOX_CAPABILITY for existing worlds.';
+  'Usage: sandbox create | peer WORLD CHANNEL LABEL [PEER_UUID] | status/seed/prepare/pause/resume/offline/online/input-outage/recover WORLD CHANNEL | raid WORLD SOURCE DESTINATION [RECEIPT_UUID] | policy WORLD CHANNEL ask/accept/reject | admit/decline WORLD CHANNEL TRANSFER VERSION | block-source/block-lineage WORLD CHANNEL ID true/false | vote WORLD CHANNEL ACTOR CHOICE | activity WORLD CHANNEL ACTOR | advance WORLD CHANNEL MS [OPERATION_UUID]. Set RIPPLE_SANDBOX_CAPABILITY for existing worlds.';
 const config = loadConfig(process.env);
 const database = createDatabase({
   connectionString: config.databaseUrl,
@@ -33,9 +35,9 @@ try {
       randomUUID(),
       syntheticSeedCommand(),
     );
-    await settleSyntheticWorld(database.pool, world);
+    const settlement = await settleSyntheticWorld(database.pool, world);
     process.stdout.write(
-      `${JSON.stringify({ synthetic: true, ...world, snapshot: await snapshotEnvelope(database.pool, world.worldId, world.channelId) }, null, 2)}\n`,
+      `${JSON.stringify({ synthetic: true, ...world, settlement, snapshot: await snapshotEnvelope(database.pool, world.worldId, world.channelId) }, null, 2)}\n`,
     );
   } else {
     const scope = z
@@ -47,7 +49,16 @@ try {
       await authorizeSynthetic(client, scope, owner);
     });
     let result: unknown;
-    if (action === 'advance')
+    let settlement: { processed: number; pending: boolean } | undefined;
+    if (action === 'peer')
+      result = await createSyntheticPeer(
+        database.pool,
+        scope,
+        owner,
+        extra === undefined ? randomUUID() : z.uuid().parse(extra),
+        z.string().parse(value),
+      );
+    else if (action === 'advance')
       result = await advanceSyntheticClock(
         database.pool,
         scope,
@@ -57,7 +68,56 @@ try {
       );
     else if (action !== 'status') {
       let command: unknown;
+      let receiptId: string = randomUUID();
       switch (action) {
+        case 'seed':
+          command = syntheticSeedCommand();
+          break;
+        case 'prepare':
+          command = { type: 'prepare' };
+          break;
+        case 'raid':
+          receiptId = extra === undefined ? randomUUID() : z.uuid().parse(extra);
+          command = {
+            type: 'raid',
+            transferId: operationId(scope.channelId, 0, `${receiptId}:transfer`),
+            childId: operationId(scope.channelId, 0, `${receiptId}:child`),
+            residencyId: operationId(scope.channelId, 0, `${receiptId}:residency`),
+            arrivalRoundId: operationId(scope.channelId, 0, `${receiptId}:welcome`),
+            destinationChannelId: z.uuid().parse(value),
+            destinationTwitchId: value,
+          };
+          break;
+        case 'policy': {
+          const snapshot = await snapshotEnvelope(database.pool, scope.worldId, scope.channelId);
+          if (snapshot === null) throw new Error('Synthetic channel missing.');
+          command = {
+            type: 'policy',
+            visitorPolicy: z.enum(['ask', 'accept', 'reject']).parse(value),
+            expectedVersion: snapshot.stateVersion,
+          };
+          break;
+        }
+        case 'admit':
+        case 'decline':
+          command = {
+            type: 'admission',
+            transferId: z.uuid().parse(value),
+            transferVersion: z.coerce.number().int().nonnegative().parse(extra),
+            decision: action === 'admit' ? 'accept' : 'decline',
+            roundId: randomUUID(),
+          };
+          break;
+        case 'block-source':
+        case 'block-lineage':
+          command = {
+            type: action === 'block-source' ? 'blockSource' : 'blockLineage',
+            ...(action === 'block-source'
+              ? { sourceChannelId: z.uuid().parse(value) }
+              : { lineageId: z.uuid().parse(value) }),
+            blocked: z.enum(['true', 'false']).parse(extra) === 'true',
+          };
+          break;
         case 'vote':
         case 'activity': {
           const actor = z.string().min(1).max(64).parse(value);
@@ -92,11 +152,14 @@ try {
         default:
           throw new Error(usage);
       }
-      result = await acceptSyntheticCommand(database.pool, scope, owner, randomUUID(), command);
-      await settleSyntheticWorld(database.pool, scope);
+      result = {
+        receiptId,
+        ...(await acceptSyntheticCommand(database.pool, scope, owner, receiptId, command)),
+      };
+      settlement = await settleSyntheticWorld(database.pool, scope);
     }
     process.stdout.write(
-      `${JSON.stringify({ synthetic: true, result, snapshot: await snapshotEnvelope(database.pool, scope.worldId, scope.channelId) }, null, 2)}\n`,
+      `${JSON.stringify({ synthetic: true, result, settlement, snapshot: await snapshotEnvelope(database.pool, scope.worldId, scope.channelId) }, null, 2)}\n`,
     );
   }
 } catch (error) {
