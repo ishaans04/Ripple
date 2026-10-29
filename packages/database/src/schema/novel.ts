@@ -2,6 +2,7 @@ import { sql } from 'drizzle-orm';
 import {
   check,
   foreignKey,
+  index,
   integer,
   jsonb,
   pgTable,
@@ -52,6 +53,7 @@ export const traceQualifications = pgTable(
   (t) => [
     primaryKey({ columns: [t.worldId, t.lineageId, t.channelId] }),
     unique('trace_qualification_offer_unique').on(t.worldId, t.traceId),
+    index('trace_qualification_emitter_idx').on(t.worldId, t.emitterId),
     foreignKey({
       columns: [t.worldId, t.lineageId],
       foreignColumns: [lineages.worldId, lineages.id],

@@ -178,6 +178,12 @@ Scoped snapshots, the controller and read-only preview show earned active/pendin
 
 Mutation-preview rules use only a recorded recent valid profile and a known trace, label their uncertainty, and return Learning when no valid profile exists. Version-one ballots freeze the preview at opening, retain its source round, and expose estimates and trade-offs in the controller/read-only preview. New observations never rewrite the displayed estimate.
 
+## Lineage reads
+
+`GET /api/lineages/:id?worldId=…&channelId=…` uses the channel's read capability to return approved origin/branch names, parent/founder/generation, saved genome/appearance/energy/status, current or last ended host, birth/admission provenance, branch counts and earned trace attribution after expiry. Access is limited to that world's lineages the channel originated or encountered; it does not expose unrelated lineages, voter identities, raw transfer snapshots or unenrolled destination identities.
+
+Pages default to 25 branches, with `limit` from 1–50. Pass the returned `next` as `after` to continue in generation/ID order. Each page uses one committed database snapshot; refresh from the first page to include newly born branches. Historical fossils preserve their actual saved appearance and energy, including contest losses above zero. The full passport and lineage UI remain Phase 7 work.
+
 ## Broadcast overlay
 
 Create or rotate a read-only preview link in `/controller`; the same operation now provides an **OBS browser source URL** for `/overlay`. Paste it into a 1920×1080 browser source. The canvas is transparent, with the creature and a compact decision panel in the lower corner. Both links share one scoped capability; rotation revokes both. Capabilities remain in URL fragments and authorized headers, never ordinary page-query parameters. Overlay links cannot send owner controls or votes.

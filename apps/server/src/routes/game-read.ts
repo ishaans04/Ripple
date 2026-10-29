@@ -1,13 +1,43 @@
 import { z } from 'zod';
-import { readScopeSchema } from '@ripple/contracts';
+import { lineageCursorSchema, readScopeSchema } from '@ripple/contracts';
 import type { FastifyInstance } from 'fastify';
 import type pg from 'pg';
 import { ApiError } from '../errors.ts';
 import { authorizeRead, bearer, exchangeReadCapability } from '../game/read-access.ts';
 import { snapshotEnvelope } from '../game/snapshot.ts';
 import { readRoundAnalysis } from '../game/round-analysis.ts';
+import { readLineage } from '../game/lineage-read.ts';
 
 export function registerGameReadRoutes(app: FastifyInstance, pool: pg.Pool): void {
+  app.get(
+    '/api/lineages/:id',
+    { config: { rateLimit: { max: 120, timeWindow: '1 minute' } } },
+    async (request, reply) => {
+      const params = z
+          .strictObject({ id: z.uuid().transform((id) => id.toLowerCase()) })
+          .safeParse(request.params),
+        query = readScopeSchema
+          .extend({
+            limit: z.coerce.number().int().min(1).max(50).default(25),
+            after: lineageCursorSchema.optional(),
+          })
+          .safeParse(request.query);
+      if (!params.success || !query.success)
+        throw new ApiError('BAD_REQUEST', 400, 'Specify a scoped lineage and valid page cursor.');
+      await authorizeRead(pool, query.data, bearer(request.headers.authorization));
+      const result = await readLineage(
+        pool,
+        query.data,
+        params.data.id,
+        query.data.limit,
+        query.data.after,
+      );
+      if (result === null)
+        throw new ApiError('NOT_FOUND', 404, 'Lineage is unavailable to this channel.');
+      reply.header('cache-control', 'no-store');
+      return result;
+    },
+  );
   app.get(
     '/api/rounds/:id/explanation',
     { config: { rateLimit: { max: 120, timeWindow: '1 minute' } } },

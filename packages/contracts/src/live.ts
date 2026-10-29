@@ -35,6 +35,13 @@ export const choicePreviewSchema = z
       }),
     ]),
   );
+export const appearanceViewSchema = z.discriminatedUnion('kind', [
+  z.object({ kind: z.literal('founder'), rendererVersion: z.string(), part: shellPartSchema }),
+  z.object({
+    kind: z.literal('studio'),
+    blueprint: z.object({ rendererVersion: z.string(), part: shellPartSchema }),
+  }),
+]);
 export const channelViewSchema = z.object({
   channelId: z.uuid(),
   label: z.string(),
@@ -59,17 +66,7 @@ export const channelViewSchema = z.object({
       health: z.int().min(0).max(100),
       status: z.string(),
       genome: studioGenomeSchema,
-      appearance: z.discriminatedUnion('kind', [
-        z.object({
-          kind: z.literal('founder'),
-          rendererVersion: z.string(),
-          part: shellPartSchema,
-        }),
-        z.object({
-          kind: z.literal('studio'),
-          blueprint: z.object({ rendererVersion: z.string(), part: shellPartSchema }),
-        }),
-      ]),
+      appearance: appearanceViewSchema,
     })
     .nullable(),
   round: z

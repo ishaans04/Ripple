@@ -149,6 +149,7 @@ export const organisms = pgTable(
     check('organisms_name_length', sql`length(${t.name}) between 1 and 40`),
     index('organisms_parent_idx').on(t.worldId, t.parentId),
     index('organisms_lineage_idx').on(t.worldId, t.lineageId, t.status),
+    index('organisms_lineage_page_idx').on(t.worldId, t.lineageId, t.generation, t.id),
   ],
 );
 

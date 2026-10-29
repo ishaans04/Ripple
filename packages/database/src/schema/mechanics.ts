@@ -153,6 +153,7 @@ export const habitatTraces = pgTable(
       .on(t.worldId, t.channelId)
       .where(sql`${t.status}='active'`),
     index('traces_host_status_idx').on(t.worldId, t.channelId, t.status),
+    index('traces_emitter_idx').on(t.worldId, t.emitterId),
   ],
 );
 
