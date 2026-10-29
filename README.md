@@ -153,6 +153,8 @@ The pinned MediaPipe 1.1.1 runtime and SHA-256-verified version 1 model are serv
 
 `npm run test:e2e` builds the application and runs the studio browser journeys against the actual Fastify service and production security headers. Windows Chrome and Edge must be installed. Tests include real model inference on an upstream test photograph (no physical camera needed), synthetic-landmark parity with pointer input, denial, tracking loss, touch dragging, and local recovery. These tests are not a claim of live Twitch integration.
 
+The browser suite starts its own server on port 4179 and refuses to reuse an existing listener. Set `RIPPLE_E2E_PORT` to another free port when needed; unrelated local previews cannot supply a passing server check. Raw touch checks scroll the target into view and verify its hit target before dispatch.
+
 ## Architecture
 
 One TypeScript application service plus PostgreSQL, deployed as a single image (see PRD section 12). Browsers never connect to the database. The same image runs locally under Compose and in hosted deployments, with migrations applied as a separate pre-start step.

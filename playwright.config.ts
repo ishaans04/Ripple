@@ -1,4 +1,5 @@
 import { defineConfig, devices } from '@playwright/test';
+import { browserTestUrl } from './tests/browser-config.ts';
 
 export default defineConfig({
   testDir: './tests/browser',
@@ -9,7 +10,7 @@ export default defineConfig({
   retries: 0,
   reporter: 'list',
   use: {
-    baseURL: 'http://127.0.0.1:4173',
+    baseURL: browserTestUrl,
     trace: 'retain-on-failure',
     screenshot: 'only-on-failure',
   },
@@ -19,8 +20,8 @@ export default defineConfig({
   ],
   webServer: {
     command: 'node --conditions=ripple-source tests/browser-server.ts',
-    url: 'http://127.0.0.1:4173/studio',
+    url: `${browserTestUrl}/studio`,
     timeout: 60000,
-    reuseExistingServer: !process.env.CI,
+    reuseExistingServer: false,
   },
 });

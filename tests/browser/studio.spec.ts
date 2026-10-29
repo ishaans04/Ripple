@@ -234,10 +234,20 @@ test('touch drag and narrow layout keep the same bounded controls', async ({ pag
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/studio');
   const handle = page.getByRole('slider', { name: 'Shell width control', exact: true });
+  await handle.scrollIntoViewIfNeeded();
+  await expect(handle).toBeInViewport();
   const box = await handle.boundingBox();
   if (box === null) throw new Error('Missing shell handle');
   const x = box.x + box.width / 2;
   const y = box.y + box.height / 2;
+  // Raw CDP touch dispatch does not perform Playwright's hit-target checks.
+  expect(
+    await page.evaluate(
+      ({ x, y }) =>
+        document.elementFromPoint(x, y)?.closest('[role="slider"]')?.getAttribute('aria-label'),
+      { x, y },
+    ),
+  ).toBe('Shell width control');
   const session = await context.newCDPSession(page);
   await session.send('Input.dispatchTouchEvent', {
     type: 'touchStart',
