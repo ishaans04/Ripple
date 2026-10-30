@@ -31,6 +31,8 @@ import {
   organismHostsSql,
   organismOriginSql,
 } from './appearance-projection.ts';
+import { projectStudio, studioProjectionSql } from './studio-projection.ts';
+import type { StudioView } from '@ripple/contracts';
 
 export interface ChannelSnapshot {
   channelId: string;
@@ -44,6 +46,7 @@ export interface ChannelSnapshot {
   familyDigest: FamilyDigest | null;
   display: DisplayPreferences;
   celebration: Celebration | null;
+  studio: StudioView;
   mechanics: {
     version: 0 | 1;
     enableRequested: boolean;
@@ -126,6 +129,7 @@ export async function readSnapshot(
       visitor_result: unknown;
       analysis: unknown;
     } | null;
+    studio: unknown;
     server_time: Date;
   }>(
     `select c.state_version,c.label,w.mode,c.online,c.healthy,c.paused,c.rules_hash,(c.configuration->>'graceMs')::int as grace_ms,
@@ -134,9 +138,9 @@ export async function readSnapshot(
       from residencies r join organisms o on o.world_id=r.world_id and o.id=r.organism_id
       where r.world_id=c.world_id and r.channel_id=c.id and r.role='resident' order by (r.ended_at is null) desc,r.started_at desc limit 1) as organism,
     (select jsonb_build_object('id',r.id,'number',r.number,'kind',r.kind,'phase',r.phase,'checkpoint',r.checkpoint,'resolution',r.resolution,'explanation',r.explanation,'visitor_result',r.visitor_result,'analysis',${roundAnalysisProjectionSql})
-      from rounds r where r.world_id=c.world_id and r.channel_id=c.id order by r.number desc limit 1) as round,
+      from rounds r where r.world_id=c.world_id and r.channel_id=c.id and r.kind<>'STUDIO_SELECTION' order by r.number desc limit 1) as round,
     ${propagationProjectionSql} as propagation,
-    cp.display,cp.celebration,
+    cp.display,cp.celebration,${studioProjectionSql} as studio,
     (select jsonb_build_object('items',d.items,'remaining',d.remaining) from family_digests d
       where d.world_id=c.world_id and d.channel_id=c.id and c.online) as family_digest,
     jsonb_build_object('version',cp.mechanics_version,'enableRequested',cp.mechanics_requested,'tracesEnabled',cp.traces_enabled,'state',${mechanicsStateProjectionSql}) as mechanics,
@@ -164,6 +168,7 @@ export async function readSnapshot(
       display: displayPreferencesSchema.parse(row.display),
       celebration: row.celebration === null ? null : celebrationSchema.parse(row.celebration),
       mechanics: { ...row.mechanics, state: mechanicsStateSchema.parse(row.mechanics.state) },
+      studio: projectStudio(row.studio),
       organism:
         organism === null
           ? null
@@ -211,6 +216,9 @@ export async function readSnapshot(
               ...(round.checkpoint.traceCleared === undefined
                 ? {}
                 : { traceCleared: round.checkpoint.traceCleared }),
+              ...(round.checkpoint.studioHatch === undefined
+                ? {}
+                : { studioHatch: round.checkpoint.studioHatch }),
             },
     },
   };

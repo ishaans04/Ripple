@@ -11,7 +11,7 @@ import {
   applyRoundDeadline,
   seedResident,
 } from './rounds.ts';
-import { loadContext, type GameContext } from './store.ts';
+import { gameHeld, loadContext, type GameContext } from './store.ts';
 import { readSnapshot } from './snapshot.ts';
 import { chatIntentSchema } from '../twitch/chat.ts';
 import { queueAnnouncement } from '../twitch/bot.ts';
@@ -23,6 +23,22 @@ import { operationId } from './operation-id.ts';
 import { claimHistoricalRaid } from './historical-adoption.ts';
 import { clearHabitatTraces, setHabitatTraces } from './trace-control.ts';
 import { requestMechanics } from './mechanics-rollout.ts';
+import {
+  acceptStudioVote,
+  applyBridgeScene,
+  applyStudioDeadline,
+  blockArtist,
+  markBridgeStale,
+  openStudioBallot,
+  releasePendingAdaptation,
+  returnFromStudio,
+  reviewStudio,
+  startStudio,
+  studioOnIntegration,
+  submitProposal,
+  updateStudioSettings,
+  withdrawProposal,
+} from './studio.ts';
 
 async function apply(
   context: GameContext,
@@ -32,6 +48,29 @@ async function apply(
   receiptId: string,
 ): Promise<CommandEffect> {
   switch (command.type) {
+    case 'studioSettings':
+      return updateStudioSettings(context, command.settings);
+    case 'studioStart':
+      return startStudio(context, command, sequence, atMs);
+    case 'studioReturn':
+      return returnFromStudio(context, command, sequence, atMs);
+    case 'bridgeScene':
+      return applyBridgeScene(context, command, sequence, atMs);
+    case 'bridgeStale':
+      return markBridgeStale(context);
+    case 'studioDeadline':
+      return applyStudioDeadline(context, command, sequence, atMs);
+    case 'studioProposal':
+      return submitProposal(context, command, sequence, atMs);
+    case 'studioWithdraw':
+    case 'studioRemoveProposal':
+      return withdrawProposal(context, command, sequence);
+    case 'studioBlockArtist':
+      return blockArtist(context, command, sequence);
+    case 'studioReview':
+      return reviewStudio(context, command, sequence, atMs);
+    case 'studioRelease':
+      return releasePendingAdaptation(context, command, sequence, atMs);
     case 'enableMechanics':
       return requestMechanics(context);
     case 'clearTrace':
@@ -131,8 +170,16 @@ async function apply(
       });
     case 'seed':
       return seedResident(context, command, atMs);
-    case 'vote':
+    case 'vote': {
+      // While chat is choosing a studio design, the ordinary ballot is held at its checkpoint.
+      const studio = await openStudioBallot(context);
+      if (
+        studio !== null &&
+        (command.roundId === undefined || command.roundId === studio.ballot_round_id)
+      )
+        return acceptStudioVote(context, studio, command.actorKey, command.choice, sequence);
       return acceptVote(context, command, sequence);
+    }
     case 'activity':
       return acceptActivity(context, command.actorKey, sequence, atMs);
     case 'shock':
@@ -141,12 +188,19 @@ async function apply(
       return applyRoundDeadline(context, command, sequence, atMs);
     case 'pause':
     case 'resume':
+    case 'recover':
+      return applyLifecycle(context, command, atMs);
     case 'integration':
     case 'stream':
     case 'inputHealth':
-    case 'interrupt':
-    case 'recover':
-      return applyLifecycle(context, command, atMs);
+    case 'interrupt': {
+      const previous = { online: context.channel.online, healthy: context.channel.healthy };
+      const result = await applyLifecycle(context, command, atMs);
+      const studioChanged = await studioOnIntegration(context, previous, sequence, atMs);
+      return studioChanged && result.updateType === null
+        ? { ...result, code: 'APPLIED', updateType: 'availability.changed' }
+        : result;
+    }
   }
 }
 /** Called with the channel lock, so a pause and its obsolete jobs commit together. */
@@ -292,6 +346,8 @@ export async function processNextInput(
       ).rows[0];
       if (input === undefined) throw new Error('The next accepted sequence is missing.');
       const intent = chatIntentSchema.safeParse(input.command);
+      const studioBallot = intent.success ? await openStudioBallot(context) : null;
+      const ballotId = studioBallot?.ballot_round_id ?? context.round?.id ?? 'none';
       let command: GameCommand = liveRaid.success
         ? {
             ...liveRaid.data,
@@ -303,9 +359,8 @@ export async function processNextInput(
           ? intent.data.action === 'vote'
             ? {
                 type: 'vote',
-                actorKey: sha256Hex(
-                  canonicalJson([intent.data.actorBase, context.round?.id ?? 'none', 'vote']),
-                ),
+                ...(studioBallot === null ? {} : { roundId: ballotId }),
+                actorKey: sha256Hex(canonicalJson([intent.data.actorBase, ballotId, 'vote'])),
                 choice: intent.data.choice,
               }
             : {
@@ -379,7 +434,7 @@ export async function processNextInput(
         context.round === null &&
         context.channel.online &&
         context.channel.healthy &&
-        !context.channel.paused
+        !gameHeld(context.channel)
       ) {
         const openingId =
           'roundId' in command && command.roundId !== undefined

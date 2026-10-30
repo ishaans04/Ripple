@@ -32,6 +32,13 @@ export const passportAdaptationSchema = z.object({
     z.object({ status: z.literal('hold') }),
     // Closed before selections or participants were recorded; nothing is inferred.
     z.object({ status: z.literal('unrecorded') }),
+    // An approved Cocoon Studio design took this slot instead of ordinary cards.
+    z.object({
+      status: z.literal('studio'),
+      hash: z.string().regex(/^[a-f0-9]{64}$/),
+      committed: z.boolean(),
+      genomeAfter: studioGenomeSchema.nullable(),
+    }),
   ]),
 });
 export type PassportAdaptation = z.infer<typeof passportAdaptationSchema>;

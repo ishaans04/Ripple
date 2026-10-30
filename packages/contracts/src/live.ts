@@ -112,6 +112,10 @@ export const channelViewSchema = z.object({
       voteCloseAtMs: z.number().nullable(),
       explanation: z.object({ headline: z.string() }).nullable(),
       analysis: roundAnalysisSchema.nullable().optional(),
+      // An approved studio design is incubating in place of this round's ordinary cards.
+      studioHatch: z
+        .object({ adaptationId: z.uuid(), sessionId: z.uuid(), hash: z.string() })
+        .optional(),
     })
     .nullable(),
 });

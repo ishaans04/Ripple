@@ -35,6 +35,8 @@ const savedAdaptationSchema = z.object({
   ),
   mutationSelection: z.object({ choiceId: z.string().nullable() }).nullable(),
   participantGenome: genome.nullable(),
+  studioHatch: z.object({ hash: z.string() }).nullable().optional(),
+  studioCommitted: z.boolean().optional(),
 });
 const same = (a: z.infer<typeof genome>, b: z.infer<typeof genome>) =>
   a.pulse === b.pulse && a.calm === b.calm && a.grit === b.grit && a.drift === b.drift;
@@ -54,6 +56,13 @@ export function recordedSelection(
     source: candidate.source,
     genomeAfter: candidate.genome,
   });
+  if (saved.studioHatch !== null && saved.studioHatch !== undefined)
+    return {
+      status: 'studio',
+      hash: saved.studioHatch.hash,
+      committed: saved.studioCommitted === true,
+      genomeAfter: saved.participantGenome,
+    };
   if (saved.mutationSelection !== null) {
     if (saved.mutationSelection.choiceId === null) return { status: 'hold' };
     const chosen = saved.candidates.find((item) => item.id === saved.mutationSelection?.choiceId);
@@ -99,7 +108,8 @@ export async function readPassport(
       'total',(select count(*) from rounds r where r.world_id=o.world_id and r.organism_id=o.id and r.kind='MUTATION' and r.close_sequence is not null),
       'items',coalesce((select jsonb_agg(item order by number desc) from (
         select r.number,jsonb_build_object('roundId',r.id,'number',r.number,'host',${host('c')},'openedAt',r.opened_at,
-          'genomeBefore',r.checkpoint->'genomeBefore','candidates',r.checkpoint->'candidates','mutationSelection',r.checkpoint->'mutationSelection',
+          'genomeBefore',r.checkpoint->'genomeBefore','candidates',r.checkpoint->'candidates','mutationSelection',r.checkpoint->'mutationSelection','studioHatch',r.checkpoint->'studioHatch',
+          'studioCommitted',exists(select 1 from pending_adaptations pa where pa.world_id=r.world_id and pa.committed_round_id=r.id and pa.status='committed'),
           'participantGenome',(select p.genome from round_participants p where p.world_id=r.world_id and p.round_id=r.id and p.organism_id=o.id)) as item
         from rounds r join channels c on c.world_id=r.world_id and c.id=r.channel_id
         where r.world_id=o.world_id and r.organism_id=o.id and r.kind='MUTATION' and r.close_sequence is not null

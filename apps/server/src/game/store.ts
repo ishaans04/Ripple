@@ -16,12 +16,14 @@ import type pg from 'pg';
 export interface ChannelRow {
   world_id: string;
   id: string;
+  label: string;
   seed: string;
   rules_hash: string;
   configuration: unknown;
   online: boolean;
   healthy: boolean;
   paused: boolean;
+  studio_hold: boolean;
   intake_sequence: number;
   processed_sequence: number;
   state_version: number;
@@ -38,6 +40,8 @@ export interface OrganismRow {
   status: 'ALIVE' | 'HARBOR' | 'FOSSIL' | 'ARCHIVED';
   mutation_slots: MutationSlots;
   appearance: CommittedAppearance;
+  design_version: number;
+  appearance_hash: string | null;
 }
 export interface RoundRow {
   id: string;
@@ -119,7 +123,7 @@ export async function loadContext(
   const round =
     (
       await client.query<RoundRow>(
-        'select * from rounds where world_id=$1 and channel_id=$2 and completed_at is null',
+        "select * from rounds where world_id=$1 and channel_id=$2 and completed_at is null and kind<>'STUDIO_SELECTION'",
         [worldId, channelId],
       )
     ).rows[0] ?? null;
@@ -145,6 +149,10 @@ export async function loadContext(
       policy,
     },
   };
+}
+/** The game clock is held by a manual pause or by an undecided Cocoon Studio. */
+export function gameHeld(channel: ChannelRow): boolean {
+  return channel.paused || channel.studio_hold;
 }
 export async function saveCheckpoint(
   context: GameContext,

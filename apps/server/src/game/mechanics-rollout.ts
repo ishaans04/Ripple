@@ -1,5 +1,5 @@
 import { effect, type CommandEffect } from './lifecycle.ts';
-import type { GameContext } from './store.ts';
+import { gameHeld, type GameContext } from './store.ts';
 
 /** Persist intent only. Current ballot/observation checkpoints retain their captured mechanics. */
 export async function requestMechanics(context: GameContext): Promise<CommandEffect> {
@@ -17,7 +17,7 @@ export async function requestMechanics(context: GameContext): Promise<CommandEff
 export async function applyRequestedMechanics(context: GameContext): Promise<void> {
   if (!context.mechanics.requested || context.mechanics.version === 1) return;
   if (context.round !== null) throw new Error('Cannot change mechanics inside an existing round');
-  if (!context.channel.online || !context.channel.healthy || context.channel.paused)
+  if (!context.channel.online || !context.channel.healthy || gameHeld(context.channel))
     throw new Error('Cannot enable mechanics while the channel clock is held');
   const changed = await context.client.query(
     'update channel_play set mechanics_version=1,mechanics_requested=false where world_id=$1 and channel_id=$2 and mechanics_version=0 and mechanics_requested',

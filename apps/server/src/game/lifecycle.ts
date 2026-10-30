@@ -5,7 +5,7 @@ import {
   recoverRoundClock,
   resumeRoundClock,
 } from '@ripple/engine';
-import { saveCheckpoint, type GameContext } from './store.ts';
+import { gameHeld, saveCheckpoint, type GameContext } from './store.ts';
 import { captureFamilyDigest, clearFamilyDigest } from './family-digest.ts';
 
 export interface CommandEffect {
@@ -48,7 +48,7 @@ export async function applyLifecycle(
     if (
       channel.online &&
       channel.healthy &&
-      !channel.paused &&
+      !gameHeld(channel) &&
       context.round !== null &&
       context.round.checkpoint.clock.phase !== 'INTERRUPTED'
     ) {
@@ -127,6 +127,11 @@ export async function applyLifecycle(
   }
   if (round === null)
     return effect(flagChanged ? 'APPLIED' : 'NO_CHANGE', flagChanged ? 'resumed' : null);
+  // A manual resume clears only the manual pause; an undecided studio keeps holding the clock.
+  if (channel.studio_hold)
+    return effect(flagChanged ? 'APPLIED' : 'NO_CHANGE', flagChanged ? 'resumed' : null, {
+      studioHold: true,
+    });
   const clock =
     command.type === 'recover'
       ? recoverRoundClock(round.checkpoint.clock, atMs)

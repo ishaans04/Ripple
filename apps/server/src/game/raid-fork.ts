@@ -176,9 +176,9 @@ export async function forkRaid(
   if (childId !== null && parent !== undefined && inherited !== null && arrival !== null) {
     const g = inherited.genome;
     await client.query(
-      `insert into organisms(world_id,id,lineage_id,parent_id,founder_id,generation,founding_genome,pulse,calm,grit,drift,health,status,appearance,mutation_slots,name,created_at,appearance_mapping)
+      `insert into organisms(world_id,id,lineage_id,parent_id,founder_id,generation,founding_genome,pulse,calm,grit,drift,health,status,appearance,mutation_slots,name,created_at,appearance_mapping,appearance_hash)
       values($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,'HARBOR',$13,$14,$15,$16,
-        (select appearance_mapping from organisms where world_id=$1 and id=$4))`,
+        (select appearance_mapping from organisms where world_id=$1 and id=$4),$17)`,
       [
         channel.world_id,
         childId,
@@ -196,6 +196,8 @@ export async function forkRaid(
         JSON.stringify(initialMutationSlots),
         parent.name,
         new Date(atMs),
+        // Only the committed design travels; a pending studio result never reaches the child.
+        inherited.appearance.kind === 'studio' ? inherited.appearance.hash : null,
       ],
     );
     if (snapshot.dormant !== undefined && snapshot.dormant !== null)

@@ -47,6 +47,12 @@ export interface RoundCheckpoint {
     readonly supporters: number;
     readonly totalVotes: number;
   };
+  /** An approved studio design takes this mutation slot instead of ordinary cards. */
+  readonly studioHatch?: {
+    readonly adaptationId: string;
+    readonly sessionId: string;
+    readonly hash: string;
+  };
   readonly specialBallot?: {
     readonly kind: 'WELCOME' | 'PREPARATION' | 'TRACE';
     readonly options: readonly SpecialOption[];

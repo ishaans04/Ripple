@@ -18,11 +18,12 @@ import {
 } from '@ripple/engine';
 import { captureRoundParticipants } from './visitor-observation.ts';
 import { effect, type CommandEffect } from './lifecycle.ts';
-import { genomeOf, saveCheckpoint, type GameContext, type OrganismRow } from './store.ts';
+import { gameHeld, genomeOf, saveCheckpoint, type GameContext, type OrganismRow } from './store.ts';
 import { loadRaidPolicy, readTransfer, recordTransferTransition } from './propagation-store.ts';
 import { offerDormantMutation } from './dormant-state.ts';
 import { activeTrace, pendingTrace, traceReference, decideHabitatTrace } from './trace-state.ts';
 import { applyRequestedMechanics } from './mechanics-rollout.ts';
+import { hatchCheckpoint, pendingAdaptationFor } from './studio-hatch.ts';
 
 /** Runs only after the previous round has committed its completion, or on an empty channel. */
 export async function openNextRound(
@@ -31,7 +32,7 @@ export async function openNextRound(
   atMs: number,
 ): Promise<boolean> {
   const { client, channel, rules, timings } = context;
-  if (!channel.online || !channel.healthy || channel.paused) return false;
+  if (!channel.online || !channel.healthy || gameHeld(channel)) return false;
   await applyRequestedMechanics(context);
   const actor = (
     await client.query<OrganismRow>(
@@ -90,42 +91,48 @@ export async function openNextRound(
     timings,
   };
   const recent = baseline.at(-1);
+  const hatch =
+    kind === 'MUTATION' && resident?.id === actor.id
+      ? await pendingAdaptationFor(context, actor.id)
+      : null;
   const dormant =
-    kind === 'MUTATION'
+    kind === 'MUTATION' && hatch === null
       ? await offerDormantMutation(
           context,
           recent === undefined ? null : { burst: recent.burst, steadiness: 1000 - recent.burst },
         )
       : null;
   let checkpoint: RoundCheckpoint =
-    kind === 'MUTATION'
-      ? openMutationRound(
-          { ...input, ...(dormant === null ? {} : { dormantMove: dormant.move }) },
-          rules,
-        )
-      : openSpecialRound(
-          {
-            ...input,
-            kind,
-            options:
-              kind === 'TRACE'
-                ? traceOptions
-                : kind === 'WELCOME'
-                  ? welcomeOptions(
-                      resident?.health ?? null,
-                      await loadRaidPolicy(client, channel.world_id),
-                    )
-                  : preparationOptions,
-            ...(visitor === undefined ? {} : { visitorId: visitor.organism_id }),
-            ...(kind !== 'TRACE' || tracePending === null
-              ? {}
-              : { traceOffer: traceReference(tracePending) }),
-          },
-          rules,
-        );
+    hatch !== null
+      ? hatchCheckpoint({ atMs, actor, history: baseline, pending: hatch }, context)
+      : kind === 'MUTATION'
+        ? openMutationRound(
+            { ...input, ...(dormant === null ? {} : { dormantMove: dormant.move }) },
+            rules,
+          )
+        : openSpecialRound(
+            {
+              ...input,
+              kind,
+              options:
+                kind === 'TRACE'
+                  ? traceOptions
+                  : kind === 'WELCOME'
+                    ? welcomeOptions(
+                        resident?.health ?? null,
+                        await loadRaidPolicy(client, channel.world_id),
+                      )
+                    : preparationOptions,
+              ...(visitor === undefined ? {} : { visitorId: visitor.organism_id }),
+              ...(kind !== 'TRACE' || tracePending === null
+                ? {}
+                : { traceOffer: traceReference(tracePending) }),
+            },
+            rules,
+          );
   if (context.mechanics.version === 1)
     checkpoint = { ...checkpoint, activeTrace: heldTrace ?? null };
-  if (context.mechanics.version === 1 && kind === 'MUTATION') {
+  if (context.mechanics.version === 1 && kind === 'MUTATION' && hatch === null) {
     checkpoint = {
       ...checkpoint,
       choicePreview: previewMutationChoices(

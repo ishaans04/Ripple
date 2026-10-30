@@ -15,7 +15,9 @@ export async function recordChoiceReplay(
   if (
     context.mechanics.version !== 1 ||
     resolution.outcome === 'interrupted' ||
-    checkpoint.specialBallot !== undefined
+    checkpoint.specialBallot !== undefined ||
+    // A studio hatch had no cards to compare; its design came from the studio ballot.
+    checkpoint.studioHatch !== undefined
   )
     return;
   const { round, client, channel, rules } = context;

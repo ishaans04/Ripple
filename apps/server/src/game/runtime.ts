@@ -20,7 +20,7 @@ async function recordLiveBoundary(
 ): Promise<void> {
   const channels =
     await pool.query<ScopeRow>(`select c.world_id,c.id from channels c join worlds w on w.id=c.world_id
-    join rounds r on r.world_id=c.world_id and r.channel_id=c.id and r.completed_at is null
+    join rounds r on r.world_id=c.world_id and r.channel_id=c.id and r.completed_at is null and r.kind<>'STUDIO_SELECTION'
     where w.mode='live' and c.online and c.healthy and not c.paused and r.checkpoint->'clock'->>'paused'='false'
     order by c.world_id,c.id`);
   for (const channel of channels.rows)

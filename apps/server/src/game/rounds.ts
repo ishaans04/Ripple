@@ -17,13 +17,14 @@ import {
   finishVisitorObservation,
   lockParticipantLineages,
 } from './visitor-observation.ts';
-import { genomeOf, saveCheckpoint, type GameContext } from './store.ts';
+import { gameHeld, genomeOf, saveCheckpoint, type GameContext } from './store.ts';
 import {
   captureDormantMutation,
   ageDormantMutations,
   consumeDormantOffer,
 } from './dormant-state.ts';
 import { ageHabitatTraces, qualifyHabitatTraces } from './trace-state.ts';
+import { commitStudioHatch, settleStudioAfterObservation } from './studio-hatch.ts';
 
 export { openNextRound } from './round-scheduling.ts';
 export async function seedResident(
@@ -34,7 +35,7 @@ export async function seedResident(
   const { channel, client, rules } = context;
   if (context.organism !== null) return effect('RESIDENT_EXISTS');
   if (!channel.online || !channel.healthy) return effect('INTEGRATION_UNAVAILABLE');
-  if (channel.paused) return effect('PAUSED');
+  if (gameHeld(channel)) return effect('PAUSED');
   const genome = rules.genome.founder;
   await client.query(
     'insert into lineages (world_id,id,origin_channel_id,rules_hash,created_at) values ($1,$2,$3,$4,$5)',
@@ -71,6 +72,8 @@ export async function seedResident(
     status: 'ALIVE',
     mutation_slots: initialMutationSlots,
     appearance: founderAppearance,
+    design_version: 0,
+    appearance_hash: null,
   };
   await openNextRound(context, command.roundId, atMs);
   if (command.name !== undefined)
@@ -92,7 +95,7 @@ function canAccept(context: GameContext): boolean {
   return (
     context.channel.online &&
     context.channel.healthy &&
-    !context.channel.paused &&
+    !gameHeld(context.channel) &&
     context.round?.checkpoint.clock.paused === false &&
     context.organism?.status === 'ALIVE'
   );
@@ -172,7 +175,7 @@ export async function applyRoundDeadline(
   const { round, organism, channel, client, rules, timings } = context;
   if (round === null || organism === null || round.id !== command.roundId)
     return effect('STALE_VERSION');
-  if (!channel.online || !channel.healthy || channel.paused || round.checkpoint.clock.paused)
+  if (!channel.online || !channel.healthy || gameHeld(channel) || round.checkpoint.clock.paused)
     return effect('PAUSED');
   const clock = advanceRoundClock(round.checkpoint.clock, command.revision, atMs, timings);
   if (clock === round.checkpoint.clock) return effect('STALE_VERSION');
@@ -187,9 +190,12 @@ export async function applyRoundDeadline(
     }));
     if (round.checkpoint.specialBallot !== undefined)
       return closeSpecialBallot(context, ordered, sequence, atMs, clock);
+    if (round.checkpoint.studioHatch !== undefined)
+      return commitStudioHatch(context, clock, sequence, atMs);
     const closed = closeMutationRound(round.checkpoint, ordered, organism.mutation_slots, round.id);
     await client.query(
-      'update organisms set pulse=$3,calm=$4,grit=$5,drift=$6,mutation_slots=$7,version=version+1 where world_id=$1 and id=$2',
+      // A Hold keeps the design version, so a captured studio challenge stays valid.
+      'update organisms set pulse=$3,calm=$4,grit=$5,drift=$6,mutation_slots=$7,version=version+1,design_version=design_version+$8 where world_id=$1 and id=$2',
       [
         channel.world_id,
         organism.id,
@@ -198,6 +204,7 @@ export async function applyRoundDeadline(
         closed.genome.grit,
         closed.genome.drift,
         JSON.stringify(closed.slots),
+        closed.choiceId === null ? 0 : 1,
       ],
     );
     context.organism = {
@@ -205,6 +212,7 @@ export async function applyRoundDeadline(
       ...closed.genome,
       mutation_slots: closed.slots,
       version: organism.version + 1,
+      design_version: organism.design_version + (closed.choiceId === null ? 0 : 1),
     };
     await client.query('update rounds set close_sequence=$3 where world_id=$1 and id=$2', [
       channel.world_id,
@@ -324,6 +332,7 @@ export async function applyRoundDeadline(
     const dormantAged = await ageDormantMutations(context, sequence);
     const tracesAged = await ageHabitatTraces(context, resolution.outcome === 'applied', sequence);
     const tracesQualified = await qualifyHabitatTraces(context, sequence);
+    const studioCancelled = await settleStudioAfterObservation(context, sequence, atMs);
     await saveCheckpoint(context, { ...round.checkpoint, clock });
     return effect(
       'APPLIED',
@@ -340,6 +349,7 @@ export async function applyRoundDeadline(
         ...(dormantAged.length === 0 ? {} : { dormantAged }),
         ...(tracesAged.length === 0 ? {} : { tracesAged }),
         ...(tracesQualified.length === 0 ? {} : { tracesQualified }),
+        ...(studioCancelled ? { studioCancelled } : {}),
       },
     );
   }

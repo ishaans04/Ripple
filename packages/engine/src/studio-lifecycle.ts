@@ -52,7 +52,7 @@ const transitions: Readonly<Record<StudioEvent, Partial<Record<StudioPhase, Stud
   host_returned: { OPENING: 'CANCELLED', CREATING: 'CANCELLED' },
   host_cancelled: { OPENING: 'CANCELLED', CREATING: 'CANCELLED', VOTING: 'CANCELLED' },
   offline: { OPENING: 'CANCELLED', CREATING: 'CANCELLED', VOTING: 'CANCELLED' },
-  base_invalid: { REVIEW: 'CANCELLED', PENDING_HATCH: 'CANCELLED' },
+  base_invalid: { VOTING: 'CANCELLED', REVIEW: 'CANCELLED', PENDING_HATCH: 'CANCELLED' },
   organism_fossilized: {
     OPENING: 'CANCELLED',
     CREATING: 'CANCELLED',
