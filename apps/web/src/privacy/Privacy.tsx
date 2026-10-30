@@ -16,10 +16,10 @@ export default function Privacy() {
       </p>
       <p>
         In a connected studio, choose “Forget my artist identity” to erase the mapping and sign-in
-        sessions. New reads show “Former artist” on accepted designs. Designs, genes and anonymous
-        game provenance remain unchanged. Signing in again uses the same scoped pseudonym so
-        proposal limits and artist blocks still apply. It creates fresh credit and does not restore
-        old credit.
+        sessions. New reads show “Former artist” on accepted designs. Designs, genes and
+        pseudonymous game provenance remain unchanged. Signing in again uses the same scoped
+        pseudonym so proposal limits and artist blocks still apply. It creates fresh credit and does
+        not restore old credit.
       </p>
       <p>
         Sign-in sessions expire after 12 hours. Credit mappings expire 30 days after the most recent

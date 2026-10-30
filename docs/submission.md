@@ -18,7 +18,7 @@ After committing and obtaining green CI on the exact revision, run:
 node tests/package-release.ts
 ```
 
-The command refuses a dirty worktree, missing evidence, failed recorded latency/restore/client gates, insufficient Phase 10 history, the wrong author/committer, co-author trailers, forbidden archive paths, or a local revision without green CI. It creates a source ZIP and SHA-256 manifest under ignored `tmp/release/`. The archive comes from `git archive HEAD`; it includes the checked-in model and notices but excludes real environment files, database dumps, node_modules and local build output. The manifest records the exact revision and CI link. CI can also produce a candidate source artifact while its other jobs finish; that artifact alone is not final approval.
+The command refuses a dirty worktree, missing evidence, either failed independent load trial, failed restore/client gates, insufficient Phase 10 history, the wrong author/committer, co-author trailers, forbidden archive paths, or a local revision without green CI. It creates a source ZIP and SHA-256 manifest under ignored `tmp/release/`. The archive comes from `git archive HEAD`; it includes the checked-in model and notices but excludes real environment files, database dumps, node_modules and local build output. The manifest records the exact revision and CI link. A candidate archive produced in a CI environment while other jobs finish is not final approval.
 
 The synthetic fixture backup is deliberately excluded. Use `npm run test:restore` to reproduce the actual dump/restore exercise on a separate temporary database. Use `npm run test:judge`, `npm run simulate`, `npm run replay` and `npm run test:load` for the documented verification paths.
 

@@ -1,7 +1,7 @@
 import { fork, execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { writeFile } from 'node:fs/promises';
-import { resolve } from 'node:path';
+import { mkdir, writeFile } from 'node:fs/promises';
+import { dirname, resolve } from 'node:path';
 import { createHmac, randomBytes, randomUUID } from 'node:crypto';
 import { parseArgs } from 'node:util';
 import { setTimeout as wait } from 'node:timers/promises';
@@ -650,12 +650,11 @@ try {
       'After the timed load, a separate actual worker is killed immediately after commit, retried and restarted; socket convergence is checked again. Fault timing is separate from steady-state latency.',
     ],
   };
-  if (values.output)
-    await writeFile(
-      resolve(process.env.INIT_CWD ?? process.cwd(), values.output),
-      `${JSON.stringify(report, null, 2)}\n`,
-    );
-  else process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
+  if (values.output) {
+    const outputPath = resolve(process.env.INIT_CWD ?? process.cwd(), values.output);
+    await mkdir(dirname(outputPath), { recursive: true });
+    await writeFile(outputPath, `${JSON.stringify(report, null, 2)}\n`);
+  } else process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
   if (
     values.strict &&
     (acked !== notifications ||

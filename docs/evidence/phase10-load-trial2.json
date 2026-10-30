@@ -1,0 +1,124 @@
+{
+  "schemaVersion": 1,
+  "synthetic": true,
+  "revision": "25a01c2792a0c0eacea234d3772441b85d9cc476",
+  "environment": {
+    "node": "v24.22.1",
+    "platform": "linux",
+    "cpus": 4,
+    "cpuModel": "AMD EPYC 9V45 96-Core Processor",
+    "totalMemoryBytes": 16759443456
+  },
+  "workload": {
+    "channels": 100,
+    "sockets": 300,
+    "studios": 20,
+    "artistsInLargestStudio": 60,
+    "proposals": 174,
+    "proposalsDuringHttpLoad": 29,
+    "acceptedProposals": 174,
+    "seconds": 60,
+    "ordinaryNotificationsPerChannelPerSecond": 2,
+    "burstMultiplier": 10,
+    "notifications": 12180,
+    "acked": 12180,
+    "elapsedMs": 59791.824178999996,
+    "requestsPerSecond": 203
+  },
+  "callbackMs": {
+    "samples": 12180,
+    "p50": 58.774719000000914,
+    "p95": 121.61992399999963,
+    "p99": 413.0485329999992,
+    "max": 558.4238150000001
+  },
+  "acceptedToObservedCommitMs": {
+    "samples": 12180,
+    "p50": 152,
+    "p95": 311,
+    "p99": 1154,
+    "max": 1508
+  },
+  "publicMutationCommitMs": {
+    "samples": 720,
+    "p50": 208,
+    "p95": 334,
+    "p99": 383,
+    "max": 413
+  },
+  "publicFrameMs": {
+    "samples": 720,
+    "p50": 222,
+    "p95": 338,
+    "p99": 382,
+    "max": 424
+  },
+  "convergedSockets": 300,
+  "remainingAcknowledged": 0,
+  "reconnectSnapshots": 30,
+  "frames": 4815,
+  "duplicateCommitments": 0,
+  "crashRecovery": {
+    "exit": {
+      "code": null,
+      "signal": "SIGKILL"
+    },
+    "stderr": "",
+    "committedRecords": 1,
+    "publicUpdates": 1,
+    "receiptReused": true,
+    "restartedWorkerReapplied": false,
+    "convergedSockets": 300
+  },
+  "errors": {},
+  "serverErrors": "",
+  "openSockets": 300,
+  "database": {
+    "bytes": 54277823,
+    "blks_read": "106",
+    "blks_hit": "3778748",
+    "tup_inserted": "64527",
+    "tup_updated": "40597"
+  },
+  "rowSizes": [
+    {
+      "record": "public_projection",
+      "avg_bytes": 1213.6478764478763,
+      "p95_bytes": 2900
+    },
+    {
+      "record": "normalized_input",
+      "avg_bytes": 145.08004704037631,
+      "p95_bytes": 152
+    },
+    {
+      "record": "accepted_event",
+      "avg_bytes": 714.4629557036457,
+      "p95_bytes": 825
+    }
+  ],
+  "server": {
+    "stats": true,
+    "cpu": {
+      "user": 11402519,
+      "system": 3480528
+    },
+    "elapsedMs": 65455.538263,
+    "memory": {
+      "rss": 409264128,
+      "heapTotal": 277553152,
+      "heapUsed": 176023128,
+      "external": 21819556,
+      "arrayBuffers": 11375150
+    }
+  },
+  "configurationHash": "f442d8296981c63dfa8fde4dc0c7f75fe8c767280241cc8c08539b6ddcf680b6",
+  "limits": [
+    "Synthetic signed notifications over real localhost HTTP and PostgreSQL; no Twitch network or TLS time.",
+    "Client generator runs separately from the app; both share the declared host.",
+    "Commit samples include polling delay. Ordinary activity creates no public frame; public latency samples use vote/transition records only.",
+    "Proposal submissions use the production ordered adapter during setup and HTTP load; public network proposal auth is covered by route tests.",
+    "No hosted capacity or low-end physical-device claim is established.",
+    "After the timed load, a separate actual worker is killed immediately after commit, retried and restarted; socket convergence is checked again. Fault timing is separate from steady-state latency."
+  ]
+}

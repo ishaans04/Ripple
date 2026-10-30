@@ -155,13 +155,12 @@ jobs:
           node-version-file: .nvmrc
           cache: npm
       - run: npm ci --no-audit --no-fund
-      - run: mkdir -p tmp
       - name: Measure the complete declared server workload and enforce its targets
-        run: npm run test:load -- --seconds 60 --channels 100 --strict --output tmp/phase10-ci-load.json
+        run: npm run test:load -- --seconds 60 --channels 100 --strict --output tmp/release-load/phase10-ci-load.json
       - name: Preserve measured load evidence even on failure
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         with:
           name: release-load-evidence-${{ matrix.trial }}
-          path: tmp/phase10-ci-load.json
+          path: tmp/release-load/phase10-ci-load.json
           if-no-files-found: ignore
