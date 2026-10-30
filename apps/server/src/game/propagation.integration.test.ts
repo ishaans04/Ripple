@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import pg from 'pg';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { runMigrations, scanDeadlines } from '@ripple/database';
+import { acceptInput, runMigrations, scanDeadlines } from '@ripple/database';
 import { createTemporaryDatabase, type TemporaryDatabase } from '@ripple/database/testing';
 import { propagationViewSchema, type GameCommand } from '@ripple/contracts';
 import {
@@ -113,6 +113,64 @@ describe('persisted preparation, welcome and shared visitor observations', () =>
       destinationTwitchId: target,
     };
   }
+  it('repeatedly races duplicate raids against round close without forking an uncommitted genome', async () => {
+    for (let attempt = 0; attempt < 8; attempt++) {
+      const world = await start(),
+        target = await peer(world, false);
+      const before = await snapshot(world);
+      const candidate = before.payload.round?.candidates[0];
+      if (!candidate || !('genome' in candidate)) throw new Error('Missing genetic candidate');
+      await send(world, world.channelId, { type: 'vote', actorKey: 'race-voter', choice: 1 });
+      const job = (
+        await pool.query<{ command: unknown; due_at: Date }>(
+          "select command,due_at from deadlines where world_id=$1 and channel_id=$2 and status='pending' order by due_at limit 1",
+          [world.worldId, world.channelId],
+        )
+      ).rows[0]!;
+      const raid = raidCommand(target),
+        messageId = randomUUID();
+      const enqueueRaid = () =>
+        acceptSyntheticCommand(pool, world, world.ownerCapability, messageId, raid);
+      const enqueueClose = () =>
+        acceptInput(pool, {
+          worldId: world.worldId,
+          channelId: world.channelId,
+          provider: 'release-close-race',
+          messageId: 'close',
+          command: job.command,
+          acceptedAtMs: job.due_at.getTime(),
+        });
+      await Promise.all(
+        (attempt % 2 ? [enqueueRaid, enqueueClose] : [enqueueClose, enqueueRaid]).map((fn) => fn()),
+      );
+      await enqueueRaid();
+      await Promise.all([
+        processNextInput(pool, world.worldId, world.channelId),
+        processNextInput(pool, world.worldId, world.channelId),
+      ]);
+      await drain(world);
+      const events = (
+        await pool.query<{ sequence: number; type: string }>(
+          "select sequence,command->>'type' type from game_events where world_id=$1 and channel_id=$2 and command->>'type' in ('raid','deadline') order by sequence",
+          [world.worldId, world.channelId],
+        )
+      ).rows;
+      expect(events).toHaveLength(2);
+      const transfer = (
+        await pool.query<TransferRow>('select * from transfers where world_id=$1', [world.worldId])
+      ).rows;
+      expect(transfer).toHaveLength(1);
+      const parentGenome =
+        events[0]?.type === 'raid' ? before.payload.organism?.genome : candidate.genome;
+      expect(transfer[0]?.snapshot.parent?.genome).toEqual(parentGenome);
+      const children = await pool.query(
+        'select id from organisms where world_id=$1 and parent_id is not null',
+        [world.worldId],
+      );
+      expect(children.rowCount).toBe(1);
+      expect(await processNextInput(pool, world.worldId, world.channelId)).toBeNull();
+    }
+  });
   it('coalesces preparation at the next boundary, commits standing Shield, and never adds a mutation slot', async () => {
     const world = await start();
     expect((await send(world, world.channelId, { type: 'prepare' }))[0]?.effect.code).toBe(
