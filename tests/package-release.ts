@@ -30,38 +30,39 @@ for (const required of [
   'docs/demo/ripple-synthetic.webm',
 ])
   assert.ok(files.includes(required), `Missing submission artifact ${required}`);
-const load = z
-  .object({
-    workload: z.object({
-      channels: z.literal(100),
-      sockets: z.literal(300),
-      studios: z.number().min(20),
-      artistsInLargestStudio: z.number().min(50),
-      seconds: z.number().min(60),
-      notifications: z.number(),
-      acked: z.number(),
-    }),
-    callbackMs: z.object({ p95: z.number().lt(500) }),
-    acceptedToObservedCommitMs: z.object({ p95: z.number().lt(1000) }),
-    publicMutationCommitMs: z.object({ p95: z.number().lt(1000) }),
-    remainingAcknowledged: z.literal(0),
+const loadSchema = z.object({
+  workload: z.object({
+    channels: z.literal(100),
+    sockets: z.literal(300),
+    studios: z.number().min(20),
+    artistsInLargestStudio: z.number().min(50),
+    seconds: z.number().min(60),
+    notifications: z.number(),
+    acked: z.number(),
+  }),
+  callbackMs: z.object({ p95: z.number().lt(500) }),
+  acceptedToObservedCommitMs: z.object({ p95: z.number().lt(1000) }),
+  publicMutationCommitMs: z.object({ p95: z.number().lt(1000) }),
+  remainingAcknowledged: z.literal(0),
+  convergedSockets: z.literal(300),
+  duplicateCommitments: z.literal(0),
+  openSockets: z.literal(300),
+  serverErrors: z.literal(''),
+  errors: z.record(z.string(), z.number()),
+  crashRecovery: z.object({
+    committedRecords: z.literal(1),
+    publicUpdates: z.literal(1),
+    stderr: z.literal(''),
+    receiptReused: z.literal(true),
+    restartedWorkerReapplied: z.literal(false),
     convergedSockets: z.literal(300),
-    duplicateCommitments: z.literal(0),
-    openSockets: z.literal(300),
-    serverErrors: z.literal(''),
-    errors: z.record(z.string(), z.number()),
-    crashRecovery: z.object({
-      committedRecords: z.literal(1),
-      publicUpdates: z.literal(1),
-      stderr: z.literal(''),
-      receiptReused: z.literal(true),
-      restartedWorkerReapplied: z.literal(false),
-      convergedSockets: z.literal(300),
-    }),
-  })
-  .parse(JSON.parse(await readFile('docs/evidence/phase10-load.json', 'utf8')));
-assert.equal(load.workload.notifications, load.workload.acked);
-assert.equal(Object.keys(load.errors).length, 0);
+  }),
+});
+for (const file of ['phase10-load.json', 'phase10-load-trial2.json']) {
+  const load = loadSchema.parse(JSON.parse(await readFile(`docs/evidence/${file}`, 'utf8')));
+  assert.equal(load.workload.notifications, load.workload.acked);
+  assert.equal(Object.keys(load.errors).length, 0);
+}
 const restore = z
   .object({
     channels: z.array(z.object({ equal: z.literal(true) })).min(2),
