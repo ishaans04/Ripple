@@ -66,6 +66,44 @@ describe('durable ordered intake', () => {
       code: 'WRONG_WORLD_MODE',
     });
   });
+  it('rolls back receipt and raw payload when the final intake cursor write fails', async () => {
+    const scope = await createTestChannel(pool);
+    const input = {
+      ...scope,
+      provider: 'synthetic',
+      messageId: 'cursor-write-failure',
+      command: { type: 'resume' },
+    };
+    await pool.query(
+      "create function fail_intake_cursor() returns trigger language plpgsql as $$ begin raise exception 'intake cursor disk failure'; end $$",
+    );
+    await pool.query(
+      'create trigger fail_intake_cursor before update of intake_sequence on channels for each row execute function fail_intake_cursor()',
+    );
+    try {
+      await expect(acceptInput(pool, input)).rejects.toThrow('intake cursor disk failure');
+    } finally {
+      await pool.query('drop trigger fail_intake_cursor on channels');
+      await pool.query('drop function fail_intake_cursor()');
+    }
+    expect(
+      (await pool.query('select 1 from input_receipts where world_id=$1', [scope.worldId]))
+        .rowCount,
+    ).toBe(0);
+    expect(
+      (await pool.query('select 1 from inbox where world_id=$1', [scope.worldId])).rowCount,
+    ).toBe(0);
+    expect(
+      (
+        await pool.query<{ intake_sequence: number }>(
+          'select intake_sequence from channels where world_id=$1 and id=$2',
+          [scope.worldId, scope.channelId],
+        )
+      ).rows[0]?.intake_sequence,
+    ).toBe(0);
+    expect(await acceptInput(pool, input)).toMatchObject({ sequence: 1, duplicate: false });
+    expect(await acceptInput(pool, input)).toMatchObject({ sequence: 1, duplicate: true });
+  });
   it('never moves acceptance time backwards when requests race a synthetic clock', async () => {
     const scope = await createTestChannel(pool);
     const input = { ...scope, provider: 'synthetic', command: { type: 'resume' } };

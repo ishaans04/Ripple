@@ -77,8 +77,17 @@ export async function acceptInputInTransaction(
   // A provider ID is world-wide. Concurrent receipts targeting different channels
   // may conflict here; the loser rolls back and cannot acknowledge new gameplay.
   const inserted = await client.query(
-    `insert into input_receipts(world_id,channel_id,sequence,provider,message_id,command_hash,accepted_at)
-     values($1,$2,$3,$4,$5,encode(sha256(convert_to($6::jsonb::text,'UTF8')),'hex'),$7) on conflict do nothing`,
+    `with receipt as (
+       insert into input_receipts(world_id,channel_id,sequence,provider,message_id,command_hash,accepted_at)
+       values($1,$2,$3,$4,$5,encode(sha256(convert_to($6::jsonb::text,'UTF8')),'hex'),$7)
+       on conflict do nothing returning world_id,channel_id,sequence,provider,message_id,accepted_at
+     ), payload as (
+       insert into inbox(world_id,channel_id,sequence,provider,message_id,command,accepted_at)
+       select world_id,channel_id,sequence,provider,message_id,$6::jsonb,accepted_at from receipt
+       returning world_id,channel_id,sequence,accepted_at
+     )
+     update channels c set intake_sequence=p.sequence,last_accepted_at=p.accepted_at
+     from payload p where c.world_id=p.world_id and c.id=p.channel_id`,
     [
       input.worldId,
       input.channelId,
@@ -90,22 +99,6 @@ export async function acceptInputInTransaction(
     ],
   );
   if (inserted.rowCount !== 1) throw new IntakeError('RECEIPT_CONFLICT');
-  await client.query(
-    'insert into inbox(world_id,channel_id,sequence,provider,message_id,command,accepted_at) values($1,$2,$3,$4,$5,$6,$7)',
-    [
-      input.worldId,
-      input.channelId,
-      sequence,
-      input.provider,
-      input.messageId,
-      JSON.stringify(input.command),
-      row.accepted_at,
-    ],
-  );
-  await client.query(
-    'update channels set intake_sequence=$3,last_accepted_at=$4 where world_id=$1 and id=$2',
-    [input.worldId, input.channelId, sequence, row.accepted_at],
-  );
   return { sequence, duplicate: false, acceptedAtMs: row.accepted_at.getTime() };
 }
 export async function acceptInput(pool: pg.Pool, input: IntakeInput): Promise<IntakeReceipt> {

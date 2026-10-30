@@ -132,12 +132,10 @@ export async function processActivityBatch(
     const last = receipts.at(-1);
     if (!last) throw new Error('Missing activity batch receipt');
     await client.query(
-      'update channels set processed_sequence=$3,checksum=$4 where world_id=$1 and id=$2',
-      [worldId, channelId, last.sequence, checksum],
-    );
-    await client.query(
-      'update inbox set processed_at=clock_timestamp(),attempts=attempts+1,error_code=null where world_id=$1 and channel_id=$2 and sequence>$3 and sequence<=$4',
-      [worldId, channelId, channel.processed_sequence, last.sequence],
+      `with advanced as (update channels set processed_sequence=$3,checksum=$4 where world_id=$1 and id=$2 returning world_id,id)
+       update inbox i set processed_at=clock_timestamp(),attempts=attempts+1,error_code=null
+       from advanced a where i.world_id=a.world_id and i.channel_id=a.id and i.sequence>$5 and i.sequence<=$3`,
+      [worldId, channelId, last.sequence, checksum, channel.processed_sequence],
     );
     return receipts;
   });

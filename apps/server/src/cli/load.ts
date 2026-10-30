@@ -290,7 +290,11 @@ try {
       operation_id: string;
       update: string | null;
     }>(
-      "select e.channel_id,e.sequence,e.operation_id,e.result->>'updateType' as update from game_events e join jsonb_to_recordset($2::jsonb) c(id uuid,seq int) on e.channel_id=c.id and e.sequence>c.seq where e.world_id=$1 order by e.channel_id,e.sequence",
+      `select e.channel_id,e.sequence,e.operation_id,e.result->>'updateType' as update
+       from jsonb_to_recordset($2::jsonb) c(id uuid,seq int)
+       cross join lateral(select channel_id,sequence,operation_id,result from game_events
+         where world_id=$1 and channel_id=c.id and sequence>c.seq order by sequence limit 1000) e
+       order by e.channel_id,e.sequence`,
       [worldId, JSON.stringify([...cursors].map(([id, seq]) => ({ id, seq })))],
     );
     for (const row of rows.rows) {
@@ -599,6 +603,7 @@ try {
       node: process.version,
       platform: platform(),
       cpus: cpus().length,
+      cpuModel: cpus()[0]?.model,
       totalMemoryBytes: totalmem(),
     },
     workload: {

@@ -541,12 +541,10 @@ export async function processNextInput(
       );
       const version = channel.state_version + (result.updateType === null ? 0 : 1);
       await client.query(
-        'update channels set processed_sequence=$3,state_version=$4,checksum=$5 where world_id=$1 and id=$2',
+        `with advanced as (update channels set processed_sequence=$3,state_version=$4,checksum=$5 where world_id=$1 and id=$2 returning world_id,id)
+         update inbox i set processed_at=clock_timestamp(),attempts=attempts+1,error_code=null
+         from advanced a where i.world_id=a.world_id and i.channel_id=a.id and i.sequence=$3`,
         [worldId, channelId, sequence, version, checksum],
-      );
-      await client.query(
-        'update inbox set processed_at=clock_timestamp(),attempts=attempts+1,error_code=null where world_id=$1 and channel_id=$2 and sequence=$3',
-        [worldId, channelId, sequence],
       );
       if (result.updateType !== null) {
         const snapshot = await readSnapshot(client, worldId, channelId);
