@@ -5,6 +5,7 @@ import { traceEffectText, traceTitle } from '../realtime/trace-labels.ts';
 import { Creature } from '../creature/Creature.tsx';
 import { familyRemainingText, familyUpdateText } from '../realtime/family-text.ts';
 import { useFreshCelebration } from './useFreshCelebration.ts';
+import { StudioStatus, studioHoldsDecision } from '../studio/StudioStatus.tsx';
 
 const celebrationText = {
   cheer: 'Thanks for the cheer!',
@@ -170,7 +171,21 @@ export default function Overlay() {
           )}
           {status === 'connected' && channel !== null ? (
             <>
-              <Decision channel={channel} now={now + serverOffsetMs} />
+              {studioHoldsDecision(channel.studio) ||
+              (channel.round?.studioHatch !== undefined && channel.round.phase === 'VOTING') ? (
+                <div className={styles.studio}>
+                  <StudioStatus channel={channel} now={now + serverOffsetMs} showLink />
+                </div>
+              ) : (
+                <>
+                  <Decision channel={channel} now={now + serverOffsetMs} />
+                  {channel.studio?.session?.phase === 'PENDING_HATCH' && (
+                    <div className={styles.studio}>
+                      <StudioStatus channel={channel} now={now + serverOffsetMs} showLink={false} />
+                    </div>
+                  )}
+                </>
+              )}
               {channel.propagation?.visitor !== undefined &&
                 channel.propagation.visitor !== null && (
                   <p>

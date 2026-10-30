@@ -6,6 +6,7 @@ import { ChannelCard } from './ChannelCard.tsx';
 import { AdmissionControls } from './AdmissionControls.tsx';
 import { HistoricalRaids } from './HistoricalRaids.tsx';
 import { TraceControls } from './TraceControls.tsx';
+import { StudioCard } from './StudioCard.tsx';
 import { DisplayControls } from './DisplayControls.tsx';
 import { CelebrationsCard } from './CelebrationsCard.tsx';
 import { admissionLabel } from './PropagationCard.tsx';
@@ -131,7 +132,11 @@ export default function Controller() {
     setBusy(true);
     setPending(command);
     try {
-      await liveRequest(`/api/channels/${status.channelId}/${command.action}`, {
+      // Studio-scoped actions carry their own absolute path; channel actions are relative.
+      const path = command.action.startsWith('/')
+        ? command.action
+        : `/api/channels/${status.channelId}/${command.action}`;
+      await liveRequest(path, {
         method: 'POST',
         headers: {
           'content-type': 'application/json',
@@ -353,6 +358,14 @@ export default function Controller() {
               control={(body) => {
                 control('control', body);
               }}
+            />
+          )}
+          {status.snapshot !== null && (
+            <StudioCard
+              channel={status.snapshot.payload}
+              disabled={disabled}
+              csrfToken={status.csrfToken}
+              control={control}
             />
           )}
           {status.snapshot !== null && (

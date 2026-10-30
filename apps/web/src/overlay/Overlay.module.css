@@ -137,3 +137,16 @@
 .stage[data-reduced-motion='true'] .creature[data-celebrating='true'] {
   animation: none;
 }
+
+.studio svg {
+  width: 4.5rem;
+  height: auto;
+  vertical-align: middle;
+}
+.studio ol {
+  display: grid;
+  gap: 0.35rem;
+  margin: 0.5rem 0;
+  padding-left: 0;
+  list-style: none;
+}

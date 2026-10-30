@@ -124,3 +124,25 @@
   width: auto;
   accent-color: #56d6c5;
 }
+
+.proposals {
+  display: grid;
+  gap: 0.5rem;
+  padding-left: 0;
+  list-style: none;
+}
+.proposals li {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+}
+.panel svg {
+  width: 4.5rem;
+  height: auto;
+}
+.panel details label {
+  display: grid;
+  gap: 0.25rem;
+  margin: 0.5rem 0;
+}
