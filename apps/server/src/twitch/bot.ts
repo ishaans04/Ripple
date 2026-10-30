@@ -15,10 +15,7 @@ export async function queueAnnouncement(
 ): Promise<void> {
   if (result.code !== 'APPLIED' || result.updateType === null) return;
   const { channel, client, round, organism } = context;
-  const live = await client.query("select 1 from worlds where id=$1 and mode='live'", [
-    channel.world_id,
-  ]);
-  if (live.rowCount !== 1) return;
+  if (context.worldMode !== 'live') return;
   let message: string | undefined;
   switch (result.updateType) {
     case 'ballot.opened':

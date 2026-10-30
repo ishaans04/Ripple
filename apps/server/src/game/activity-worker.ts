@@ -33,7 +33,8 @@ export async function processActivityBatch(
       [worldId, channelId],
     )
   ).rows[0];
-  if (!peek || activity(peek.command) === null) return null;
+  if (!peek) return [];
+  if (activity(peek.command) === null) return null;
   return transaction(pool, async (client) => {
     await lockChannels(client, worldId, [channelId]);
     if (

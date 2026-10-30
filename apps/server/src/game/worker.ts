@@ -47,6 +47,7 @@ async function apply(
   sequence: number,
   atMs: number,
   receiptId: string,
+  resolvedStudioBallot?: Awaited<ReturnType<typeof openStudioBallot>>,
 ): Promise<CommandEffect> {
   switch (command.type) {
     case 'studioSettings':
@@ -173,7 +174,8 @@ async function apply(
       return seedResident(context, command, atMs);
     case 'vote': {
       // While chat is choosing a studio design, the ordinary ballot is held at its checkpoint.
-      const studio = await openStudioBallot(context);
+      const studio =
+        resolvedStudioBallot === undefined ? await openStudioBallot(context) : resolvedStudioBallot;
       if (
         studio !== null &&
         (command.roundId === undefined || command.roundId === studio.ballot_round_id)
@@ -428,6 +430,7 @@ export async function processNextInput(
               sequence,
               input.accepted_at.getTime(),
               `${input.provider}:${input.message_id}`,
+              intent.success && intent.data.action === 'vote' ? studioBallot : undefined,
             );
       let opened = false;
       if (
@@ -490,8 +493,9 @@ export async function processNextInput(
         result,
         analyticsFor(command, result, context, { online: wasOnline }, channel.online),
       );
-      // Activity changes only bounded observation membership, never clocks or durable deadlines.
-      if (command.type !== 'activity') await reconcileRoundDeadline(context);
+      // Membership and votes never change clocks. Opening a new round still installs its deadline.
+      if (opened || (command.type !== 'activity' && command.type !== 'vote'))
+        await reconcileRoundDeadline(context);
       await queueAnnouncement(
         context,
         opened ? effect('APPLIED', 'ballot.opened') : result,
