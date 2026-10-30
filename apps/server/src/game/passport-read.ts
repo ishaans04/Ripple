@@ -80,6 +80,12 @@ export function recordedSelection(
 
 const host = (alias: string) =>
   `jsonb_build_object('channelId',${alias}.id,'label',${alias}.label)`;
+// Expects b (blueprint), s (studio session), sc (its channel) and an optional pa (commitment).
+const designSql = (parent: string, channelCredit: string, artistCredit: string) =>
+  `jsonb_build_object('hash',b.hash,'template',b.template,'rendererVersion',b.renderer_version,'studioSessionId',b.session_id,
+  'creatingChannel',${host('sc')},'parentHash',${parent},'channelCredit',coalesce(${channelCredit},sc.label),
+  'artistCredit',case when jsonb_typeof(${artistCredit})='string' then ${artistCredit}#>>'{}' else null end,
+  'committedBy',pa.organism_id,'committedAt',pa.resolved_at)`;
 
 export async function readPassport(
   pool: pg.Pool,
@@ -96,6 +102,19 @@ export async function readPassport(
     'origin',${organismOriginSql},'hosts',${organismHostsSql},
     'parent',(select jsonb_build_object('id',p.id,'name',p.name,'status',p.status) from organisms p where p.world_id=o.world_id and p.id=o.parent_id),
     'founder',(select jsonb_build_object('id',f.id,'name',f.name,'status',f.status) from organisms f where f.world_id=o.world_id and f.id=o.founder_id),
+    'design',jsonb_build_object(
+      'current',case when o.appearance_hash is null then null else (select ${designSql("o.appearance->>'parentHash'", "o.appearance->>'channelCredit'", "o.appearance->'artistCredit'")}
+        from appearance_blueprints b join studio_sessions s on s.world_id=b.world_id and s.id=b.session_id join channels sc on sc.world_id=s.world_id and sc.id=s.channel_id
+        left join pending_adaptations pa on pa.world_id=b.world_id and pa.blueprint_hash=b.hash and pa.status='committed'
+          and pa.organism_id in (with recursive chain(id,parent_id,depth) as (select o.id,o.parent_id,0 union all select a.id,a.parent_id,chain.depth+1 from organisms a join chain on a.world_id=o.world_id and a.id=chain.parent_id where chain.depth<16) select id from chain)
+        where b.world_id=o.world_id and b.hash=o.appearance_hash order by pa.resolved_at limit 1) end,
+      'history',coalesce((select jsonb_agg(entry order by resolved_at,id) from (
+        select pa.resolved_at,pa.id,${designSql('b.parent_hash', "pa.approval->>'channelCredit'", "pa.approval->'artistCredit'")} as entry
+        from pending_adaptations pa join appearance_blueprints b on b.world_id=pa.world_id and b.hash=pa.blueprint_hash
+        join studio_sessions s on s.world_id=pa.world_id and s.id=pa.session_id join channels sc on sc.world_id=s.world_id and sc.id=s.channel_id
+        where pa.world_id=o.world_id and pa.status='committed' and pa.organism_id in (
+          with recursive chain(id,parent_id,depth) as (select o.id,o.parent_id,0 union all select a.id,a.parent_id,chain.depth+1 from organisms a join chain on a.world_id=o.world_id and a.id=chain.parent_id where chain.depth<16) select id from chain)
+        order by pa.resolved_at desc limit $6) page),'[]'::jsonb)),
     'residencies',coalesce((select jsonb_agg(${host('c')}||jsonb_build_object('role',r.role,'startedAt',r.started_at,'endedAt',r.ended_at) order by r.started_at,r.id)
       from residencies r join channels c on c.world_id=r.world_id and c.id=r.channel_id where r.world_id=o.world_id and r.organism_id=o.id),'[]'::jsonb),
     'birth',(select jsonb_build_object('transferId',t.id,'source',${host('source')},

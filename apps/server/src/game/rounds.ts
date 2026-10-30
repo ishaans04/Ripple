@@ -22,6 +22,7 @@ import {
   captureDormantMutation,
   ageDormantMutations,
   consumeDormantOffer,
+  expressDormantDesign,
 } from './dormant-state.ts';
 import { ageHabitatTraces, qualifyHabitatTraces } from './trace-state.ts';
 import { commitStudioHatch, settleStudioAfterObservation } from './studio-hatch.ts';
@@ -229,6 +230,7 @@ export async function applyRoundDeadline(
     });
     await captureRoundParticipants(context);
     const dormantConsumed = await consumeDormantOffer(context, closed.choiceId, sequence);
+    const dormantDesign = await expressDormantDesign(context, closed.choiceId);
     const dormant = await captureDormantMutation(context, closed.tally, sequence);
     return effect('APPLIED', 'ballot.closed', {
       roundId: round.id,
@@ -237,6 +239,7 @@ export async function applyRoundDeadline(
       genome: closed.genome,
       ...(dormant === null ? {} : { dormant }),
       ...(dormantConsumed === null ? {} : { dormantConsumed }),
+      ...(dormantDesign === null ? {} : { dormantDesign }),
     });
   }
   if (round.phase === 'OBSERVING') {

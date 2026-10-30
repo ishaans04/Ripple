@@ -165,7 +165,13 @@ export const roundAnalysisSchema = z.object({
       originChannelId: z.uuid(),
       supporters: z.int(),
       totalVotes: z.int(),
+      blueprintHash: z.string().optional(),
     })
     .nullable(),
+  // The approved studio design that took this mutation slot instead of ordinary cards.
+  studioHatch: z
+    .object({ adaptationId: z.uuid(), sessionId: z.uuid(), hash: z.string() })
+    .nullable()
+    .optional(),
 });
 export type RoundAnalysis = z.infer<typeof roundAnalysisSchema>;

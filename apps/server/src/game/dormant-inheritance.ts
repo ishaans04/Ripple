@@ -56,8 +56,8 @@ export async function inheritDormantMutation(
     throw new Error('Dormant inheritance exceeds the generation allowance.');
   const lifetime = inheritValidRoundLifetime(snapshot.lifetime);
   await context.client.query(
-    `insert into dormant_mutations(world_id,id,organism_id,source_round_id,template,provenance,remaining_hops,remaining_rounds,status,lifetime,offered)
-     values($1,$2,$3,$4,$5,$6,$7,$8,'active',$9,$10)`,
+    `insert into dormant_mutations(world_id,id,organism_id,source_round_id,template,provenance,remaining_hops,remaining_rounds,status,lifetime,offered,blueprint_hash)
+     values($1,$2,$3,$4,$5,$6,$7,$8,'active',$9,$10,$11)`,
     [
       context.channel.world_id,
       operationId(context.channel.id, sequence, `dormant-child:${childId}`),
@@ -78,6 +78,7 @@ export async function inheritDormantMutation(
       lifetime.remainingRounds,
       lifetime,
       snapshot.offered,
+      snapshot.provenance.studio?.blueprintHash ?? null,
     ],
   );
 }

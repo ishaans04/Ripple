@@ -43,6 +43,24 @@ export const passportAdaptationSchema = z.object({
 });
 export type PassportAdaptation = z.infer<typeof passportAdaptationSchema>;
 
+const hash = z.string().regex(/^[a-f0-9]{64}$/);
+/** A committed community design and where it came from (addendum 14.2). */
+export const passportDesignSchema = z.object({
+  hash,
+  template: z.string(),
+  rendererVersion: z.string(),
+  studioSessionId: z.uuid(),
+  creatingChannel: host,
+  parentHash: hash.nullable(),
+  // Individual artist credit appears only when the artist opted in; channel credit is the default.
+  channelCredit: z.string(),
+  artistCredit: z.string().nullable(),
+  // The organism whose hatch committed it; an inherited design names an ancestor.
+  committedBy: z.uuid().nullable(),
+  committedAt: time.nullable(),
+});
+export type PassportDesign = z.infer<typeof passportDesignSchema>;
+
 export const passportSchema = z.object({
   schemaVersion: z.literal(1),
   worldId: z.uuid(),
@@ -85,6 +103,13 @@ export const passportSchema = z.object({
       createdAt: time,
     })
     .nullable(),
+  // Older clients may omit it; every fresh passport carries the design provenance.
+  design: z
+    .object({
+      current: passportDesignSchema.nullable(),
+      history: z.array(passportDesignSchema).max(PASSPORT_RECORD_LIMIT),
+    })
+    .optional(),
   adaptations: z.object({
     total: z.int().nonnegative(),
     items: z.array(passportAdaptationSchema).max(PASSPORT_ADAPTATION_PAGE),

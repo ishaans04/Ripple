@@ -46,6 +46,8 @@ export interface RoundCheckpoint {
     readonly originChannelId: string;
     readonly supporters: number;
     readonly totalVotes: number;
+    /** A revalidated studio design that is adopted only if chat selects this card. */
+    readonly blueprintHash?: string;
   };
   /** An approved studio design takes this mutation slot instead of ordinary cards. */
   readonly studioHatch?: {

@@ -21,7 +21,8 @@ export const roundAnalysisProjectionSql = `case when r.resolution is not null or
  'traceAttribution',case when r.resolution is null then null else (select jsonb_build_object('id',t.id,'emitterId',t.emitter_id,'lineageId',q.lineage_id,'originChannelId',l.origin_channel_id,'qualifyingRoundId',t.qualifying_round_id,'template',t.template)
    from habitat_traces t join trace_qualifications q on q.world_id=t.world_id and q.trace_id=t.id join lineages l on l.world_id=q.world_id and l.id=q.lineage_id
    where t.world_id=r.world_id and t.channel_id=r.channel_id and t.id=(r.checkpoint->'activeTrace'->>'id')::uuid) end,
- 'dormantOffer',r.checkpoint->'dormantOffer'
+ 'dormantOffer',r.checkpoint->'dormantOffer',
+ 'studioHatch',r.checkpoint->'studioHatch'
 ) else null end`;
 
 /** Missing comparisons in a modern scored round are an integrity failure, never a fabricated zero. */
@@ -33,7 +34,12 @@ export function parseSavedRoundAnalysis(value: unknown): RoundAnalysis {
       analysis.participants.some((p) => p.actual.outcome === 'applied' && p.ancestor === null)
     )
       throw new Error('Missing saved matched ancestor comparison.');
-    if (analysis.kind === 'MUTATION' && analysis.alternative === null)
+    // A studio hatch replaced the cards, so there is no rejected card to compare.
+    if (
+      analysis.kind === 'MUTATION' &&
+      (analysis.studioHatch ?? null) === null &&
+      analysis.alternative === null
+    )
       throw new Error('Missing saved rejected-choice comparison.');
   }
   return analysis;

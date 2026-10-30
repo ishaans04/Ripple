@@ -23,6 +23,8 @@ import {
   resumeRoundClock,
   sha256Hex,
   shortlistStudioProposals,
+  studioDormantFinalist,
+  studioMutationMove,
   studioHoldsGame,
   studioOpeningEligibility,
   type BallotVote,
@@ -33,6 +35,7 @@ import {
 } from '@ripple/engine';
 import { effect, type CommandEffect } from './lifecycle.ts';
 import { operationId } from './operation-id.ts';
+import { captureStudioDormant } from './dormant-state.ts';
 import { gameHeld, genomeOf, saveCheckpoint, type GameContext, type OrganismRow } from './store.ts';
 
 export interface StudioSettingsRow {
@@ -56,6 +59,7 @@ export interface StoredSelection {
   finalistIndex: number | null;
   counts: number[];
   totalVotes: number;
+  dormantId?: string;
 }
 export interface StudioSessionRow {
   id: string;
@@ -1026,6 +1030,33 @@ async function closeVoting(
   const finalists = await finalistsOf(context, session);
   const { tally, outcome } = resolveStudioSelection(finalists, votes);
   await closeBallotRound(context, session, sequence, atMs, [...tally.counts]);
+  const dormant =
+    context.mechanics.version === 1
+      ? studioDormantFinalist(
+          finalists,
+          tally,
+          outcome.kind === 'design' ? outcome.finalist.blueprint : null,
+          context.rules,
+        )
+      : null;
+  const dormantMove =
+    dormant === null ? null : studioMutationMove(dormant.blueprint.mutationTemplateId);
+  const captured =
+    dormant === null || dormantMove === null || session.ballot_round_id === null
+      ? null
+      : await captureStudioDormant(
+          context,
+          {
+            sessionId: session.id,
+            ballotRoundId: session.ballot_round_id,
+            organismId: session.organism_id,
+            move: dormantMove,
+            blueprintHash: dormant.hash,
+            supporters: tally.counts[finalists.indexOf(dormant)] ?? 0,
+            totalVotes: tally.totalVotes,
+          },
+          sequence,
+        );
   const finalistIndex =
     outcome.kind === 'design'
       ? finalists.findIndex((item) => item.proposalId === outcome.finalist.proposalId) + 1
@@ -1036,6 +1067,7 @@ async function closeVoting(
     finalistIndex,
     counts: [...tally.counts],
     totalVotes: tally.totalVotes,
+    ...(captured === null ? {} : { dormantId: captured.capturedId }),
   };
   if (outcome.kind === 'keep_current') {
     await recordStudioTransition(

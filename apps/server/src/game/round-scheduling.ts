@@ -161,6 +161,7 @@ export async function openNextRound(
               originChannelId: dormant.row.provenance.originChannelId,
               supporters: dormant.row.provenance.supporters,
               totalVotes: dormant.row.provenance.totalVotes,
+              ...(dormant.blueprintHash === null ? {} : { blueprintHash: dormant.blueprintHash }),
             },
           }),
     };

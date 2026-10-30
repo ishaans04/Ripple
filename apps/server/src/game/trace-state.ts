@@ -116,6 +116,10 @@ export async function qualifyHabitatTraces(
           qualifyingRoundId: round.id,
           genome: genomeOf(candidate),
           sequence,
+          // Visual provenance only: the shell the emitter actually wore when it earned the trace.
+          ...(candidate.appearance_hash === null
+            ? {}
+            : { emitterDesignHash: candidate.appearance_hash }),
         },
         enabled ? lifetime : { ...lifetime, remainingRounds: 0 },
         round.id,
