@@ -1,0 +1,71 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-10-30",
+  "session": "01a18d83-decb-7e01-8cbe-e6c69963d4ab",
+  "baselineRevision": "b88bc21",
+  "fixedRevision": "b7e916f",
+  "command": "npm run test:integration -- apps/server/src/routes/sandbox.integration.test.ts -t \"one account|concurrent capacity\" --reporter=json",
+  "environment": {
+    "node": "v24.16.0",
+    "platform": "win32",
+    "arch": "x64"
+  },
+  "method": "Temporarily restore only game/sandbox.ts and routes/sandbox.ts from baseline; run identical new regressions in a temporary PostgreSQL database; restore current sources in finally; repeat.",
+  "before": {
+    "passed": 0,
+    "failed": 2,
+    "checks": [
+      {
+        "name": "judge sandbox API runs the judge journey and the studio flow in an isolated synthetic world within three minutes",
+        "status": "skipped",
+        "failures": []
+      },
+      {
+        "name": "judge sandbox API keeps judges isolated from each other and from live worlds",
+        "status": "skipped",
+        "failures": []
+      },
+      {
+        "name": "judge sandbox API preserves one account vote across repeated actions",
+        "status": "failed",
+        "failures": [
+          "AssertionError: expected 8 to be 4 // Object.is equality\n    at D:/Ishaan projects/Ripple/apps/server/src/routes/sandbox.integration.test.ts:192:78\n    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)\n    at async file:///D:/Ishaan%20projects/Ripple/node_modules/vitest/dist/chunks/run.BPv-BBRv.js:2801:20"
+        ]
+      },
+      {
+        "name": "judge sandbox API serializes concurrent capacity checks",
+        "status": "failed",
+        "failures": [
+          "AssertionError: expected [ { status: 'fulfilled', …(1) }, …(1) ] to have a length of 1 but got 2\n    at Proxy.<anonymous> (file:///D:/Ishaan%20projects/Ripple/node_modules/vitest/dist/chunks/index.aTZaPVhf.js:2163:20)\n    at Proxy.<anonymous> (file:///D:/Ishaan%20projects/Ripple/node_modules/vitest/dist/chunks/index.aTZaPVhf.js:1958:14)\n    at Proxy.methodWrapper (file:///D:/Ishaan%20projects/Ripple/node_modules/chai/index.js:1737:25)\n    at D:/Ishaan projects/Ripple/apps/server/src/routes/sandbox.integration.test.ts:204:71\n    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)\n    at async file:///D:/Ishaan%20projects/Ripple/node_modules/vitest/dist/chunks/run.BPv-BBRv.js:2801:20"
+        ]
+      }
+    ]
+  },
+  "after": {
+    "passed": 2,
+    "failed": 0,
+    "checks": [
+      {
+        "name": "judge sandbox API runs the judge journey and the studio flow in an isolated synthetic world within three minutes",
+        "status": "skipped",
+        "failures": []
+      },
+      {
+        "name": "judge sandbox API keeps judges isolated from each other and from live worlds",
+        "status": "skipped",
+        "failures": []
+      },
+      {
+        "name": "judge sandbox API preserves one account vote across repeated actions",
+        "status": "passed",
+        "failures": []
+      },
+      {
+        "name": "judge sandbox API serializes concurrent capacity checks",
+        "status": "passed",
+        "failures": []
+      }
+    ]
+  },
+  "rulesChanged": false
+}

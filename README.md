@@ -259,3 +259,5 @@ One TypeScript application service plus PostgreSQL, deployed as a single image (
 Phase 9: anonymous judge sandbox API creates isolated expiring worlds with synthetic votes, habitat changes, raids, the complete studio flow, reset and verified whole-world replay.
 
 Open /sandbox (or Try sandbox on the landing page) for the keyless browser expedition: synthetic controls, the shared hand/pointer editor with confirmed submission, real results, lineage/passport links and inspectable replay. The owner capability stays in the URL fragment and authorization headers.
+
+The deterministic simulator runs all six policies across six habitats, normalized channel sizes, trace decisions and shelter strategies. Run `npm run simulate -- --split held-out --rounds 36 --output tmp/balance.json`. See [Phase 9 evidence](docs/evidence/phase9.md) for recorded tuning/held-out results, limitations and the actual Codex repair iteration. `npm run metrics -- WORLD all sandbox` reports synthetic product/studio signals separately from live activity, including camera/pointer completion and repeat studio use; these are event counts, not retention claims.
