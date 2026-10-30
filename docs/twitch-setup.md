@@ -55,3 +55,18 @@ Backup/restore rehearsal, retention policy enforcement, physical-device measurem
 ## Optional celebrations
 
 Set `ENABLE_CELEBRATIONS=true` only if you want paid-event thank-yous on the overlay. Each broadcaster then chooses **Authorize optional celebrations** in the controller, which repeats the broadcaster sign-in with `bits:read`, `channel:read:subscriptions` and `channel:read:hype_train`. Twitch only delivers events a channel is eligible for (for example, Bits require Affiliate or Partner status). Rehearse with the Twitch CLI (`twitch event trigger cheer`, `subscribe`, `hype-train-begin`) against the public HTTPS callback; the overlay should show one thank-you per minute and no game state should change.
+
+## Cocoon Studio two-channel acceptance to record
+
+Cocoon Studio needs no additional Twitch scopes or credentials; artist sign-in reuses the registered application and redirect with no scopes. Leave `ENABLE_COCOON_STUDIO` unset (or `true`). With both broadcaster channels live and healthy:
+
+1. In channel A's controller, open **Studio settings**, enable Cocoon Studio, keep **I review every winning design**, enter the OBS break and active scene names, and save. Choose **Create bridge link** under **OBS scene bridge** and add that URL to OBS as a browser source with permission to read the current scene (Browser Source → Page permissions → Read access to user information). Keep the overlay source separate; it stays read-only.
+2. Switch OBS to the break scene. Record that the controller shows availability REST from the bridge, the overlay shows the cocoon invitation and studio link, the bot posts the link, and the ordinary round shows a held clock.
+3. On one device, open the link, sign in with Twitch and shape a shell with hand controls; on another, use pointer controls. Confirm each submission explicitly. Record that drafts were not sent before confirmation and that both proposals appear in the controller's moderation list.
+4. After creation closes, vote in chat with `!ripple 1`–`3` from several accounts. Record the overlay finalists, counts and Keep current option.
+5. Switch OBS back to the active scene, then **Approve design** in the controller. Record the pending cocoon message and that health, genes and appearance are unchanged.
+6. Let play continue to the next mutation slot. Record the hatch, the changed genes and the committed design on the overlay and passport.
+7. Raid channel B from channel A. Record that the descendant carries the committed design, and that channel B's passport shows the studio of origin, creating channel and trade-off.
+8. Also record: hiding the bridge source marks the signal stale without ending the break; **End break** during creation cancels without applying drafts; and going offline during voting closes it without a result.
+
+These steps are the real-integration gate for Phase 8. The synthetic `smoke-studio` journey and browser fixtures exercise the same code paths but are not live evidence.
