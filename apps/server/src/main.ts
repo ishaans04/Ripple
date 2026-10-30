@@ -6,6 +6,7 @@ import { startGameRuntime } from './game/runtime.ts';
 import { TwitchClient } from './twitch/client.ts';
 import { ensureInstallation } from './twitch/installation.ts';
 import { interruptLiveInput, startTwitchRuntime } from './twitch/runtime.ts';
+import { startMaintenance } from './privacy/runtime.ts';
 
 function readConfig(): ServerConfig {
   try {
@@ -36,8 +37,10 @@ if (config.twitch === undefined) await interruptLiveInput(database.pool, 'LIVE_T
 const runtime = startGameRuntime(database.pool, app.log, () => {
   app.publicGateway.wake();
 });
+const maintenance = startMaintenance(database.pool, app.log);
 let twitchRuntime: ReturnType<typeof startTwitchRuntime> | undefined;
 app.addHook('preClose', async () => {
+  await maintenance.stop();
   await twitchRuntime?.stop();
   await runtime.stop();
 });

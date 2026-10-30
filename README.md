@@ -265,3 +265,5 @@ The deterministic simulator runs all six policies across six habitats, normalize
 Phase 10 data protection: artist sign-in uses erasable identity/credit mappings and random game pseudonyms. Accepted records and stored public updates contain opaque credit tokens, preserving replay after identity removal. Raw processed intake can expire without losing permanent duplicate/conflict receipts or deterministic exports. Expired-world deletion is atomic and refuses active worlds.
 
 Artist participants can erase their sign-in and credit mapping with **Forget my artist identity** in a connected studio. The public [/privacy](/privacy) page explains camera locality, actual retention and deletion, and the effect on accepted designs.
+
+Retention runs automatically every 30 seconds. The privacy CLI supports targeted erasure, expired-world purge and a separately retained erasure ledger for safe backup recovery; see [privacy operations](docs/privacy-operations.md).

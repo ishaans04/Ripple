@@ -10,6 +10,7 @@ import {
 import { settleSyntheticWorld } from '../game/synthetic-clock.ts';
 import { canonicalGameProjection } from '../game/replay.ts';
 import { registerArtistIdentity, resolvePublicCredits, forgetArtist } from './credits.ts';
+import { exportErasureLedger, applyErasureLedger } from './ledger.ts';
 let temporary: TemporaryDatabase, pool: pg.Pool;
 beforeAll(async () => {
   temporary = await createTemporaryDatabase();
@@ -76,4 +77,42 @@ it('keeps identity lookup world-scoped and expires credit independently of game 
     [second.worldId],
   );
   expect(await resolvePublicCredits(pool, b.credit_token)).toBe('Former artist');
+});
+it('reapplies a post-backup erasure before a restored identity can be published', async () => {
+  const world = await createSyntheticWorld(pool);
+  const identity = await registerArtistIdentity(
+    pool,
+    world.worldId,
+    'restore-subject',
+    'RestoredName',
+  );
+  const backup = (
+    await pool.query<{
+      world_id: string;
+      subject_hash: string;
+      artist_key: string;
+      credit_token: string;
+      login: string;
+      expires_at: Date;
+    }>('select * from artist_identities where world_id=$1', [world.worldId])
+  ).rows[0]!;
+  await forgetArtist(pool, world.worldId, identity.artist_key);
+  const ledger = await exportErasureLedger(pool);
+  // Reproduce the private mapping an older database backup would restore.
+  await pool.query(
+    'insert into artist_identities(world_id,subject_hash,artist_key,credit_token,login,expires_at) values($1,$2,$3,$4,$5,$6)',
+    [
+      backup.world_id,
+      backup.subject_hash,
+      backup.artist_key,
+      backup.credit_token,
+      backup.login,
+      backup.expires_at,
+    ],
+  );
+  expect(await resolvePublicCredits(pool, identity.credit_token)).toBe('RestoredName');
+  await applyErasureLedger(pool, ledger);
+  await applyErasureLedger(pool, ledger);
+  expect(await resolvePublicCredits(pool, identity.credit_token)).toBe('Former artist');
+  await expect(applyErasureLedger(pool, { ...ledger, credentials: 'forbidden' })).rejects.toThrow();
 });
