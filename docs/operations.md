@@ -1,0 +1,35 @@
+# Operating and recovering Ripple
+
+Use the [deployment guide](deployment.md), [Twitch setup](twitch-setup.md) and [privacy operations](privacy-operations.md) together. Live acceptance is deferred; synthetic evidence does not authorize claiming a successful real Twitch or OBS rehearsal.
+
+## Observe before changing state
+
+`/health/live` reports process availability; `/health/ready` checks database connectivity and migration currency. Neither means Twitch grants, EventSub subscriptions or OBS are healthy. The controller displays those integration states. `npm run status` (or `node apps/server/dist/cli/status.js` inside the image) prints private aggregate diagnostics: per-world-mode backlog and oldest pending age, deadline lag, failed inputs, stale bridges, revoked grants, subscriptions needing attention, bot backlog, database size/I/O and pool use. Its `operatorProcess` describes that CLI, not the running app. Use provider process metrics for application CPU/RAM.
+
+Suggested initial alert thresholds: readiness unavailable for 30 seconds; live oldest-pending age over one second for a minute; due live deadlines over five seconds late; any repeatedly failed input; disk over 75%; missing expected daily backup or unhealthy WAL archive; stale OBS bridge while bridge automation is enabled. Tune alerts from real traffic; synthetic/replay worlds and intentionally paused channels need separate interpretation. `pg_stat_database` counters are cumulative since `stats_reset`, not a disk throughput benchmark. Preserve timestamps, request IDs, revision and aggregate counts when investigating; redact capabilities, cookies, tokens and identity mappings.
+
+## Incidents
+
+| Symptom | Action and recovery check |
+| --- | --- |
+| PostgreSQL unavailable | Keep readiness failing and alert the operator. Inspect provider/storage health; do not replace the database with an empty one. Uncommitted callbacks fail for provider retry. Already acknowledged receipts remain durable. After recovery, verify ordered cursor catch-up, failed inputs, current snapshots and replay before resuming interrupted observation explicitly. |
+| App/worker dies after commit | Restart the same image and database. The durable outbox and snapshot recover committed state; the same receipt cannot create another vote, raid child or hatch. Live process-gap markers interrupt unknown observation time rather than scoring it. Confirm the controller's recovery state; never edit a cursor or invent elapsed input. |
+| Backlog or processing failure | Inspect oldest pending sequence and correlated error privately. Fix the cause and redeploy a tested image; retain the accepted record. Do not delete poison input, skip sequences or retry bot output blindly. Capture a private backup before any database repair and verify replay after it. |
+| Expired/revoked OAuth | The integration holds affected live observation. Reauthorize the correct broadcaster/bot from the controller; inspect required scopes, token validation and enabled subscriptions. Do not paste tokens into logs or change actor-hash secrets to make authorization pass. |
+| Stale/hidden OBS bridge | A stale bridge never means the broadcaster returned. Check source URL/capability, configured exact scene names, browser-source shutdown settings and reconnect/current-scene reconciliation. Use explicit Start/End break controls while diagnosing. Revoke/reissue the bridge capability if exposed. |
+| Camera denied/unavailable | Keep the draft and use pointer/keyboard/touch controls. Check HTTPS/localhost, browser/OS camera permission and device use by another app. No microphone permission is needed. Enable only after the participant chooses it; do not loop permission prompts. |
+| Model/worker fails or stalls | Check the pinned task/WASM files, checksums, MIME types and production CSP in the browser network console. Do not substitute an unversioned model/CDN. Loading times out after 30 seconds; a stalled inference after five seconds. The worker closes, camera stops and pointer controls remain. |
+| Slow socket/client | The gateway bounds frames/buffers and closes with a recoverable reason. Reconnect for a current snapshot; do not replay obsolete animations. Verify the client renders the latest state version and avoid increasing buffer caps to mask a slow consumer. |
+| Unsupported renderer | Show the explicit compatibility error and retain the saved declarative design. Deploy the required historical renderer or reject/hold an incompatible pending design. Never silently reinterpret its genetic cost. |
+
+## Backup and restore
+
+Keep encrypted, access-restricted backups separately from the application host and retain the latest erasure ledger separately from database snapshots. A local Docker volume is persistent storage, not an off-host backup. Enable provider backups/PITR and verify their actual retention and archive health.
+
+`npm run test:restore` runs a genuine PostgreSQL 18 custom-format dump and restore using the Compose database's client tools. It creates two uniquely named temporary databases, verifies that `TEST_DATABASE_URL` addresses that Compose server, builds a completed studio and inherited raid child, dumps the source, restores a separate empty target, reapplies a post-backup identity erasure, compares both canonical projections and accepted histories, and rebuilds both channels from accepted records. It writes only a synthetic fixture dump under ignored `tmp/` and a measured JSON report. It never restores over a production database. The committed [rehearsal evidence](evidence/phase10-restore.json) records checksum, bytes and elapsed times.
+
+For a real incident: block public traffic and ingress; preserve the damaged database; select a verified backup and record its recovery point; restore into a new private database with matching PostgreSQL client/server versions; run migrations with the matching image; reapply the latest independent erasure ledger; run retention; verify record chains and replay; invalidate sessions/capabilities as appropriate; then switch the application connection under a controlled restart. Record actual lost-time exposure and recovery duration. A quiescent fixture's zero-loss result is not a promised live RPO. Test this procedure on the chosen host before enabling real channels, and repeat after substantial schema changes.
+
+## Deploy and rollback
+
+Deploy only a green, recorded revision. Migrations take an advisory lock and must finish before readiness. Take a named backup before schema changes. Stop new callbacks or disable live input during an incident, allow graceful draining, and preserve interrupted-round recovery. Prefer a reviewed forward fix. Do not run an old image against an incompatible newer schema or reverse immutable history; if a database rollback is required, restore the paired database/image privately, reapply erasures and reconcile any provider redelivery using durable receipt identities. The first vault migration deliberately signs out pre-vault artists; no legacy real-account histories are claimed.
