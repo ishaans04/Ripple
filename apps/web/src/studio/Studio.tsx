@@ -1,10 +1,11 @@
-import { useEffect, useMemo, useReducer, useRef, useState } from 'react';
+import { useEffect, useMemo, useReducer, useRef, useState, type ReactNode } from 'react';
 import {
   founderShell,
   markingPatterns,
   shellBounds,
   shellPalettes,
   type AppearanceBlueprint,
+  type StudioChallenge,
   type StudioMutationTemplate,
 } from '@ripple/contracts';
 import {
@@ -18,6 +19,7 @@ import { loadDraft, saveDraft } from './drafts.ts';
 import { EditorCanvas } from './EditorCanvas.tsx';
 import { HandControls } from './HandControls.tsx';
 import styles from './Studio.module.css';
+import { LiveStudio } from './LiveStudio.tsx';
 
 // An explicitly local practice context, never an impersonated live studio or world.
 export const practiceChallenge = createStudioChallenge(
@@ -32,30 +34,59 @@ export const practiceChallenge = createStudioChallenge(
   },
   candidateRuleset,
 );
-const templateNames: Record<StudioMutationTemplate, string> = {
+export const templateNames: Record<StudioMutationTemplate, string> = {
   'grit-plus2-pulse-minus2': 'Grit +2 · Pulse −2',
   'grit-plus2-calm-minus2': 'Grit +2 · Calm −2',
   'grit-plus2-drift-minus2': 'Grit +2 · Drift −2',
   'cosmetic-only': 'Appearance only · genes unchanged',
 };
 
-function recover() {
+function recover(challenge: StudioChallenge) {
   try {
-    return loadDraft(localStorage, practiceChallenge, Date.now());
+    return loadDraft(localStorage, challenge, Date.now());
   } catch {
     return null;
   }
 }
+/** A live studio supplies its captured challenge, status and confirmed submission. */
+export interface LiveEditor {
+  status: ReactNode;
+  canSubmit: boolean;
+  cameraAvailable: boolean;
+  submit: (blueprint: AppearanceBlueprint, creditOptIn: boolean) => void;
+}
 export default function Studio() {
-  const [recovered] = useState(recover);
+  const params = new URLSearchParams(window.location.search);
+  // After artist sign-in Twitch returns here; the studio being edited is remembered locally.
+  const session =
+    params.get('s') ??
+    (params.get('signedIn') === '1' ? sessionStorage.getItem('ripple:studio-session') : null);
+  return session !== null && /^[0-9a-f-]{36}$/i.test(session) ? (
+    <LiveStudio sessionId={session.toLowerCase()} />
+  ) : (
+    <StudioEditor challenge={practiceChallenge} live={null} />
+  );
+}
+export function StudioEditor({
+  challenge,
+  live,
+}: {
+  challenge: StudioChallenge;
+  live: LiveEditor | null;
+}) {
+  const [recovered] = useState(() => recover(challenge));
   const [state, dispatch] = useReducer(
     editorReducer,
     recovered?.part ?? founderShell,
     initialEditor,
   );
   const [template, setTemplate] = useState<StudioMutationTemplate>(
-    recovered?.mutationTemplateId ?? 'grit-plus2-pulse-minus2',
+    recovered?.mutationTemplateId !== undefined &&
+      challenge.mutationTemplateIds.includes(recovered.mutationTemplateId)
+      ? recovered.mutationTemplateId
+      : (challenge.mutationTemplateIds[0] ?? 'cosmetic-only'),
   );
+  const [creditOptIn, setCreditOptIn] = useState(false);
   const [confirming, setConfirming] = useState(false);
   const dialog = useRef<HTMLDialogElement>(null);
   useEffect(() => {
@@ -70,15 +101,15 @@ export default function Studio() {
   const blueprint: AppearanceBlueprint = useMemo(
     () => ({
       schemaVersion: 1,
-      worldId: practiceChallenge.worldId,
-      studioSessionId: practiceChallenge.studioSessionId,
-      baseOrganismId: practiceChallenge.baseOrganismId,
-      baseOrganismVersion: practiceChallenge.baseOrganismVersion,
+      worldId: challenge.worldId,
+      studioSessionId: challenge.studioSessionId,
+      baseOrganismId: challenge.baseOrganismId,
+      baseOrganismVersion: challenge.baseOrganismVersion,
       rendererVersion: 'shell-v1',
       mutationTemplateId: template,
       part: state.part,
     }),
-    [state.part, template],
+    [challenge, state.part, template],
   );
   useEffect(() => {
     // The bounded record is small. Persist on every committed edit rather than
@@ -86,7 +117,7 @@ export default function Studio() {
     const persist = () => {
       let saved = false;
       try {
-        saved = saveDraft(localStorage, blueprint, practiceChallenge, Date.now());
+        saved = saveDraft(localStorage, blueprint, challenge, Date.now());
       } catch {
         /* Download remains available. */
       }
@@ -103,7 +134,7 @@ export default function Studio() {
     return () => {
       window.removeEventListener('pagehide', flush);
     };
-  }, [blueprint]);
+  }, [blueprint, challenge]);
   const saveStatus =
     downloaded === blueprint
       ? 'Design downloaded. Your local draft is also kept.'
@@ -113,7 +144,7 @@ export default function Studio() {
           ? 'Draft saved on this device.'
           : 'Device storage is unavailable. Download your design to keep it.';
   function download() {
-    const accepted = acceptBlueprint(blueprint, practiceChallenge, candidateRuleset);
+    const accepted = acceptBlueprint(blueprint, challenge, candidateRuleset);
     const url = URL.createObjectURL(
       new Blob([JSON.stringify({ blueprint: accepted.blueprint, hash: accepted.hash }, null, 2)], {
         type: 'application/json',
@@ -136,16 +167,20 @@ export default function Studio() {
         <a href="/" className={styles.brand}>
           Ripple<span> / Cocoon Studio</span>
         </a>
-        <span className={styles.badge}>Local practice</span>
+        <span className={styles.badge}>{live === null ? 'Local practice' : 'Live studio'}</span>
       </header>
       <section className={styles.intro}>
         <p className={styles.eyebrow}>A little shell. A lasting story.</p>
         <h1>Shape what travels next.</h1>
         <p>Pull a point. Find a pattern. Give this strain a shell of its own.</p>
-        <p className={styles.muted}>
-          Explore at your own pace. This practice design stays on your device and does not change a
-          live game.
-        </p>
+        {live === null ? (
+          <p className={styles.muted}>
+            Explore at your own pace. This practice design stays on your device and does not change
+            a live game.
+          </p>
+        ) : (
+          live.status
+        )}
       </section>
       <div className={styles.workspace}>
         <section className={styles.preview} aria-label="Shell editor">
@@ -185,7 +220,11 @@ export default function Studio() {
           </p>
         </section>
         <aside className={styles.controls}>
-          <HandControls part={state.part} dispatch={dispatch} />
+          <HandControls
+            part={state.part}
+            dispatch={dispatch}
+            available={live?.cameraAvailable ?? true}
+          />
           <section>
             <p className={styles.eyebrow}>01 / The trade-off</p>
             <h2>Reinforce the shell</h2>
@@ -194,13 +233,13 @@ export default function Studio() {
               id="trade-off"
               value={template}
               onChange={(event) => {
-                const selected = practiceChallenge.mutationTemplateIds.find(
+                const selected = challenge.mutationTemplateIds.find(
                   (id) => id === event.target.value,
                 );
                 if (selected !== undefined) setTemplate(selected);
               }}
             >
-              {practiceChallenge.mutationTemplateIds.map((id) => (
+              {challenge.mutationTemplateIds.map((id) => (
                 <option key={id} value={id}>
                   {templateNames[id]}
                 </option>
@@ -277,7 +316,7 @@ export default function Studio() {
               setConfirming(true);
             }}
           >
-            Save design <span aria-hidden="true">↗</span>
+            {live === null ? 'Save design' : 'Review and submit'} <span aria-hidden="true">↗</span>
           </button>
           <p className={styles.muted} role="status">
             {saveStatus}
@@ -286,7 +325,11 @@ export default function Studio() {
       </div>
       <footer className={styles.footer}>
         <span>Created here. Carried onward.</span>
-        <span>Local practice · no live proposal is submitted</span>
+        <span>
+          {live === null
+            ? 'Local practice · no live proposal is submitted'
+            : 'Drafts stay on this device until you confirm a submission'}
+        </span>
       </footer>
       <dialog
         ref={dialog}
@@ -296,12 +339,47 @@ export default function Studio() {
         }}
         aria-labelledby="save-title"
       >
-        <h2 id="save-title">Save this shell?</h2>
-        <p>
-          Download your design and its genetic trade-off. This saves a local design, not a live
-          proposal.
-        </p>
-        <button className={styles.primary} autoFocus onClick={download}>
+        <h2 id="save-title">{live === null ? 'Save this shell?' : 'Submit this shell?'}</h2>
+        {live === null ? (
+          <p>
+            Download your design and its genetic trade-off. This saves a local design, not a live
+            proposal.
+          </p>
+        ) : (
+          <>
+            <p>
+              Submit this design with its trade-off ({templateNames[template]}). Chat chooses among
+              at most two finalists; Keep current is always an option. It changes nothing until the
+              community selects it and the broadcaster approves.
+            </p>
+            <label className={styles.check}>
+              <input
+                type="checkbox"
+                checked={creditOptIn}
+                onChange={(event) => {
+                  setCreditOptIn(event.target.checked);
+                }}
+              />
+              Credit me by my Twitch name (otherwise the channel is credited)
+            </label>
+            <button
+              className={styles.primary}
+              autoFocus
+              disabled={!live.canSubmit}
+              onClick={() => {
+                live.submit(blueprint, creditOptIn);
+                setConfirming(false);
+              }}
+            >
+              Submit proposal
+            </button>
+          </>
+        )}
+        <button
+          className={live === null ? styles.primary : undefined}
+          autoFocus={live === null}
+          onClick={download}
+        >
           Download design
         </button>
         <button

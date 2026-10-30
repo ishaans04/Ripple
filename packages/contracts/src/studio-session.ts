@@ -2,6 +2,7 @@ import { z } from 'zod';
 import {
   blueprintSchema,
   hashSchema,
+  shellPartSchema,
   mutationTemplateSchema,
   studioChallengeSchema,
   studioGenomeSchema,
@@ -158,6 +159,17 @@ export const studioStateSchema = z.object({
   label: z.string(),
   studio: studioViewSchema,
   challenge: studioChallengeSchema.nullable(),
+  // The creature being redesigned, as currently committed; pending designs never appear here.
+  organism: z
+    .object({
+      name: z.string(),
+      genome: studioGenomeSchema,
+      appearance: z.discriminatedUnion('kind', [
+        z.object({ kind: z.literal('founder'), part: shellPartSchema }),
+        z.object({ kind: z.literal('studio'), blueprint: z.object({ part: shellPartSchema }) }),
+      ]),
+    })
+    .nullable(),
   serverTimeMs: z.number(),
 });
 export type StudioState = z.infer<typeof studioStateSchema>;

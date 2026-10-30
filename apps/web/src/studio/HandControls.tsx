@@ -19,9 +19,12 @@ const labels: Record<CameraStatus, string> = {
 export function HandControls({
   part,
   dispatch,
+  available = true,
 }: {
   part: ShellPart;
   dispatch: Dispatch<EditorAction>;
+  /** False once a live studio closes: the camera stops and cannot restart for it. */
+  available?: boolean;
 }) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const session = useRef<CameraSession | null>(null);
@@ -45,6 +48,11 @@ export function HandControls({
     },
     [],
   );
+  useEffect(() => {
+    if (available) return;
+    session.current?.stop();
+    session.current = null;
+  }, [available]);
   function enable() {
     if (videoRef.current === null) return;
     setError('');
@@ -101,8 +109,11 @@ export function HandControls({
                 : 'Hand detected · pinch a white control point to grab it.'}
         </p>
       )}
+      {!available && <p>This studio has closed, so the camera is off. Your draft is kept.</p>}
       {status === 'idle' ? (
-        <button onClick={enable}>Enable hand controls</button>
+        <button onClick={enable} disabled={!available}>
+          Enable hand controls
+        </button>
       ) : (
         <button
           onClick={() => {

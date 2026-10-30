@@ -46,6 +46,14 @@ export function registerStudioPublicRoutes(app: FastifyInstance, pool: pg.Pool):
         // A later studio on the same channel is not shown through an older link.
         studio: current ? snapshot.payload.studio : { ...snapshot.payload.studio, session: null },
         challenge: current ? studioChallengeSchema.parse(session.challenge) : null,
+        organism:
+          snapshot.payload.organism === null
+            ? null
+            : {
+                name: snapshot.payload.organism.name,
+                genome: snapshot.payload.organism.genome,
+                appearance: snapshot.payload.organism.appearance,
+              },
         serverTimeMs: Date.parse(snapshot.serverTime),
       });
     },

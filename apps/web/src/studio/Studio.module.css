@@ -274,3 +274,47 @@
     display: block;
   }
 }
+
+.liveStatus {
+  display: grid;
+  gap: 0.75rem;
+  max-width: 52rem;
+}
+.creature {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+.creature svg {
+  width: 7rem;
+  height: auto;
+}
+.finalists {
+  display: grid;
+  gap: 0.5rem;
+  padding-left: 1.25rem;
+}
+.finalists li {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+}
+.finalists svg,
+.cocoon svg {
+  width: 5rem;
+  height: auto;
+}
+.cocoon {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  border: 1px dashed currentColor;
+  border-radius: 0.75rem;
+  padding: 0.75rem;
+}
+.check {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
