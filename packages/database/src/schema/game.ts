@@ -51,6 +51,8 @@ export const channels = pgTable(
     online: boolean('online').notNull().default(false),
     healthy: boolean('healthy').notNull().default(false),
     paused: boolean('paused').notNull().default(false),
+    /** Held by an undecided Cocoon Studio; independent of the broadcaster's manual pause. */
+    studioHold: boolean('studio_hold').notNull().default(false),
     initialOnline: boolean('initial_online').notNull().default(false),
     initialHealthy: boolean('initial_healthy').notNull().default(false),
     initialPaused: boolean('initial_paused').notNull().default(false),
@@ -119,6 +121,10 @@ export const organisms = pgTable(
     // Persisted so historical organisms and fossils keep their original gene-to-appearance mapping.
     appearanceMapping: smallint('appearance_mapping').notNull().default(1),
     mutationSlots: jsonb('mutation_slots').notNull(),
+    /** Increments only when genes or the committed design change; studio challenges capture it. */
+    designVersion: integer('design_version').notNull().default(0),
+    /** The committed studio blueprint, or null for the versioned founder shell. */
+    appearanceHash: text('appearance_hash'),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [
@@ -149,6 +155,7 @@ export const organisms = pgTable(
       sql`(${t.parentId} is null and ${t.generation}=0 and ${t.founderId}=${t.id}) or (${t.parentId} is not null and ${t.parentId}<>${t.id} and ${t.founderId}<>${t.id} and ${t.generation} between 1 and 16)`,
     ),
     check('organisms_version_nonnegative', sql`${t.version} >= 0`),
+    check('organisms_design_version_nonnegative', sql`${t.designVersion} >= 0`),
     check('organisms_appearance_mapping_known', sql`${t.appearanceMapping} = 1`),
     check('organisms_name_length', sql`length(${t.name}) between 1 and 40`),
     index('organisms_parent_idx').on(t.worldId, t.parentId),

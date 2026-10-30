@@ -78,6 +78,8 @@ export const dormantMutations = pgTable(
     remainingRounds: integer('remaining_rounds').notNull(),
     status: text('status').notNull(),
     offered: boolean('offered').notNull().default(false),
+    /** A qualifying losing studio finalist's design, revalidated before any later expression. */
+    blueprintHash: text('blueprint_hash'),
   },
   (t) => [
     primaryKey({ columns: [t.worldId, t.id] }),

@@ -34,7 +34,7 @@ export const oauthStates = pgTable(
     expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
   },
   (t) => [
-    check('oauth_state_purpose', sql`${t.purpose} in ('broadcaster','bot')`),
+    check('oauth_state_purpose', sql`${t.purpose} in ('broadcaster','bot','artist')`),
     index('oauth_states_expiry_idx').on(t.expiresAt),
   ],
 );

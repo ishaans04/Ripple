@@ -232,6 +232,13 @@
       "when": 1793350959433,
       "tag": "0032_optional_celebrations",
       "breakpoints": true
+    },
+    {
+      "idx": 33,
+      "version": "7",
+      "when": 1793363895178,
+      "tag": "0033_cocoon_studio",
+      "breakpoints": true
     }
   ]
 }

@@ -10,3 +10,4 @@ export * from './twitch.ts';
 export * from './propagation.ts';
 export * from './moderation.ts';
 export * from './novel.ts';
+export * from './studio.ts';

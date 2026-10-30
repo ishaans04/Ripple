@@ -55,9 +55,13 @@ export const rounds = pgTable(
       foreignColumns: [organisms.worldId, organisms.id],
     }),
     uniqueIndex('rounds_channel_number').on(t.worldId, t.channelId, t.number),
+    // A studio selection ballot runs while the ordinary round stays paused at its checkpoint.
     uniqueIndex('rounds_one_open')
       .on(t.worldId, t.channelId)
-      .where(sql`${t.completedAt} is null`),
+      .where(sql`${t.completedAt} is null and ${t.kind} <> 'STUDIO_SELECTION'`),
+    uniqueIndex('rounds_one_open_studio')
+      .on(t.worldId, t.channelId)
+      .where(sql`${t.completedAt} is null and ${t.kind} = 'STUDIO_SELECTION'`),
     check('rounds_number_positive', sql`${t.number} > 0`),
     check(
       'rounds_kind_valid',
