@@ -1,7 +1,9 @@
 import { randomUUID } from 'node:crypto';
 import {
+  familyDigestSchema,
   mechanicsStateSchema,
   type AppearanceMarks,
+  type FamilyDigest,
   type AppearanceMappingVersion,
   type MechanicsState,
   type PropagationView,
@@ -35,6 +37,7 @@ export interface ChannelSnapshot {
   paused: boolean;
   rulesHash: string;
   propagation: PropagationView;
+  familyDigest: FamilyDigest | null;
   mechanics: {
     version: 0 | 1;
     enableRequested: boolean;
@@ -87,6 +90,7 @@ export async function readSnapshot(
     rules_hash: string;
     grace_ms: number;
     propagation: PropagationView;
+    family_digest: unknown;
     mechanics: ChannelSnapshot['mechanics'];
     organism: {
       id: string;
@@ -124,6 +128,8 @@ export async function readSnapshot(
     (select jsonb_build_object('id',r.id,'number',r.number,'kind',r.kind,'phase',r.phase,'checkpoint',r.checkpoint,'resolution',r.resolution,'explanation',r.explanation,'visitor_result',r.visitor_result,'analysis',${roundAnalysisProjectionSql})
       from rounds r where r.world_id=c.world_id and r.channel_id=c.id order by r.number desc limit 1) as round,
     ${propagationProjectionSql} as propagation,
+    (select jsonb_build_object('items',d.items,'remaining',d.remaining) from family_digests d
+      where d.world_id=c.world_id and d.channel_id=c.id and c.online) as family_digest,
     jsonb_build_object('version',cp.mechanics_version,'enableRequested',cp.mechanics_requested,'tracesEnabled',cp.traces_enabled,'state',${mechanicsStateProjectionSql}) as mechanics,
     date_trunc('milliseconds',clock_timestamp()) as server_time
     from channels c join worlds w on w.id=c.world_id join channel_play cp on cp.world_id=c.world_id and cp.channel_id=c.id where c.world_id=$1 and c.id=$2 and (w.expires_at is null or w.expires_at>clock_timestamp())`,
@@ -145,6 +151,7 @@ export async function readSnapshot(
       paused: row.paused,
       rulesHash: row.rules_hash,
       propagation: row.propagation,
+      familyDigest: row.family_digest === null ? null : familyDigestSchema.parse(row.family_digest),
       mechanics: { ...row.mechanics, state: mechanicsStateSchema.parse(row.mechanics.state) },
       organism:
         organism === null

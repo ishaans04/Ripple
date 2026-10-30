@@ -4,6 +4,7 @@ import { propagationViewSchema, transferViewSchema } from './propagation-view.ts
 import { roundAnalysisSchema } from './analysis.ts';
 import { mechanicsStateSchema } from './mechanics-view.ts';
 import { appearanceMappingVersionSchema, appearanceMarksSchema } from './appearance.ts';
+import { familyDigestSchema } from './family.ts';
 export const choicePreviewSchema = z
   .object({
     label: z.literal('Based on recent activity'),
@@ -60,6 +61,8 @@ export const channelViewSchema = z.object({
     .optional(),
   // Older retained public updates predate propagation; fresh snapshots always include it.
   propagation: propagationViewSchema.optional(),
+  // Captured when the stream returns; null outside a session or when there is no news.
+  familyDigest: familyDigestSchema.nullable().optional(),
   organism: z
     .object({
       id: z.uuid(),

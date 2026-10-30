@@ -6,6 +6,7 @@ import {
   resumeRoundClock,
 } from '@ripple/engine';
 import { saveCheckpoint, type GameContext } from './store.ts';
+import { captureFamilyDigest, clearFamilyDigest } from './family-digest.ts';
 
 export interface CommandEffect {
   code: GameResultCode;
@@ -33,6 +34,8 @@ export async function applyLifecycle(
   const { channel, round, client, timings } = context;
   const scope = [channel.world_id, channel.id];
   if (command.type === 'stream' || command.type === 'inputHealth') {
+    if (command.type === 'stream' && command.online !== channel.online)
+      await (command.online ? captureFamilyDigest(context, atMs) : clearFamilyDigest(context));
     const result = await applyLifecycle(
       context,
       {

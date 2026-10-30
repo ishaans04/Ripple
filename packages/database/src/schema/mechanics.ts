@@ -207,6 +207,64 @@ export const descendantCursors = pgTable(
   ],
 );
 
+/**
+ * Append-only structural family history per lineage, written by database triggers on births,
+ * admissions, fossils, archives and trace qualifications. The sequence follows the lineage lock,
+ * so a cursor never skips an update that commits later.
+ */
+export const lineageUpdates = pgTable(
+  'lineage_updates',
+  {
+    worldId: uuid('world_id').notNull(),
+    lineageId: uuid('lineage_id').notNull(),
+    sequence: integer('sequence').notNull(),
+    kind: text('kind').notNull(),
+    organismId: uuid('organism_id').notNull(),
+    channelId: uuid('channel_id'),
+    traceId: uuid('trace_id'),
+  },
+  (t) => [
+    primaryKey({ columns: [t.worldId, t.lineageId, t.sequence] }),
+    foreignKey({
+      columns: [t.worldId, t.lineageId],
+      foreignColumns: [lineages.worldId, lineages.id],
+    }),
+    foreignKey({
+      columns: [t.worldId, t.organismId],
+      foreignColumns: [organisms.worldId, organisms.id],
+    }),
+    foreignKey({
+      columns: [t.worldId, t.channelId],
+      foreignColumns: [channels.worldId, channels.id],
+    }),
+    check('lineage_updates_sequence_positive', sql`${t.sequence} > 0`),
+    check(
+      'lineage_updates_kind_valid',
+      sql`${t.kind} in ('born','admitted','fossilized','archived','trace_earned')`,
+    ),
+  ],
+);
+
+/** The family digest captured when a channel's stream returns; cleared when it goes offline. */
+export const familyDigests = pgTable(
+  'family_digests',
+  {
+    worldId: uuid('world_id').notNull(),
+    channelId: uuid('channel_id').notNull(),
+    capturedAt: timestamp('captured_at', { withTimezone: true }).notNull(),
+    items: jsonb('items').notNull(),
+    remaining: integer('remaining').notNull(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.worldId, t.channelId] }),
+    foreignKey({
+      columns: [t.worldId, t.channelId],
+      foreignColumns: [channels.worldId, channels.id],
+    }),
+    check('family_digests_remaining_nonnegative', sql`${t.remaining} >= 0`),
+  ],
+);
+
 export const analyticsEvents = pgTable(
   'analytics_events',
   {
