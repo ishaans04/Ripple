@@ -29,7 +29,7 @@ export async function registerSecurityHeaders(app: FastifyInstance): Promise<voi
   });
   app.addHook('onSend', async (request, reply, payload) => {
     const path = pathOf(request.url);
-    const studio = path === '/studio';
+    const studio = path === '/studio' || path === '/sandbox';
     const trackingWorker = /^\/assets\/hand-worker-[A-Za-z0-9_-]+\.js$/.test(path);
     reply.header(
       'permissions-policy',
@@ -62,6 +62,7 @@ export async function registerWebApp(app: FastifyInstance, webRoot: string): Pro
     },
   });
   app.get('/studio', (_request, reply) => reply.sendFile('index.html'));
+  app.get('/sandbox', (_request, reply) => reply.sendFile('index.html'));
   app.get('/controller', (_request, reply) => reply.sendFile('index.html'));
   app.get('/preview', (_request, reply) => reply.sendFile('index.html'));
   app.get('/overlay', (_request, reply) => reply.sendFile('index.html'));

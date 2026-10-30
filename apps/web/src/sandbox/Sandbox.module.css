@@ -1,0 +1,48 @@
+.page {
+  max-width: 76rem;
+  margin: auto;
+  padding: 2rem;
+}
+.page main {
+  display: grid;
+  gap: 1rem;
+}
+.page h1,
+.page h2,
+.page p {
+  margin: 0;
+}
+.page li {
+  margin-block: 0.5rem;
+}
+.badge {
+  color: var(--color-text);
+  border: 1px solid currentColor;
+  padding: 0.5rem;
+  width: fit-content;
+}
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  align-items: center;
+  padding-block: 0.5rem;
+}
+.controls p {
+  width: 100%;
+}
+.page button {
+  padding: 0.6rem 0.9rem;
+  cursor: pointer;
+}
+.page button[aria-pressed='true'] {
+  outline: 3px solid currentColor;
+}
+.page button:disabled {
+  cursor: wait;
+}
+@media (max-width: 40rem) {
+  .page {
+    padding: 1rem;
+  }
+}

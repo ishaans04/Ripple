@@ -32,6 +32,14 @@ export function Landing() {
 
       <ServiceStatusPanel />
       <section className={styles.panel}>
+        <h2 className={styles.panelHeading}>Try an expedition</h2>
+        <p>
+          Vote, change habitat, raid, build a shell and verify its replay in your own synthetic
+          world.
+        </p>
+        <a href="/sandbox">Try sandbox →</a>
+      </section>
+      <section className={styles.panel}>
         <h2 className={styles.panelHeading}>Your channel</h2>
         <p>Connect Twitch, check subscription readiness, and control your strain.</p>
         <a href="/controller">Open channel controller →</a>

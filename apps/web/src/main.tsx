@@ -11,12 +11,17 @@ const Preview = lazy(() => import('./controller/Preview.tsx'));
 const Overlay = lazy(() => import('./overlay/Overlay.tsx'));
 const Lineage = lazy(() => import('./lineage/Lineage.tsx'));
 const Bridge = lazy(() => import('./bridge/Bridge.tsx'));
+const Sandbox = lazy(() => import('./sandbox/Sandbox.tsx'));
 if (window.location.pathname === '/overlay' || window.location.pathname === '/bridge')
   document.documentElement.dataset.surface = 'overlay';
 
 createRoot(container).render(
   <StrictMode>
-    {window.location.pathname === '/studio' ? (
+    {window.location.pathname === '/sandbox' ? (
+      <Suspense fallback={<p role="status">Opening sandbox…</p>}>
+        <Sandbox />
+      </Suspense>
+    ) : window.location.pathname === '/studio' ? (
       <Suspense fallback={<p role="status">Opening Cocoon Studio…</p>}>
         <Studio />
       </Suspense>

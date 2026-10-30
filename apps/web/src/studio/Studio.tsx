@@ -50,6 +50,7 @@ function recover(challenge: StudioChallenge) {
 }
 /** A live studio supplies its captured challenge, status and confirmed submission. */
 export interface LiveEditor {
+  mode?: 'sandbox';
   status: ReactNode;
   canSubmit: boolean;
   cameraAvailable: boolean;
@@ -170,7 +171,13 @@ export function StudioEditor({
         <a href="/" className={styles.brand}>
           Ripple<span> / Cocoon Studio</span>
         </a>
-        <span className={styles.badge}>{live === null ? 'Local practice' : 'Live studio'}</span>
+        <span className={styles.badge}>
+          {live === null
+            ? 'Local practice'
+            : live.mode === 'sandbox'
+              ? 'Synthetic sandbox studio'
+              : 'Live studio'}
+        </span>
       </header>
       <section className={styles.intro}>
         <p className={styles.eyebrow}>A little shell. A lasting story.</p>
