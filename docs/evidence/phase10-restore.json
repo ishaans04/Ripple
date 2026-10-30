@@ -1,0 +1,29 @@
+{
+  "synthetic": true,
+  "method": "PostgreSQL custom pg_dump -> separate empty PostgreSQL database -> erasure ledger -> accepted-record replay",
+  "postgres": "PostgreSQL 18.6 (Debian 18.6-1.pgdg13+2) on x86_64-pc-linux-gnu, compiled by gcc (Debian 14.2.0-19) 14.2.0, 64-bit",
+  "dumpBytes": 237724,
+  "dumpSha256": "59cdf87e77d862412c8eeb49818235510fdaddb3614dbd5c91bc627f09ab4f1e",
+  "dumpMs": 1327.303899999999,
+  "restoreMs": 5803.964799999998,
+  "replayMs": 4873.0086999999985,
+  "channels": [
+    {
+      "channelId": "705ab541-749e-416b-95fb-cfe5c0bc8c9d",
+      "equal": true
+    },
+    {
+      "channelId": "382afd59-9d21-46fd-a11a-c6796879c317",
+      "equal": true
+    }
+  ],
+  "projectionSha256": [
+    "f00320ceb6c2899d2fed9c29e648ee34d64908fd40fd332ee2a8c4e20848f017",
+    "b7e88f1c1958de231d8cb69e9d847913ad6f89bbdb6849802405ac29d1a75b50"
+  ],
+  "acceptedBundleSha256": "c50b492674ba5410b63fad6eebee5f4674fe70f4f6a1abd2045a6b7615c246b5",
+  "postBackupErasureReapplied": true,
+  "lostAcknowledgedInputs": 0,
+  "rpo": "Quiescent fixture snapshot; no live RPO claim",
+  "liveAcceptance": false
+}
