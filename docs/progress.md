@@ -280,3 +280,6 @@ Pending under the live deferral (not claimed): the two-channel studio rehearsal 
 ## Live acceptance deferral requested by the user
 
 The two broadcaster accounts, operator bot, and public HTTPS URL are not set up. Continue sequential implementation with sandbox/synthetic verification where possible. Keep all authentic Twitch, raid, OBS, and hosted acceptance evidence explicitly pending, with no synthetic test represented as live evidence. Provide the account/application/OAuth/HTTPS setup steps when Phase 4 needs them. This user-directed deferral permits continued implementation; it does not satisfy the PRD's final release gate.
+
+## Phase 9 - sandbox and tooling (in progress)
+Resumed after the recorded Phase 8 exit. Three existing focused commits provide world replay, the replay CLI and product/studio analytics. The pre-existing uncommitted sandbox API was validated and repaired: its next-deadline SQL needed to aggregate the clock difference. Two real-PostgreSQL journeys pass, including a complete studio hatch, whole-world replay equality, reset/expiry and cross-world authorization. Remaining: browser judge surface, simulator/policy comparisons, studio scenarios, reproducible measured evidence, phase-wide checks and CI. Live gates remain deferred.

@@ -255,3 +255,5 @@ The browser suite starts its own server on port 4179 and refuses to reuse an exi
 ## Architecture
 
 One TypeScript application service plus PostgreSQL, deployed as a single image (see PRD section 12). Browsers never connect to the database. The same image runs locally under Compose and in hosted deployments, with migrations applied as a separate pre-start step.
+
+Phase 9: anonymous judge sandbox API creates isolated expiring worlds with synthetic votes, habitat changes, raids, the complete studio flow, reset and verified whole-world replay.
