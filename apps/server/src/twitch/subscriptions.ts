@@ -5,6 +5,7 @@ import { z } from 'zod';
 import type pg from 'pg';
 import { type TwitchClient, TwitchError } from './client.ts';
 import { subscriptionVersions } from './webhook.ts';
+import { celebrationSubscriptions } from './celebrations.ts';
 
 const remoteSchema = z.object({
   id: z.string(),
@@ -83,8 +84,14 @@ export async function reconcileSubscriptions(
       [world],
     )
   ).rows[0];
-  const channels = await pool.query<{ id: string; twitch_id: string; authorized: boolean }>(
-    `select c.id,c.twitch_id,exists(select 1 from oauth_grants g where g.world_id=c.world_id and g.channel_id=c.id and g.purpose='broadcaster' and g.revoked_at is null and g.expires_at>clock_timestamp() and g.validated_at>clock_timestamp()-interval '1 hour') as authorized from channels c join twitch_channels t on t.world_id=c.world_id and t.channel_id=c.id where c.world_id=$1 order by c.id`,
+  const channels = await pool.query<{
+    id: string;
+    twitch_id: string;
+    authorized: boolean;
+    scopes: string[] | null;
+  }>(
+    `select c.id,c.twitch_id,exists(select 1 from oauth_grants g where g.world_id=c.world_id and g.channel_id=c.id and g.purpose='broadcaster' and g.revoked_at is null and g.expires_at>clock_timestamp() and g.validated_at>clock_timestamp()-interval '1 hour') as authorized,
+    (select g.scopes from oauth_grants g where g.world_id=c.world_id and g.channel_id=c.id and g.purpose='broadcaster' and g.revoked_at is null) as scopes from channels c join twitch_channels t on t.world_id=c.world_id and t.channel_id=c.id where c.world_id=$1 order by c.id`,
     [world],
   );
   const callback = `${api.config.origin}/webhooks/twitch`,
@@ -106,7 +113,14 @@ export async function reconcileSubscriptions(
       });
       continue;
     }
-    for (const [type, version] of Object.entries(subscriptionVersions)) {
+    // Optional celebrations follow the installation flag and the broadcaster's actual grant.
+    const optional = Object.entries(celebrationSubscriptions)
+      .filter(
+        ([, item]) =>
+          api.config.celebrations === true && (channel.scopes ?? []).includes(item.scope),
+      )
+      .map(([type, item]) => [type, item.version] as const);
+    for (const [type, version] of [...Object.entries(subscriptionVersions), ...optional]) {
       const condition: Record<string, string> =
         type === 'channel.raid'
           ? { from_broadcaster_user_id: channel.twitch_id }

@@ -1,3 +1,4 @@
+import { celebrationSubscriptions } from './celebrations.ts';
 import { acceptInputInTransaction, transaction } from '@ripple/database';
 import { canonicalJson, sha256Hex } from '@ripple/engine';
 import { channelControlSchema, strainNameSchema, type GameCommand } from '@ripple/contracts';
@@ -61,7 +62,20 @@ export function registerController(
             [owner.world_id],
           )
         ).rowCount === 1;
+      const scopes =
+        (
+          await pool.query<{ scopes: string[] }>(
+            "select scopes from oauth_grants where world_id=$1 and channel_id=$2 and purpose='broadcaster' and revoked_at is null",
+            [owner.world_id, owner.channel_id],
+          )
+        ).rows[0]?.scopes ?? [];
       return {
+        celebrations: {
+          available: config.celebrations === true,
+          granted: Object.values(celebrationSubscriptions)
+            .filter((item) => scopes.includes(item.scope))
+            .map((item) => item.kind),
+        },
         worldId: owner.world_id,
         channelId: owner.channel_id,
         csrfToken: cookie(request, '__Host-ripple-csrf'),

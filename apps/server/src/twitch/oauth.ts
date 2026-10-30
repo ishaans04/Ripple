@@ -5,6 +5,7 @@ import type { FastifyInstance } from 'fastify';
 import type pg from 'pg';
 import type { TwitchClient } from './client.ts';
 import { checkIdentity, requiredScopes, storeGrant, type GrantPurpose } from './grants.ts';
+import { celebrationScopes } from './celebrations.ts';
 import { enrollChannel } from './installation.ts';
 import { registerController } from './controller.ts';
 import { equalSecret, opaqueToken, privateHash } from './security.ts';
@@ -20,7 +21,11 @@ export function registerOAuth(
   app.addHook('onRequest', async (_request, reply) => {
     reply.header('Cache-Control', 'no-store');
   });
-  async function start(purpose: GrantPurpose, browser: string): Promise<string> {
+  async function start(
+    purpose: GrantPurpose,
+    browser: string,
+    celebrations = false,
+  ): Promise<string> {
     const state = opaqueToken();
     await pool.query(
       "insert into oauth_states(hash,browser_hash,world_id,purpose,expires_at) values ($1,$2,$3,$4,clock_timestamp()+interval '10 minutes')",
@@ -30,7 +35,8 @@ export function registerOAuth(
       client_id: api.config.clientId,
       redirect_uri: `${api.config.origin}/auth/twitch/callback`,
       response_type: 'code',
-      scope: requiredScopes[purpose].join(' '),
+      // Celebration scopes are requested only when the broadcaster opts in.
+      scope: [...requiredScopes[purpose], ...(celebrations ? celebrationScopes : [])].join(' '),
       state,
       force_verify: 'true',
     });
@@ -40,8 +46,16 @@ export function registerOAuth(
     '/auth/twitch/start',
     { config: { rateLimit: { max: 10, timeWindow: '1 minute' } } },
     async (request, reply) => {
-      const browser = cookie(request, '__Host-ripple-state') ?? opaqueToken();
-      const url = await start('broadcaster', browser);
+      const browser = cookie(request, '__Host-ripple-state') ?? opaqueToken(),
+        optional = z
+          .strictObject({ celebrations: z.literal('true').optional() })
+          .safeParse(request.query);
+      if (!optional.success) throw new ControlError(400, 'BAD_REQUEST');
+      const url = await start(
+        'broadcaster',
+        browser,
+        optional.data.celebrations === 'true' && api.config.celebrations === true,
+      );
       setCookie(reply, '__Host-ripple-state', browser, 600);
       return reply.redirect(url);
     },

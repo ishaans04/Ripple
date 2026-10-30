@@ -40,6 +40,8 @@ export interface TwitchConfig {
   actorKey: string;
   operatorSecret: string;
   sessionSecret: string;
+  /** Optional paid-event celebrations; off unless ENABLE_CELEBRATIONS=true. */
+  celebrations?: boolean;
 }
 export function readTwitchConfig(
   env: Record<string, string | undefined>,
@@ -53,6 +55,8 @@ export function readTwitchConfig(
       throw new Error('ENABLE_LIVE_TWITCH must be true or false');
     return undefined;
   }
+  if (!['true', 'false', '', undefined].includes(env.ENABLE_CELEBRATIONS))
+    throw new Error('ENABLE_CELEBRATIONS must be true or false');
   const parsed = liveEnvironment.safeParse(env);
   if (!parsed.success)
     throw new Error(
@@ -72,6 +76,7 @@ export function readTwitchConfig(
     actorKey: p.ACTOR_HASH_KEY,
     operatorSecret: p.OPERATOR_SECRET,
     sessionSecret: p.SESSION_SECRET,
+    celebrations: env.ENABLE_CELEBRATIONS === 'true',
   };
 }
 const envelopeSchema = z.strictObject({

@@ -10,6 +10,7 @@ import { ControlError } from './sessions.ts';
 import { verifyWebhook } from './signature.ts';
 import { errorBody } from '../errors.ts';
 import { outgoingRaidDestination } from './raid.ts';
+import { celebrationSubscriptions } from './celebrations.ts';
 
 export const subscriptionVersions: Readonly<Record<string, string>> = Object.freeze({
   'channel.chat.message': '1',
@@ -57,7 +58,8 @@ export async function handleWebhook(
   const body = parsed.data,
     sub = body.subscription;
   if (
-    subscriptionVersions[sub.type] !== sub.version ||
+    (subscriptionVersions[sub.type] ?? celebrationSubscriptions[sub.type]?.version) !==
+      sub.version ||
     headers['twitch-eventsub-subscription-type'] !== sub.type ||
     headers['twitch-eventsub-subscription-version'] !== sub.version ||
     sub.transport.callback !== `${config.origin}/webhooks/twitch`
@@ -202,6 +204,19 @@ export async function handleWebhook(
     const event = z.object({ broadcaster_user_id: z.string() }).safeParse(body.event);
     if (!event.success || event.data.broadcaster_user_id !== found.twitch_id)
       throw new ControlError(400, 'INVALID_EVENT');
+    const celebration = celebrationSubscriptions[sub.type];
+    if (celebration !== undefined) {
+      // The disabled adapter acknowledges and ignores events; payer identity and amounts are
+      // never read or stored, so a larger payment cannot buy a larger effect.
+      if (config.celebrations === true)
+        await acceptInputInTransaction(client, {
+          ...scope,
+          provider: 'twitch-celebration',
+          messageId: receipt.id,
+          command: { type: 'celebration', kind: celebration.kind },
+        });
+      return null;
+    }
     if (sub.type === 'channel.update') {
       const category = z.object({ category_id: z.string().max(100) }).safeParse(body.event);
       if (!category.success) throw new ControlError(400, 'INVALID_EVENT');

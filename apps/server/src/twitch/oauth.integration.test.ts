@@ -96,6 +96,27 @@ describe('browser-bound broadcaster and operator OAuth', () => {
       (await pool.query<Record<string, unknown>>('select * from controller_sessions')).rowCount,
     ).toBe(1);
   });
+  it('requests celebration scopes only on explicit opt-in when the installation enables them', async () => {
+    const scopes = async (query: string) => {
+      const response = await app.inject({ url: `/auth/twitch/start${query}` });
+      return response.statusCode === 302
+        ? new URL(String(response.headers.location)).searchParams.get('scope')
+        : response.statusCode;
+    };
+    expect(await scopes('')).toBe('channel:bot');
+    expect(await scopes('?celebrations=true')).toBe('channel:bot');
+    expect(await scopes('?celebrations=yes')).toBe(400);
+    expect(await scopes('?extra=1')).toBe(400);
+    config.celebrations = true;
+    try {
+      expect(await scopes('')).toBe('channel:bot');
+      expect(await scopes('?celebrations=true')).toBe(
+        'channel:bot bits:read channel:read:subscriptions channel:read:hype_train',
+      );
+    } finally {
+      delete config.celebrations;
+    }
+  });
   it('requires operator authorization and exact origin for the separate bot grant', async () => {
     expect(
       (
