@@ -1,8 +1,10 @@
 import { randomUUID } from 'node:crypto';
 import {
+  displayPreferencesSchema,
   familyDigestSchema,
   mechanicsStateSchema,
   type AppearanceMarks,
+  type DisplayPreferences,
   type FamilyDigest,
   type AppearanceMappingVersion,
   type MechanicsState,
@@ -38,6 +40,7 @@ export interface ChannelSnapshot {
   rulesHash: string;
   propagation: PropagationView;
   familyDigest: FamilyDigest | null;
+  display: DisplayPreferences;
   mechanics: {
     version: 0 | 1;
     enableRequested: boolean;
@@ -91,6 +94,7 @@ export async function readSnapshot(
     grace_ms: number;
     propagation: PropagationView;
     family_digest: unknown;
+    display: unknown;
     mechanics: ChannelSnapshot['mechanics'];
     organism: {
       id: string;
@@ -128,6 +132,7 @@ export async function readSnapshot(
     (select jsonb_build_object('id',r.id,'number',r.number,'kind',r.kind,'phase',r.phase,'checkpoint',r.checkpoint,'resolution',r.resolution,'explanation',r.explanation,'visitor_result',r.visitor_result,'analysis',${roundAnalysisProjectionSql})
       from rounds r where r.world_id=c.world_id and r.channel_id=c.id order by r.number desc limit 1) as round,
     ${propagationProjectionSql} as propagation,
+    cp.display,
     (select jsonb_build_object('items',d.items,'remaining',d.remaining) from family_digests d
       where d.world_id=c.world_id and d.channel_id=c.id and c.online) as family_digest,
     jsonb_build_object('version',cp.mechanics_version,'enableRequested',cp.mechanics_requested,'tracesEnabled',cp.traces_enabled,'state',${mechanicsStateProjectionSql}) as mechanics,
@@ -152,6 +157,7 @@ export async function readSnapshot(
       rulesHash: row.rules_hash,
       propagation: row.propagation,
       familyDigest: row.family_digest === null ? null : familyDigestSchema.parse(row.family_digest),
+      display: displayPreferencesSchema.parse(row.display),
       mechanics: { ...row.mechanics, state: mechanicsStateSchema.parse(row.mechanics.state) },
       organism:
         organism === null

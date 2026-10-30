@@ -1,12 +1,31 @@
 import { z } from 'zod';
 
 const version = { expectedVersion: z.int().nonnegative() };
+/** Broadcaster display choices. They change presentation only, never game state or history. */
+export const displayPreferencesSchema = z
+  .strictObject({
+    layout: z.enum(['compact', 'expanded']),
+    reducedMotion: z.boolean(),
+    familyNews: z.boolean(),
+  })
+  .readonly();
+export type DisplayPreferences = z.infer<typeof displayPreferencesSchema>;
+export const defaultDisplayPreferences: DisplayPreferences = {
+  layout: 'compact',
+  reducedMotion: false,
+  familyNews: true,
+};
 /** Owner requests carry versions, never eligibility flags or generated game identifiers. */
 export const channelControlSchema = z.discriminatedUnion('action', [
   z.strictObject({ action: z.literal('enableMechanics'), ...version }),
   z.strictObject({ action: z.literal('clearTrace'), ...version }),
   z.strictObject({ action: z.literal('setTraces'), enabled: z.boolean(), ...version }),
   z.strictObject({ action: z.literal('prepare'), ...version }),
+  z.strictObject({
+    action: z.literal('display'),
+    preferences: displayPreferencesSchema,
+    ...version,
+  }),
   z.strictObject({
     action: z.literal('claimRaid'),
     ...version,

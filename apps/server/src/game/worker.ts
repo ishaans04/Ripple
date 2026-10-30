@@ -38,6 +38,16 @@ async function apply(
       return clearHabitatTraces(context, sequence, atMs);
     case 'setTraces':
       return setHabitatTraces(context, command.enabled, sequence, atMs);
+    case 'display': {
+      // Presentation only: the snapshot republishes the choice; no game state changes.
+      const changed = await context.client.query(
+        'update channel_play set display=$3 where world_id=$1 and channel_id=$2 and display is distinct from $3::jsonb',
+        [context.channel.world_id, context.channel.id, JSON.stringify(command.preferences)],
+      );
+      return changed.rowCount === 1
+        ? effect('APPLIED', 'display.changed', { preferences: command.preferences })
+        : effect('NO_CHANGE');
+    }
     case 'raid':
       return forkRaid(context, command, receiptId, sequence, atMs);
     case 'claimRaid':

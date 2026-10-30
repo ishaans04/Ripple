@@ -15,6 +15,12 @@ export async function ownerControlCommand(
     return { type: 'clearTrace', expectedVersion: body.expectedVersion };
   if (body.action === 'setTraces')
     return { type: 'setTraces', enabled: body.enabled, expectedVersion: body.expectedVersion };
+  if (body.action === 'display')
+    return {
+      type: 'display',
+      preferences: body.preferences,
+      expectedVersion: body.expectedVersion,
+    };
   if (body.action === 'claimRaid') {
     const transfer = (
       await client.query<{ version: number }>(

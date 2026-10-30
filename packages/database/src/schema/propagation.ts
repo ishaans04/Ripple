@@ -51,6 +51,10 @@ export const channelPlay = pgTable(
     preparationRequested: boolean('preparation_requested').notNull().default(false),
     nonMutationRounds: integer('non_mutation_rounds').notNull().default(0),
     rulesCompatible: boolean('rules_compatible').notNull().default(true),
+    // Presentation-only broadcaster choices; validated as DisplayPreferences at every boundary.
+    display: jsonb('display')
+      .notNull()
+      .default(sql`'{"layout":"compact","reducedMotion":false,"familyNews":true}'::jsonb`),
   },
   (t) => [
     check('channel_mechanics_version_valid', sql`${t.mechanicsVersion} in (0,1)`),
@@ -61,6 +65,10 @@ export const channelPlay = pgTable(
     }),
     check('channel_preparation_valid', sql`${t.preparation} in ('shield','reserve','neutral')`),
     check('non_mutation_rounds_valid', sql`${t.nonMutationRounds}>=0`),
+    check(
+      'channel_display_valid',
+      sql`${t.display} ?& array['layout','reducedMotion','familyNews'] and ${t.display}->>'layout' in ('compact','expanded') and jsonb_typeof(${t.display}->'reducedMotion')='boolean' and jsonb_typeof(${t.display}->'familyNews')='boolean'`,
+    ),
   ],
 );
 export const roundParticipants = pgTable(

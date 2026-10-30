@@ -8,6 +8,7 @@ import { controllerStatusSchema, type GameCommand } from '@ripple/contracts';
 import { buildApp } from '../app.ts';
 import { processNextInput } from '../game/worker.ts';
 import { syntheticSeedCommand } from '../game/sandbox.ts';
+import { readSnapshot } from '../game/snapshot.ts';
 import { ensureInstallation, enrollChannel } from './installation.ts';
 import { storeGrant } from './grants.ts';
 import { opaqueToken, privateHash, type TwitchConfig } from './security.ts';
@@ -162,6 +163,51 @@ describe('owner preparation and admission controls', () => {
     ).toBe(202);
     while (await processNextInput(pool, worldId, target));
   });
+  it('records broadcaster display preferences through versioned owner controls without changing game state', async () => {
+    const displayPost = (payload: Record<string, unknown>, key?: string, channel?: string) =>
+      post(payload, key, channel, '127.0.0.3');
+    const before = await readSnapshot(pool, worldId, target),
+      preferences = { layout: 'expanded', reducedMotion: true, familyNews: false },
+      body = { action: 'display', preferences, expectedVersion: await version() },
+      key = randomUUID();
+    expect(before?.payload.display).toEqual({
+      layout: 'compact',
+      reducedMotion: false,
+      familyNews: true,
+    });
+    expect((await displayPost(body, key, source)).statusCode).toBe(403);
+    for (const invalid of [
+      { ...body, preferences: { ...preferences, layout: 'huge' } },
+      { ...body, preferences: { ...preferences, sound: true } },
+      { ...body, preferences: { layout: 'expanded' } },
+    ])
+      expect((await displayPost(invalid)).statusCode).toBe(400);
+    expect((await displayPost(body, key)).statusCode).toBe(202);
+    expect((await displayPost(body, key)).json<{ duplicate: boolean }>().duplicate).toBe(true);
+    while (await processNextInput(pool, worldId, target));
+    const after = await readSnapshot(pool, worldId, target);
+    expect(after?.payload.display).toEqual(preferences);
+    expect(after?.version).toBe((before?.version ?? 0) + 1);
+    expect(after?.payload.organism).toEqual(before?.payload.organism);
+    expect(after?.payload.round).toEqual(before?.payload.round);
+    expect((await displayPost({ ...body, preferences: defaults() })).statusCode).toBe(409);
+    const same = randomUUID();
+    expect(
+      (await displayPost({ ...body, expectedVersion: await version() }, same)).statusCode,
+    ).toBe(202);
+    while (await processNextInput(pool, worldId, target));
+    const unchanged = await app.inject({ url: `/api/controller/commands/${same}`, cookies });
+    expect(unchanged.json<{ result: { code: string } }>().result.code).toBe('NO_CHANGE');
+    await expect(
+      pool.query(
+        `update channel_play set display='{"layout":"compact"}' where world_id=$1 and channel_id=$2`,
+        [worldId, target],
+      ),
+    ).rejects.toMatchObject({ code: '23514' });
+  });
+  function defaults() {
+    return { layout: 'compact', reducedMotion: false, familyNews: true };
+  }
   it('requires an owner, CSRF and exact versioned bodies for mechanics requests, with retry-stable acceptance', async () => {
     const body = { action: 'enableMechanics', expectedVersion: await version() },
       key = randomUUID();

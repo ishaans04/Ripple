@@ -218,6 +218,13 @@
       "when": 1793346913551,
       "tag": "0030_family_updates",
       "breakpoints": true
+    },
+    {
+      "idx": 31,
+      "version": "7",
+      "when": 1793349021640,
+      "tag": "0031_channel_display_preferences",
+      "breakpoints": true
     }
   ]
 }

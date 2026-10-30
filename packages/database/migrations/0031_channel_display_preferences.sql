@@ -1,0 +1,2 @@
+ALTER TABLE "channel_play" ADD COLUMN "display" jsonb DEFAULT '{"layout":"compact","reducedMotion":false,"familyNews":true}'::jsonb NOT NULL;--> statement-breakpoint
+ALTER TABLE "channel_play" ADD CONSTRAINT "channel_display_valid" CHECK ("channel_play"."display" ?& array['layout','reducedMotion','familyNews'] and "channel_play"."display"->>'layout' in ('compact','expanded') and jsonb_typeof("channel_play"."display"->'reducedMotion')='boolean' and jsonb_typeof("channel_play"."display"->'familyNews')='boolean');
