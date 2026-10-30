@@ -10,7 +10,9 @@ const Controller = lazy(() => import('./controller/Controller.tsx'));
 const Preview = lazy(() => import('./controller/Preview.tsx'));
 const Overlay = lazy(() => import('./overlay/Overlay.tsx'));
 const Lineage = lazy(() => import('./lineage/Lineage.tsx'));
-if (window.location.pathname === '/overlay') document.documentElement.dataset.surface = 'overlay';
+const Bridge = lazy(() => import('./bridge/Bridge.tsx'));
+if (window.location.pathname === '/overlay' || window.location.pathname === '/bridge')
+  document.documentElement.dataset.surface = 'overlay';
 
 createRoot(container).render(
   <StrictMode>
@@ -29,6 +31,10 @@ createRoot(container).render(
     ) : window.location.pathname === '/lineage' ? (
       <Suspense fallback={<p role="status">Opening lineages…</p>}>
         <Lineage />
+      </Suspense>
+    ) : window.location.pathname === '/bridge' ? (
+      <Suspense fallback={<p role="status">Starting the studio bridge…</p>}>
+        <Bridge />
       </Suspense>
     ) : window.location.pathname === '/overlay' ? (
       <Suspense fallback={<p role="status">Opening overlay…</p>}>

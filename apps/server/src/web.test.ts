@@ -48,6 +48,14 @@ describe('web application serving', () => {
     expect(response.headers['referrer-policy']).toBe('no-referrer');
   });
 
+  it('serves the OBS bridge document without camera permission or WASM', async () => {
+    const response = await app.inject({ url: '/bridge' });
+    expect(response.statusCode).toBe(200);
+    expect(response.headers['permissions-policy']).toBe('camera=(), microphone=()');
+    expect(response.headers['content-security-policy']).not.toContain('wasm-unsafe-eval');
+    // The capability lives in the fragment; no referrer can carry the page URL elsewhere.
+    expect(response.headers['referrer-policy']).toBe('no-referrer');
+  });
   it('serves the lineage document without camera permission or WASM', async () => {
     const response = await app.inject({ url: '/lineage' });
     expect(response.statusCode).toBe(200);
