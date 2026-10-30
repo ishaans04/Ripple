@@ -7,11 +7,12 @@ import type pg from 'pg';
 import { z } from 'zod';
 import { readSnapshot } from '../game/snapshot.ts';
 import { syntheticSeedCommand } from '../game/sandbox.ts';
-import { cookie, ControlError, ownerSession } from './sessions.ts';
+import { cookie, ControlError, ownerSession, type OwnerSession } from './sessions.ts';
 import { opaqueToken, type TwitchConfig } from './security.ts';
 import { subscriptionVersions } from './webhook.ts';
 import { ownerControlCommand } from './owner-control.ts';
 import { registerOwnerBlocks } from './owner-blocks.ts';
+import { registerStudioControl } from './studio-control.ts';
 import { historicalOffers } from '../game/historical-adoption.ts';
 
 const seedBody = z.strictObject({ expectedVersion: z.int().nonnegative(), name: strainNameSchema });
@@ -24,6 +25,7 @@ export function registerController(
   config: TwitchConfig,
 ): void {
   registerOwnerBlocks(app, pool, config);
+  registerStudioControl(app, pool, config);
   app.get(
     '/api/controller/status',
     { config: { rateLimit: { max: 120, timeWindow: '1 minute' } } },
@@ -147,75 +149,40 @@ export function registerController(
                   : versionBody;
         const parsed = schema.safeParse(request.body);
         if (!parsed.success) throw new ControlError(400, 'BAD_REQUEST');
-        const body = parsed.data,
-          hash = sha256Hex(canonicalJson({ action, body }));
-        const receipt = await transaction(pool, async (client) => {
-          await client.query('select id from channels where world_id=$1 and id=$2 for update', [
-            owner.world_id,
-            owner.channel_id,
-          ]);
-          const previous = (
-            await client.query<{ request_hash: string; sequence: number }>(
-              'select request_hash,sequence from controller_operations where world_id=$1 and channel_id=$2 and key=$3',
-              [owner.world_id, owner.channel_id, key.data],
-            )
-          ).rows[0];
-          if (previous !== undefined) {
-            if (previous.request_hash !== hash) throw new ControlError(409, 'IDEMPOTENCY_CONFLICT');
-            return { sequence: previous.sequence, duplicate: true };
-          }
-          const channel = (
-            await client.query<{ state_version: number }>(
-              'select state_version from channels where world_id=$1 and id=$2',
-              [owner.world_id, owner.channel_id],
-            )
-          ).rows[0];
-          if (channel?.state_version !== body.expectedVersion)
-            throw new ControlError(409, 'STALE_VERSION');
-          if (action === 'seed') {
-            const allowed = await client.query(
-              "select 1 from twitch_channels where world_id=$1 and channel_id=$2 and (last_seed_at is null or last_seed_at+seed_cooldown_ms*interval '1 millisecond'<=clock_timestamp())",
-              [owner.world_id, owner.channel_id],
-            );
-            if (allowed.rowCount !== 1) throw new ControlError(409, 'SEED_COOLDOWN');
-            const pending = await client.query(
-              "select 1 from inbox where world_id=$1 and channel_id=$2 and processed_at is null and command->>'type'='seed'",
-              [owner.world_id, owner.channel_id],
-            );
-            if (pending.rowCount !== 0) throw new ControlError(409, 'COMMAND_PENDING');
-          }
-          let command: GameCommand;
-          if (action === 'seed')
-            command = {
-              ...syntheticSeedCommand(),
-              name: seedBody.parse(body).name,
-              expectedVersion: body.expectedVersion,
-            };
-          else if (action === 'rename') {
-            const rename = renameBody.parse(body);
-            command = { type: 'rename', ...rename };
-          } else if (action === 'policy') command = { type: 'policy', ...policyBody.parse(body) };
-          else if (action === 'control')
-            command = await ownerControlCommand(client, owner, channelControlSchema.parse(body));
-          else
-            command =
-              action === 'pause'
-                ? { type: 'pause', reason: 'manual', expectedVersion: body.expectedVersion }
-                : { type: action, expectedVersion: body.expectedVersion };
-          const accepted = await acceptInputInTransaction(client, {
-            worldId: owner.world_id,
-            channelId: owner.channel_id,
-            provider: 'controller',
-            messageId: `${owner.channel_id}:${key.data}`,
-            command,
-            requiredMode: 'live',
-          });
-          await client.query(
-            'insert into controller_operations(world_id,channel_id,key,request_hash,sequence) values($1,$2,$3,$4,$5)',
-            [owner.world_id, owner.channel_id, key.data, hash, accepted.sequence],
-          );
-          return accepted;
-        });
+        const body = parsed.data;
+        const receipt = await queueOwnerCommand(
+          pool,
+          owner,
+          key.data,
+          action,
+          body,
+          async (client) => {
+            if (action === 'seed') {
+              const allowed = await client.query(
+                "select 1 from twitch_channels where world_id=$1 and channel_id=$2 and (last_seed_at is null or last_seed_at+seed_cooldown_ms*interval '1 millisecond'<=clock_timestamp())",
+                [owner.world_id, owner.channel_id],
+              );
+              if (allowed.rowCount !== 1) throw new ControlError(409, 'SEED_COOLDOWN');
+              const pending = await client.query(
+                "select 1 from inbox where world_id=$1 and channel_id=$2 and processed_at is null and command->>'type'='seed'",
+                [owner.world_id, owner.channel_id],
+              );
+              if (pending.rowCount !== 0) throw new ControlError(409, 'COMMAND_PENDING');
+              return {
+                ...syntheticSeedCommand(),
+                name: seedBody.parse(body).name,
+                expectedVersion: body.expectedVersion,
+              };
+            }
+            if (action === 'rename') return { type: 'rename', ...renameBody.parse(body) };
+            if (action === 'policy') return { type: 'policy', ...policyBody.parse(body) };
+            if (action === 'control')
+              return ownerControlCommand(client, owner, channelControlSchema.parse(body));
+            return action === 'pause'
+              ? { type: 'pause', reason: 'manual', expectedVersion: body.expectedVersion }
+              : { type: action, expectedVersion: body.expectedVersion };
+          },
+        );
         return reply.code(202).send({ operationId: key.data, ...receipt });
       },
     );
@@ -243,4 +210,57 @@ export function registerController(
       return { worldId: owner.world_id, channelId: owner.channel_id, capability };
     },
   );
+}
+
+/**
+ * Queues one owner command under the channel lock with retry identity, a request hash for
+ * conflicting retries and the caller's expected channel version.
+ */
+export async function queueOwnerCommand(
+  pool: pg.Pool,
+  owner: OwnerSession,
+  key: string,
+  action: string,
+  body: { expectedVersion: number },
+  build: (client: pg.PoolClient) => Promise<GameCommand>,
+): Promise<{ sequence: number; duplicate: boolean }> {
+  const hash = sha256Hex(canonicalJson({ action, body }));
+  return transaction(pool, async (client) => {
+    await client.query('select id from channels where world_id=$1 and id=$2 for update', [
+      owner.world_id,
+      owner.channel_id,
+    ]);
+    const previous = (
+      await client.query<{ request_hash: string; sequence: number }>(
+        'select request_hash,sequence from controller_operations where world_id=$1 and channel_id=$2 and key=$3',
+        [owner.world_id, owner.channel_id, key],
+      )
+    ).rows[0];
+    if (previous !== undefined) {
+      if (previous.request_hash !== hash) throw new ControlError(409, 'IDEMPOTENCY_CONFLICT');
+      return { sequence: previous.sequence, duplicate: true };
+    }
+    const channel = (
+      await client.query<{ state_version: number }>(
+        'select state_version from channels where world_id=$1 and id=$2',
+        [owner.world_id, owner.channel_id],
+      )
+    ).rows[0];
+    if (channel?.state_version !== body.expectedVersion)
+      throw new ControlError(409, 'STALE_VERSION');
+    const command = await build(client);
+    const accepted = await acceptInputInTransaction(client, {
+      worldId: owner.world_id,
+      channelId: owner.channel_id,
+      provider: 'controller',
+      messageId: `${owner.channel_id}:${key}`,
+      command,
+      requiredMode: 'live',
+    });
+    await client.query(
+      'insert into controller_operations(world_id,channel_id,key,request_hash,sequence) values($1,$2,$3,$4,$5)',
+      [owner.world_id, owner.channel_id, key, hash, accepted.sequence],
+    );
+    return { sequence: accepted.sequence, duplicate: accepted.duplicate };
+  });
 }

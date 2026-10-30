@@ -6,6 +6,7 @@ import { registerErrorHandling } from './errors.ts';
 import { loggerOptions, requestIdFrom, requestIdHeader, type LogDestination } from './logging.ts';
 import { registerHealthRoutes } from './routes/health.ts';
 import { registerGameReadRoutes } from './routes/game-read.ts';
+import { registerStudioPublicRoutes } from './routes/studio-public.ts';
 import { registerGateway } from './game/gateway.ts';
 import { registerSecurityHeaders, registerWebApp } from './web.ts';
 import { TwitchClient } from './twitch/client.ts';
@@ -40,6 +41,7 @@ export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
   await registerGateway(app, options.pool);
   registerHealthRoutes(app, options.pool);
   registerGameReadRoutes(app, options.pool);
+  registerStudioPublicRoutes(app, options.pool);
   app.get('/api/connection', (_request, reply) => {
     reply.header('Cache-Control', 'no-store');
     return reply.send({ liveEnabled: options.config.twitch !== undefined });

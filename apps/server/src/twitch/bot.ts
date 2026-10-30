@@ -89,11 +89,35 @@ export async function queueAnnouncement(
       message =
         'Ripple has resumed. Follow the current ballot; recovery starts a fresh observation when required.';
       break;
+    case 'studio.opened': {
+      const session = z.object({ sessionId: z.uuid() }).safeParse(result.detail);
+      // The public origin is substituted at delivery; the stored message never embeds config.
+      if (session.success)
+        message = `Cocoon Studio is open during the break: shape a shell by hand or pointer at {origin}/studio?s=${session.data.sessionId} . Camera use is optional and stays in your browser; chat picks the design.`;
+      break;
+    }
+    case 'studio.shortlist_ready': {
+      const finalists = z
+        .object({ finalists: z.array(z.string()).min(1).max(2) })
+        .safeParse(result.detail);
+      if (finalists.success)
+        message = `Cocoon Studio vote: ${finalists.data.finalists.map((_hash, i) => `!ripple ${i + 1} for design ${i + 1}`).join(', ')}, or !ripple ${finalists.data.finalists.length + 1} to keep the current shell. No votes keeps the current shell.`;
+      break;
+    }
+    case 'studio.adaptation_pending':
+      message = 'Community design selected. Hatches after the current round.';
+      break;
+    case 'appearance.committed':
+      message =
+        'The community design has hatched. Its trade-off now applies and descendants will inherit it.';
+      break;
     default:
       return;
   }
   if (message === undefined) return;
-  const expires = round?.checkpoint.clock.deadlineAtMs ?? Date.now() + 30000;
+  const expires = result.updateType.startsWith('studio.')
+    ? Date.now() + 120_000
+    : (round?.checkpoint.clock.deadlineAtMs ?? Date.now() + 30000);
   await client.query(
     'insert into bot_messages(world_id,channel_id,key,message,expires_at) values($1,$2,$3,$4,$5) on conflict do nothing',
     [channel.world_id, channel.id, `event:${sequence}`, message.slice(0, 500), new Date(expires)],
@@ -173,7 +197,7 @@ export async function dispatchBotMessage(
           body: {
             broadcaster_id: claimed.twitch_id,
             sender_id: claimed.bot_id,
-            message: claimed.message,
+            message: claimed.message.replaceAll('{origin}', api.config.origin),
             for_source_only: true,
           },
         }),

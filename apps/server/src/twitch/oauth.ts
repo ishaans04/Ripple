@@ -10,6 +10,7 @@ import { enrollChannel } from './installation.ts';
 import { registerController } from './controller.ts';
 import { equalSecret, opaqueToken, privateHash } from './security.ts';
 import { ControlError, cookie, createOwnerSession, requireOrigin, setCookie } from './sessions.ts';
+import { createArtistSession } from './studio-control.ts';
 
 export function registerOAuth(
   app: FastifyInstance,
@@ -22,7 +23,7 @@ export function registerOAuth(
     reply.header('Cache-Control', 'no-store');
   });
   async function start(
-    purpose: GrantPurpose,
+    purpose: GrantPurpose | 'artist',
     browser: string,
     celebrations = false,
   ): Promise<string> {
@@ -36,7 +37,11 @@ export function registerOAuth(
       redirect_uri: `${api.config.origin}/auth/twitch/callback`,
       response_type: 'code',
       // Celebration scopes are requested only when the broadcaster opts in.
-      scope: [...requiredScopes[purpose], ...(celebrations ? celebrationScopes : [])].join(' '),
+      // Artist sign-in proves identity only: no broadcaster, bot or paid-event scope (addendum 12.2).
+      scope:
+        purpose === 'artist'
+          ? ''
+          : [...requiredScopes[purpose], ...(celebrations ? celebrationScopes : [])].join(' '),
       state,
       force_verify: 'true',
     });
@@ -56,6 +61,16 @@ export function registerOAuth(
         browser,
         optional.data.celebrations === 'true' && api.config.celebrations === true,
       );
+      setCookie(reply, '__Host-ripple-state', browser, 600);
+      return reply.redirect(url);
+    },
+  );
+  app.get(
+    '/auth/twitch/artist/start',
+    { config: { rateLimit: { max: 10, timeWindow: '1 minute' } } },
+    async (request, reply) => {
+      const browser = cookie(request, '__Host-ripple-state') ?? opaqueToken();
+      const url = await start('artist', browser);
       setCookie(reply, '__Host-ripple-state', browser, 600);
       return reply.redirect(url);
     },
@@ -89,7 +104,7 @@ export function registerOAuth(
       if (!query.success || browser === undefined)
         throw new ControlError(400, 'INVALID_OAUTH_STATE');
       const claimed = (
-        await pool.query<{ purpose: GrantPurpose }>(
+        await pool.query<{ purpose: GrantPurpose | 'artist' }>(
           `delete from oauth_states where hash=$1 and browser_hash=$2 and world_id=$3 and expires_at>clock_timestamp() returning purpose`,
           [sha256Hex(query.data.state), sha256Hex(browser), worldId],
         )
@@ -103,17 +118,34 @@ export function registerOAuth(
         redirect_uri: `${api.config.origin}/auth/twitch/callback`,
       });
       const identity = await api.validate(tokens.access_token);
-      checkIdentity(identity, api.config, claimed.purpose);
+      if (claimed.purpose === 'artist') {
+        // The token is used once to read identity and is never stored.
+        if (
+          identity.client_id !== api.config.clientId ||
+          identity.user_id === undefined ||
+          identity.login === undefined
+        )
+          throw new ControlError(400, 'INVALID_IDENTITY');
+        await createArtistSession(
+          pool,
+          reply,
+          worldId,
+          identity.user_id,
+          identity.login,
+          api.config.sessionSecret,
+        );
+        return reply.redirect('/studio?signedIn=1');
+      }
+      const purpose: GrantPurpose = claimed.purpose;
+      checkIdentity(identity, api.config, purpose);
       if (identity.user_id === undefined || identity.login === undefined)
         throw new ControlError(400, 'INVALID_IDENTITY');
       const subject = identity.user_id,
         login = identity.login;
       await transaction(pool, async (client) => {
         const channel =
-          claimed.purpose === 'broadcaster'
-            ? await enrollChannel(client, worldId, subject, login)
-            : null;
-        await storeGrant(client, api.config, worldId, channel, claimed.purpose, tokens, identity);
+          purpose === 'broadcaster' ? await enrollChannel(client, worldId, subject, login) : null;
+        await storeGrant(client, api.config, worldId, channel, purpose, tokens, identity);
         if (channel !== null)
           await createOwnerSession(
             client,
