@@ -1,4 +1,4 @@
-﻿import { createHmac, randomBytes, randomUUID } from 'node:crypto';
+import { createHmac, randomBytes, randomUUID } from 'node:crypto';
 import Fastify, { type FastifyInstance } from 'fastify';
 import pg from 'pg';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
@@ -85,10 +85,11 @@ describe('signed EventSub intake in PostgreSQL', () => {
     kind = 'notification',
     id = randomUUID(),
     signatureOverride?: string,
+    target = app,
   ) {
     const raw = JSON.stringify(body),
       timestamp = new Date().toISOString();
-    return app.inject({
+    return target.inject({
       method: 'POST',
       url: '/webhooks/twitch',
       headers: {
@@ -215,5 +216,75 @@ describe('signed EventSub intake in PostgreSQL', () => {
     expect(
       (await pool.query<Record<string, unknown>>('select phase from rounds')).rows[0]?.phase,
     ).toBe('INTERRUPTED');
+  });
+  it('never acknowledges a callback when PostgreSQL dies before commit, and accepts the retried receipt once', async () => {
+    const faultPool = new pg.Pool({
+      connectionString: temporary.connectionString,
+      max: 1,
+      application_name: 'ripple-fault-intake',
+    });
+    faultPool.on('error', () => undefined);
+    const faultApp = Fastify();
+    await registerWebhook(faultApp, faultPool, config);
+    await faultApp.ready();
+    // This independent fixture registers its subscription before the existing challenge journey.
+    await pool.query(
+      "update twitch_subscriptions set provider_id=$1,status='enabled' where world_id=$2",
+      [subscription.id, worldId],
+    );
+    const message = randomUUID(),
+      event = { ...chat, message_id: randomUUID() };
+    await pool.query(
+      `create function delay_receipt_for_fault() returns trigger language plpgsql as $$ begin perform pg_sleep(15); return NEW; end $$`,
+    );
+    await pool.query(
+      'create trigger delay_receipt_for_fault before insert on twitch_receipts for each row execute function delay_receipt_for_fault()',
+    );
+    try {
+      const response = signed(
+        { subscription, event },
+        'notification',
+        message,
+        undefined,
+        faultApp,
+      );
+      await expect
+        .poll(
+          async () =>
+            (
+              await pool.query(
+                "select pid from pg_stat_activity where application_name='ripple-fault-intake' and wait_event='PgSleep'",
+              )
+            ).rowCount,
+        )
+        .toBe(1);
+      await pool.query(
+        "select pg_terminate_backend(pid) from pg_stat_activity where application_name='ripple-fault-intake'",
+      );
+      expect((await response).statusCode).toBe(500);
+      expect(
+        (await pool.query('select 1 from twitch_receipts where message_id=$1', [message])).rowCount,
+      ).toBe(0);
+    } finally {
+      await pool.query('drop trigger delay_receipt_for_fault on twitch_receipts');
+      await pool.query('drop function delay_receipt_for_fault()');
+      await faultApp.close();
+      await faultPool.end();
+    }
+    expect((await signed({ subscription, event }, 'notification', message)).statusCode).toBe(204);
+    expect((await signed({ subscription, event }, 'notification', message)).statusCode).toBe(204);
+    expect(
+      (
+        await pool.query(
+          'select 1 from input_receipts where world_id=$1 and provider=$2 and message_id=$3',
+          [worldId, 'twitch-chat', `${channelId}:${event.message_id}`],
+        )
+      ).rowCount,
+    ).toBe(1);
+    // The following existing challenge test starts with the same pending registry state.
+    await pool.query(
+      "update twitch_subscriptions set provider_id=null,status='creating' where world_id=$1",
+      [worldId],
+    );
   });
 });

@@ -12,16 +12,26 @@ export async function transaction<T>(
 ): Promise<T> {
   for (let attempt = 0; ; attempt++) {
     const client = await pool.connect();
+    let connectionFailure: Error | undefined;
+    const failedConnection = (error: Error) => {
+      connectionFailure = error;
+    };
+    // Pool error handlers cover idle clients only. An active backend can also disconnect.
+    client.on('error', failedConnection);
     try {
       await client.query('begin');
       const result = await operation(client);
       await client.query('commit');
       return result;
     } catch (error) {
-      await client.query('rollback').catch(() => undefined);
+      await client.query('rollback').catch((rollbackError: unknown) => {
+        connectionFailure =
+          rollbackError instanceof Error ? rollbackError : new Error('Rollback connection failed');
+      });
       if (attempt >= 2 || !['40001', '40P01'].includes(postgresCode(error) ?? '')) throw error;
     } finally {
-      client.release();
+      client.release(connectionFailure);
+      client.off('error', failedConnection);
     }
   }
 }
