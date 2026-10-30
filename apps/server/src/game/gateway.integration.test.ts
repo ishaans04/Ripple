@@ -3,7 +3,7 @@ import pg from 'pg';
 import type { FastifyInstance } from 'fastify';
 import { WebSocket } from 'ws';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
-import { publicUpdateSchema, type PublicUpdate } from '@ripple/contracts';
+import { channelViewSchema, publicUpdateSchema, type PublicUpdate } from '@ripple/contracts';
 import { runMigrations } from '@ripple/database';
 import { createTemporaryDatabase, type TemporaryDatabase } from '@ripple/database/testing';
 import { buildApp } from '../app.ts';
@@ -210,8 +210,18 @@ describe('scoped snapshot-first gateway', () => {
     try {
       await expect.poll(() => messages.length).toBe(1);
       await command(scope, { type: 'vote', actorKey: 'real-network-client', choice: 2 });
+      const stored = (
+        await pool.query<{ payload: unknown }>(
+          "select payload from public_updates where world_id=$1 and channel_id=$2 and type='vote.aggregate' order by version desc limit 1",
+          [scope.worldId, scope.channelId],
+        )
+      ).rows[0]?.payload;
+      expect(stored).toMatchObject({ kind: 'vote-counts-v1', counts: [0, 1, 0], studio: false });
+      expect(JSON.stringify(stored)).not.toContain('real-network-client');
       await expect.poll(() => messages.at(-1)?.stateVersion).toBe(2);
       expect(socket.readyState).toBe(WebSocket.OPEN);
+      expect(messages.at(-1)?.type).toBe('snapshot');
+      expect(channelViewSchema.safeParse(messages.at(-1)?.payload).success).toBe(true);
       expect((messages.at(-1)?.payload as { round: { counts: number[] } }).round.counts).toEqual([
         0, 1, 0,
       ]);

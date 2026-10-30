@@ -13,6 +13,7 @@ import {
 } from './rounds.ts';
 import { gameHeld, loadContext, type GameContext } from './store.ts';
 import { readSnapshot } from './snapshot.ts';
+import { voteCountsSchema } from './vote-update.ts';
 import { chatIntentSchema } from '../twitch/chat.ts';
 import { queueAnnouncement } from '../twitch/bot.ts';
 import { raidIntentSchema } from '../twitch/raid.ts';
@@ -547,18 +548,21 @@ export async function processNextInput(
         [worldId, channelId, sequence, version, checksum],
       );
       if (result.updateType !== null) {
-        const snapshot = await readSnapshot(client, worldId, channelId);
-        if (snapshot === null) throw new Error('Cannot publish an expired world.');
+        // A vote changes counts only. Commit its real aggregate without building a large
+        // read projection while holding the intake lock. Gateways hydrate after commit.
+        const payload =
+          result.updateType === 'vote.aggregate'
+            ? voteCountsSchema.parse({
+                kind: 'vote-counts-v1',
+                roundId: result.detail.roundId,
+                counts: result.detail.counts,
+                studio: result.detail.studio === true,
+              })
+            : (await readSnapshot(client, worldId, channelId))?.payload;
+        if (payload === undefined) throw new Error('Cannot publish an expired world.');
         await client.query(
           'insert into public_updates (world_id,channel_id,version,event_id,type,payload) values ($1,$2,$3,$4,$5,$6)',
-          [
-            worldId,
-            channelId,
-            version,
-            randomUUID(),
-            result.updateType,
-            JSON.stringify(snapshot.payload),
-          ],
+          [worldId, channelId, version, randomUUID(), result.updateType, JSON.stringify(payload)],
         );
       }
       return { sequence, effect: result, checksum };

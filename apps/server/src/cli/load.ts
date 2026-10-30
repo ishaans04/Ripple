@@ -178,6 +178,7 @@ try {
       channel.capability,
     );
     await new Promise<void>((done, reject) => {
+      let awaitingInitialSnapshot = true;
       const socket = new WebSocket(`${address.replace('http', 'ws')}/api/live?ticket=${ticket}`);
       sockets.push(socket);
       socketChannels.set(socket, channel.id);
@@ -194,7 +195,8 @@ try {
           timeline.push({ version: message.stateVersion, at: Date.now() });
           frameTimes.set(channel.id, timeline);
         }
-        if (message.type === 'snapshot') {
+        if (message.type === 'snapshot' && awaitingInitialSnapshot) {
+          awaitingInitialSnapshot = false;
           if (reconnect) reconnectSnapshots++;
           clearTimeout(timer);
           done();

@@ -9,6 +9,7 @@ import { ApiError } from '../errors.ts';
 import { resolvePublicCredits } from '../privacy/credits.ts';
 import { authorizeReadHash, consumeReadTicket } from './read-access.ts';
 import { snapshotEnvelope } from './snapshot.ts';
+import { voteCountsSchema } from './vote-update.ts';
 import type { WorldScope } from './sandbox.ts';
 
 interface Client extends WorldScope {
@@ -201,9 +202,9 @@ export class PublicGateway {
       rows.push(row);
       grouped.set(key, rows);
     }
-    for (const [key, clients] of topics) {
+    const publishTopic = async ([key, clients]: [string, Client[]]): Promise<void> => {
       const first = clients[0];
-      if (first === undefined) continue;
+      if (first === undefined) return;
       const after = Math.min(...clients.map((c) => c.version));
       const group = grouped.get(key) ?? [];
       const updates = {
@@ -222,7 +223,33 @@ export class PublicGateway {
           if (snapshot !== null) this.#send(client, snapshot);
           else client.socket.close(1008, 'World unavailable');
         }
-        continue;
+        return;
+      }
+      if (
+        updates.rows.some(
+          (row) => row.type === 'vote.aggregate' && voteCountsSchema.safeParse(row.payload).success,
+        )
+      ) {
+        const structural = updates.rows.some((row) => row.type !== 'vote.aggregate');
+        const latest = updates.rows.at(-1)?.version ?? after;
+        if (
+          structural ||
+          clients.some(
+            (client) =>
+              client.version < latest && Date.now() - client.lastAggregateAt >= AGGREGATE_MS,
+          )
+        ) {
+          const snapshot = await snapshotEnvelope(this.#pool, first.worldId, first.channelId);
+          for (const client of clients) {
+            client.pendingAggregate = null;
+            if (snapshot === null) client.socket.close(1008, 'World unavailable');
+            else if (snapshot.stateVersion > client.version) {
+              this.#send(client, snapshot);
+              client.lastAggregateAt = Date.now();
+            }
+          }
+        }
+        return;
       }
       const resolvedPayloads = await resolvePublicCredits(
         this.#pool,
@@ -264,7 +291,20 @@ export class PublicGateway {
           client.lastAggregateAt = Date.now();
         }
       }
-    }
+    };
+    const entries = [...topics.entries()];
+    let next = 0;
+    const publish = async (): Promise<void> => {
+      while (next < entries.length && !this.#closed) {
+        const entry = entries[next++];
+        if (entry) await publishTopic(entry);
+      }
+    };
+    const results = await Promise.allSettled(
+      Array.from({ length: Math.min(8, entries.length) }, publish),
+    );
+    const failed = results.find((result) => result.status === 'rejected');
+    if (failed?.status === 'rejected') throw failed.reason;
   }
   async close(): Promise<void> {
     this.#closed = true;
