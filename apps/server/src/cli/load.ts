@@ -11,12 +11,18 @@ import { WebSocket } from 'ws';
 import { z } from 'zod';
 import { runMigrations, acceptInput, transaction } from '@ripple/database';
 import { createTemporaryDatabase } from '@ripple/database/testing';
-import { defaultStudioSettings, founderShell, type StudioChallenge } from '@ripple/contracts';
+import {
+  defaultStudioSettings,
+  founderShell,
+  gameCommandSchema,
+  type StudioChallenge,
+} from '@ripple/contracts';
 import { sha256Hex, canonicalJson } from '@ripple/engine';
 import { ensureInstallation, enrollChannel } from '../twitch/installation.ts';
 import { storeGrant } from '../twitch/grants.ts';
 import { exchangeReadCapability } from '../game/read-access.ts';
 import { syntheticSeedCommand } from '../game/sandbox.ts';
+import { processNextInput } from '../game/worker.ts';
 import type { TwitchConfig } from '../twitch/security.ts';
 
 const { values } = parseArgs({
@@ -213,6 +219,7 @@ try {
   }
   await drain();
   let proposals = 0;
+  const concurrentProposals: { channelId: string; command: unknown }[] = [];
   for (const [index, channel] of channels.slice(0, studioCount).entries()) {
     const studio = (
       await pool.query<{ id: string; challenge: StudioChallenge }>(
@@ -222,7 +229,7 @@ try {
     ).rows[0];
     if (!studio) throw new Error('Studio did not open');
     for (let artist = 0; artist < (index === 0 ? 50 : 5); artist++) {
-      await send(channel.id, {
+      const command = {
         type: 'studioProposal',
         sessionId: studio.id,
         proposalId: randomUUID(),
@@ -239,7 +246,17 @@ try {
           rendererVersion: 'shell-v1',
           part: founderShell,
         },
-      });
+      };
+      await send(channel.id, command);
+      if (artist < (index === 0 ? 10 : 1))
+        concurrentProposals.push({
+          channelId: channel.id,
+          command: {
+            ...command,
+            proposalId: randomUUID(),
+            artistKey: sha256Hex(`concurrent-artist-${index}-${artist}`),
+          },
+        });
       proposals++;
     }
   }
@@ -373,6 +390,17 @@ try {
           errors[String(error)] = (errors[String(error)] ?? 0) + 1;
         }),
       );
+    if (tick === 2)
+      for (const proposal of concurrentProposals)
+        pending.push(
+          send(proposal.channelId, proposal.command)
+            .then(() => {
+              proposals++;
+            })
+            .catch((error: unknown) => {
+              errors[`PROPOSAL_${String(error)}`] = (errors[`PROPOSAL_${String(error)}`] ?? 0) + 1;
+            }),
+        );
     if (tick === 4 || tick === 5)
       for (let repeat = 0; repeat < 9; repeat++)
         for (let index = 0; index < Math.min(10, channelCount); index++)
@@ -418,10 +446,129 @@ try {
     return frame ? [frame.at - start.at] : [];
   });
   const elapsedMs = performance.now() - workloadStart;
+  const workerCommand = (action: string) =>
+    new Promise<void>((done, reject) => {
+      const timeout = setTimeout(() => {
+        reject(new Error(`Worker ${action} timed out`));
+      }, 30000);
+      child.once('message', () => {
+        clearTimeout(timeout);
+        done();
+      });
+      child.send({ action });
+    });
+  await workerCommand('stop-worker');
+  const crashChannel = channels.at(-1);
+  if (!crashChannel) throw new Error('Missing crash-recovery channel');
+  const resident = (
+    await pool.query<{ id: string }>(
+      "select o.id from organisms o join residencies r on r.world_id=o.world_id and r.organism_id=o.id where r.world_id=$1 and r.channel_id=$2 and r.role='resident' and r.ended_at is null",
+      [worldId, crashChannel.id],
+    )
+  ).rows[0];
+  if (!resident) throw new Error('Missing crash-recovery organism');
+  const crashVersion = (
+    await pool.query<{ state_version: number }>(
+      'select state_version from channels where world_id=$1 and id=$2',
+      [worldId, crashChannel.id],
+    )
+  ).rows[0]?.state_version;
+  const crashInput = {
+    worldId,
+    channelId: crashChannel.id,
+    provider: 'load-crash',
+    messageId: randomUUID(),
+    command: gameCommandSchema.parse({
+      type: 'rename',
+      organismId: resident.id,
+      name: 'Synthetic crash recovery',
+      expectedVersion: crashVersion,
+    }),
+  };
+  const crashReceipt = await acceptInput(pool, crashInput);
+  const crashWorker = fork(
+    fileURLToPath(
+      new URL(
+        import.meta.url.endsWith('.ts')
+          ? '../release/crash-worker.ts'
+          : '../release/crash-worker.js',
+        import.meta.url,
+      ),
+    ),
+    [],
+    {
+      execArgv: import.meta.url.endsWith('.ts') ? ['--conditions=ripple-source'] : [],
+      env: {
+        ...process.env,
+        DATABASE_URL: temporary.connectionString,
+        CRASH_WORLD: worldId,
+        CRASH_CHANNEL: crashChannel.id,
+      },
+      stdio: ['ignore', 'ignore', 'pipe', 'ipc'],
+    },
+  );
+  let crashError = '';
+  crashWorker.stderr?.on('data', (data: Buffer) => {
+    crashError += data.toString();
+  });
+  const crashExit = await new Promise<{ code: number | null; signal: NodeJS.Signals | null }>(
+    (done, reject) => {
+      const timeout = setTimeout(() => {
+        crashWorker.kill();
+        reject(new Error('Crash worker timed out'));
+      }, 30000);
+      crashWorker.once('exit', (code, signal) => {
+        clearTimeout(timeout);
+        done({ code, signal });
+      });
+    },
+  );
+  const repeated = await acceptInput(pool, crashInput);
+  const nextAfterCrash = await processNextInput(pool, worldId, crashChannel.id);
+  const committedCrash =
+    (
+      await pool.query<{ n: number }>(
+        'select count(*)::int n from game_events where world_id=$1 and channel_id=$2 and operation_id=$3',
+        [worldId, crashChannel.id, `load-crash:${crashInput.messageId}`],
+      )
+    ).rows[0]?.n ?? 0;
+  const crashPublicUpdates =
+    (
+      await pool.query<{ n: number }>(
+        "select count(*)::int n from public_updates where world_id=$1 and channel_id=$2 and type='strain.renamed'",
+        [worldId, crashChannel.id],
+      )
+    ).rows[0]?.n ?? 0;
+  await workerCommand('restart-worker');
+  for (const row of (
+    await pool.query<{ id: string; state_version: number }>(
+      'select id,state_version from channels where world_id=$1',
+      [worldId],
+    )
+  ).rows)
+    finalVersions.set(row.id, row.state_version);
+  const crashConvergenceEnd = Date.now() + 10000;
+  while (converged() < channelCount * 3 && Date.now() < crashConvergenceEnd) await wait(50);
+  const crashRecovery = {
+    exit: crashExit,
+    stderr: crashError,
+    committedRecords: committedCrash,
+    publicUpdates: crashPublicUpdates,
+    receiptReused: repeated.duplicate && repeated.sequence === crashReceipt.sequence,
+    restartedWorkerReapplied: nextAfterCrash !== null,
+    convergedSockets: converged(),
+  };
   const duplicates =
     (
       await pool.query<{ n: number }>(
         "select count(*)::int n from (select organism_id,target_slot from pending_adaptations where world_id=$1 and status='committed' group by 1,2 having count(*)>1) x",
+        [worldId],
+      )
+    ).rows[0]?.n ?? 0;
+  const acceptedProposals =
+    (
+      await pool.query<{ n: number }>(
+        'select count(*)::int n from studio_proposals where world_id=$1',
         [worldId],
       )
     ).rows[0]?.n ?? 0;
@@ -458,8 +605,10 @@ try {
       channels: channelCount,
       sockets: channelCount * 3,
       studios: studioCount,
-      artistsInLargestStudio: 50,
+      artistsInLargestStudio: 60,
       proposals,
+      proposalsDuringHttpLoad: concurrentProposals.length,
+      acceptedProposals,
       seconds,
       ordinaryNotificationsPerChannelPerSecond: 2,
       burstMultiplier: 10,
@@ -477,6 +626,7 @@ try {
     reconnectSnapshots,
     frames,
     duplicateCommitments: duplicates,
+    crashRecovery,
     errors,
     serverErrors: childError,
     openSockets: sockets.filter((socket) => socket.readyState === WebSocket.OPEN).length,
@@ -488,8 +638,9 @@ try {
       'Synthetic signed notifications over real localhost HTTP and PostgreSQL; no Twitch network or TLS time.',
       'Client generator runs separately from the app; both share the declared host.',
       'Commit samples include polling delay. Ordinary activity creates no public frame; public latency samples use vote/transition records only.',
-      'Proposal submissions use the production ordered adapter directly during setup; public network proposal auth is covered by route tests.',
+      'Proposal submissions use the production ordered adapter during setup and HTTP load; public network proposal auth is covered by route tests.',
       'No hosted capacity or low-end physical-device claim is established.',
+      'After the timed load, a separate actual worker is killed immediately after commit, retried and restarted; socket convergence is checked again. Fault timing is separate from steady-state latency.',
     ],
   };
   if (values.output)
@@ -503,11 +654,19 @@ try {
     (acked !== notifications ||
       outstanding.size ||
       duplicates ||
+      acceptedProposals !== proposals ||
+      crashError.length ||
+      crashExit.code === 0 ||
+      committedCrash !== 1 ||
+      crashPublicUpdates !== 1 ||
+      !crashRecovery.receiptReused ||
+      crashRecovery.restartedWorkerReapplied ||
       Object.keys(errors).length ||
       childError.length ||
       converged() < channelCount * 3 ||
       (percentile(callback, 0.95) ?? Infinity) >= 500 ||
       (percentile(committed, 0.95) ?? Infinity) >= 1000 ||
+      (percentile(published, 0.95) ?? Infinity) >= 1000 ||
       reconnectSnapshots < 30)
   )
     throw new Error('Declared release load targets failed; inspect the measured report');

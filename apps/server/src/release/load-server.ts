@@ -14,7 +14,7 @@ process.once('message', (message: { config: TwitchConfig }) => {
       config: { logLevel: 'error', webRoot: undefined, twitch: message.config },
       pool: database.pool,
     });
-    const runtime = startGameRuntime(database.pool, app.log, () => {
+    let runtime = startGameRuntime(database.pool, app.log, () => {
       app.publicGateway.wake();
     });
     const address = await app.listen({ host: '127.0.0.1', port: 0 });
@@ -22,6 +22,16 @@ process.once('message', (message: { config: TwitchConfig }) => {
     const started = performance.now();
     process.send?.({ ready: true, address });
     process.on('message', (value: { action: string }) => {
+      if (value.action === 'stop-worker')
+        void runtime.stop().then(() => {
+          process.send?.({ workerStopped: true });
+        });
+      if (value.action === 'restart-worker') {
+        runtime = startGameRuntime(database.pool, app.log, () => {
+          app.publicGateway.wake();
+        });
+        process.send?.({ workerRestarted: true });
+      }
       if (value.action === 'stats')
         process.send?.({
           stats: true,
