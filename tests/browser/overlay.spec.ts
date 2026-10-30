@@ -390,11 +390,63 @@ test('overlay applies the broadcaster layout, reduced motion and family-news pre
   await expect(page.getByRole('region', { name: 'Family news since last stream' })).toBeVisible();
   await expect(creature).not.toHaveCSS('animation-name', 'none');
   const compactWidth = (await creature.boundingBox())?.width ?? 0;
-  push?.({ ...current, display: { layout: 'expanded', reducedMotion: true, familyNews: false } });
+  push?.({
+    ...current,
+    display: { layout: 'expanded', reducedMotion: true, familyNews: false, celebrations: true },
+  });
   await expect(overlay).toHaveAttribute('data-layout', 'expanded');
   await expect(creature).toHaveCSS('animation-name', 'none');
   await expect(page.getByRole('region', { name: 'Family news since last stream' })).toHaveCount(0);
   await expect
     .poll(async () => (await creature.boundingBox())?.width ?? 0)
     .toBeGreaterThan(compactWidth);
+});
+test('overlay shows a live celebration briefly with no game claim and never replays an old one', async ({
+  page,
+}) => {
+  const base = fixture();
+  if (base.round === null) throw new Error('Missing fixture round');
+  const observing: ChannelView = {
+    ...base,
+    round: { ...base.round, phase: 'OBSERVING' },
+    celebration: { kind: 'cheer', atMs: 1000 },
+  };
+  let push: ((payload: ChannelView) => void) | undefined;
+  await page.route('**/api/overlay/exchange', (route) =>
+    route.fulfill({ json: { ticket: 't'.repeat(43), expiresAt: '2099-01-01T00:00:00.000Z' } }),
+  );
+  await page.routeWebSocket('**/api/live?*', (socket) => {
+    let version = 0;
+    push = (payload) => {
+      socket.send(
+        JSON.stringify({
+          protocolVersion: 1,
+          eventId: channelId,
+          worldId: world,
+          topic: `channel:${channelId}`,
+          stateVersion: ++version,
+          type: 'snapshot',
+          serverTime: new Date().toISOString(),
+          payload,
+        }),
+      );
+    };
+    push(observing);
+  });
+  await page.goto(`/overlay#${fragment}`);
+  await expect(page.getByRole('heading', { name: 'Observing habitat' })).toBeVisible();
+  await expect(page.getByText('Thanks for the cheer!', { exact: false })).toHaveCount(0);
+  push?.({ ...observing, celebration: { kind: 'subscription', atMs: 70_000 } });
+  const message = page.getByText('Thanks for subscribing! Celebration only · no game advantage');
+  await expect(message).toBeVisible();
+  await expect(page.locator('[data-celebrating="true"]')).toHaveCount(1);
+  await expect(page.getByText('Energy 42/100')).toBeVisible();
+  await expect(message).toHaveCount(0, { timeout: 12_000 });
+  await expect(page.locator('[data-celebrating="true"]')).toHaveCount(0);
+  push?.({
+    ...observing,
+    display: { layout: 'compact', reducedMotion: false, familyNews: true, celebrations: false },
+    celebration: { kind: 'hype_train', atMs: 140_000 },
+  });
+  await expect(page.getByText('A hype train has started!', { exact: false })).toHaveCount(0);
 });

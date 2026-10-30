@@ -865,7 +865,7 @@ test('display preferences send a versioned presentation request and keep keyboar
 }) => {
   let committed = false;
   const requests: Record<string, unknown>[] = [],
-    saved = { layout: 'expanded', reducedMotion: true, familyNews: false };
+    saved = { layout: 'expanded', reducedMotion: true, familyNews: false, celebrations: true };
   await page.route('**/api/connection', (route) => route.fulfill({ json: { liveEnabled: true } }));
   await page.route('**/api/controller/status', (route) =>
     route.fulfill({
@@ -916,4 +916,29 @@ test('landing page and the read-only preview pass automated WCAG 2.1 AA checks',
   await page.goto('/preview');
   await expect(page.getByRole('status')).toContainText('unsupported');
   await expectAccessible(page);
+});
+
+test('controller explains optional celebrations and links to the separate opt-in grant', async ({
+  page,
+}) => {
+  let granted: string[] = [],
+    available = false;
+  await page.route('**/api/connection', (route) => route.fulfill({ json: { liveEnabled: true } }));
+  await page.route('**/api/controller/status', (route) =>
+    route.fulfill({ json: { ...status, celebrations: { available, granted } } }),
+  );
+  await page.goto('/controller');
+  const panel = page.getByRole('region', { name: 'Optional celebrations' });
+  await expect(panel).toContainText('turned off for this Ripple installation');
+  await expect(panel.getByRole('link')).toHaveCount(0);
+  available = true;
+  await page.reload();
+  await expect(panel).toContainText('Not authorized. Ripple will not read paid events');
+  await expect(
+    panel.getByRole('link', { name: 'Authorize optional celebrations' }),
+  ).toHaveAttribute('href', '/auth/twitch/start?celebrations=true');
+  granted = ['cheer', 'hype_train'];
+  await page.reload();
+  await expect(panel).toContainText('Authorized for cheers, hype trains.');
+  await expect(panel).toContainText('never change genes, energy, votes or survival');
 });

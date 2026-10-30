@@ -112,3 +112,28 @@
   grid-template-columns: minmax(140px, 340px) minmax(0, 1fr);
   width: min(1240px, 100%);
 }
+
+/* Optional celebrations: a brief, gentle ring and a text line; nothing flashes. */
+.panel .celebration {
+  color: #f0bd68;
+  font-weight: 650;
+  font-size: 0.9em;
+}
+.creature[data-celebrating='true'] {
+  border-radius: 50%;
+  box-shadow: 0 0 0 6px #f0bd6866;
+  animation: glow 2.4s ease-in-out infinite;
+}
+@keyframes glow {
+  50% {
+    box-shadow: 0 0 0 14px #f0bd6833;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .creature[data-celebrating='true'] {
+    animation: none;
+  }
+}
+.stage[data-reduced-motion='true'] .creature[data-celebrating='true'] {
+  animation: none;
+}

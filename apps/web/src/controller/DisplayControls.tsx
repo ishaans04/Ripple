@@ -25,7 +25,8 @@ export function DisplayControls({
     changed =
       current.layout !== saved.layout ||
       current.reducedMotion !== saved.reducedMotion ||
-      current.familyNews !== saved.familyNews;
+      current.familyNews !== saved.familyNews ||
+      current.celebrations !== saved.celebrations;
   return (
     <section className={styles.panel} aria-label="Overlay display">
       <h2>Overlay display</h2>
@@ -65,6 +66,16 @@ export function DisplayControls({
         />
         Show family news on the overlay between ballots
       </label>
+      <label className={styles.inline}>
+        <input
+          type="checkbox"
+          checked={current.celebrations}
+          onChange={(event) => {
+            setDraft({ ...current, celebrations: event.target.checked });
+          }}
+        />
+        Show optional paid-event celebrations · never affect the game
+      </label>
       <div className={styles.actions}>
         <button
           disabled={disabled || !changed}
@@ -78,7 +89,8 @@ export function DisplayControls({
       <p>
         {saved.layout === 'compact' ? 'Compact' : 'Expanded'} layout ·{' '}
         {saved.reducedMotion ? 'motion reduced' : 'subtle motion'} · family news{' '}
-        {saved.familyNews ? 'shown' : 'hidden'} on the overlay. Viewers who ask their browser for
+        {saved.familyNews ? 'shown' : 'hidden'} · celebrations{' '}
+        {saved.celebrations ? 'shown' : 'hidden'} on the overlay. Viewers who ask their browser for
         reduced motion always get a still creature. Ripple plays no sound.
       </p>
     </section>

@@ -4,6 +4,13 @@ import { useReadChannel } from '../realtime/useReadChannel.ts';
 import { traceEffectText, traceTitle } from '../realtime/trace-labels.ts';
 import { Creature } from '../creature/Creature.tsx';
 import { familyRemainingText, familyUpdateText } from '../realtime/family-text.ts';
+import { useFreshCelebration } from './useFreshCelebration.ts';
+
+const celebrationText = {
+  cheer: 'Thanks for the cheer!',
+  subscription: 'Thanks for subscribing!',
+  hype_train: 'A hype train has started!',
+} as const;
 import styles from './Overlay.module.css';
 
 const ballotTitle: Readonly<Record<string, string>> = {
@@ -114,8 +121,10 @@ export default function Overlay() {
       clearInterval(timer);
     };
   }, []);
+  const fresh = useFreshCelebration(channel);
   const creature = channel?.organism,
     display = channel?.display ?? defaultDisplayPreferences,
+    celebration = display.celebrations ? fresh : null,
     ancestry = channel?.propagation?.resident,
     trace = channel?.mechanics?.state?.activeTrace;
   return (
@@ -129,6 +138,7 @@ export default function Overlay() {
         {creature !== undefined && creature !== null && (
           <div
             className={`${styles.creature} ${creature.status === 'FOSSIL' ? styles.fossil : ''}`}
+            data-celebrating={celebration === null ? undefined : 'true'}
           >
             <Creature organism={creature} />
           </div>
@@ -142,6 +152,11 @@ export default function Overlay() {
               </p>
             )}
           </div>
+          {celebration !== null && (
+            <p className={styles.celebration} role="status">
+              {celebrationText[celebration.kind]} Celebration only · no game advantage
+            </p>
+          )}
           {creature !== undefined && creature !== null && (
             <p className={styles.energy}>
               Energy {creature.health}/100 ·{' '}
