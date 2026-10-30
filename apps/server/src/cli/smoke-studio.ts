@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
+import { rm } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
 import { dirname, extname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { z } from 'zod';
@@ -96,6 +98,41 @@ const unauthorized = await fetch(new URL(`/api/channels/${created.channelId}/ava
   body: JSON.stringify({ kind: 'scene', scene: 'BRB' }),
 });
 assert.equal(unauthorized.status, 401);
+// Rebuild the whole two-channel world from accepted records through the installed replay tool.
+const replayEntry = join(dirname(ownPath), `replay${extname(ownPath)}`);
+const bundle = join(tmpdir(), `ripple-studio-${created.worldId}.json`);
+execFileSync(
+  process.execPath,
+  [...process.execArgv, replayEntry, 'export', created.worldId, bundle],
+  {
+    encoding: 'utf8',
+  },
+);
+const replay = z
+  .object({
+    sourceComparison: z.array(z.object({ channelId: z.uuid(), equal: z.boolean() })),
+    channels: z.array(
+      z.object({
+        channelId: z.uuid(),
+        resident: z.object({ designHash: z.string().nullable() }).nullable(),
+        studios: z.array(z.object({ phase: z.string(), designHash: z.string().nullable() })),
+      }),
+    ),
+  })
+  .parse(
+    JSON.parse(
+      execFileSync(process.execPath, [...process.execArgv, replayEntry, 'run', bundle], {
+        encoding: 'utf8',
+      }),
+    ),
+  );
+assert.ok(
+  replay.sourceComparison.length >= 2 && replay.sourceComparison.every((item) => item.equal),
+);
+const replayedSource = replay.channels.find((channel) => channel.channelId === created.channelId);
+assert.equal(replayedSource?.resident?.designHash, winner.hash);
+assert.equal(replayedSource.studios[0]?.designHash, winner.hash);
+await rm(bundle, { force: true });
 process.stdout.write(
-  `${JSON.stringify({ synthetic: true, studio: 'hatched', sessionId: session.id, descendantHost: peer.channelId })}\n`,
+  `${JSON.stringify({ synthetic: true, studio: 'hatched', replayed: true, sessionId: session.id, descendantHost: peer.channelId })}\n`,
 );

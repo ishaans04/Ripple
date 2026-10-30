@@ -138,6 +138,10 @@ With the stack running, `docker compose exec -T app node apps/server/dist/cli/sm
 
 `docker compose exec -T app node apps/server/dist/cli/smoke-mechanics.js` verifies version-one creation, minority capture and exact inherited allowance, actual saved ancestor/rejected-choice records, a trace earned through two real synthetic observations, Keep, pause preservation, three-valid-observation expiry, capability-scoped analysis and immutable attribution after expiry/toggling. CI runs it in the production image; source development uses `npm run smoke:mechanics`. `docker compose exec -T app node apps/server/dist/cli/smoke-studio.js` verifies a configured OBS break scene, the held game clock, the public studio and finalist-blueprint routes, two synthetic artists, the chat selection, review, the hatch's gene change and design, a raid descendant and a refused unscoped bridge report; source development uses `npm run smoke:studio`. All four tools are synthetic verification and never establish live Twitch or OBS acceptance.
 
+## Replay
+
+`npm run replay -- export WORLD_ID bundle.json` writes every channel's checksum-chained accepted records for a world. `npm run replay -- verify bundle.json` checks each chain and that every cross-channel dependency points inside the export. `npm run replay -- run bundle.json` rebuilds the world in a new, isolated replay world: records keep each channel's order, a raid waits for the destination positions it originally observed, and arrivals and claims wait for their raid. It prints each channel's resident, committed design and studio outcomes, a read capability for viewing the replay in `/preview`, and, when the source world is in the same database, channel-by-channel equality (exit code 2 on any difference). Replay uses accepted records only: no camera data, landmarks or provider calls. In the installed image the tool is `node apps/server/dist/cli/replay.js`.
+
 ## Repository layout
 
 ```text
