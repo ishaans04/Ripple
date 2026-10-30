@@ -11,12 +11,12 @@
     "logicalCpus": 4,
     "totalMemoryBytes": 17174360064
   },
-  "inputRoundTripP95Ms": 116.67259999999987,
-  "inputToNextFrameP95Ms": 19.79999999998836,
-  "animationFrameP95Ms": 16.800000000000182,
-  "inferenceP95Ms": 351.70000000001164,
+  "inputRoundTripP95Ms": 132.53120000000035,
+  "inputToNextFrameP95Ms": 16.79999999998836,
+  "animationFrameP95Ms": 16.699999999999818,
+  "inferenceP95Ms": 366.4000000000233,
   "maxInFlight": 1,
-  "frames": 15,
+  "frames": 18,
   "editingWrites": 0,
   "limits": "4x CPU emulation on the declared Windows host; no claim about all physical low-end cameras/GPUs. InputRoundTrip includes Playwright transport; inputToNextFrame is measured inside the page."
 }

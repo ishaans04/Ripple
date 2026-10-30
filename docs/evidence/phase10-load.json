@@ -1,13 +1,13 @@
 {
   "schemaVersion": 1,
   "synthetic": true,
-  "revision": "25a01c2792a0c0eacea234d3772441b85d9cc476",
+  "revision": "3be2bf850dc48086214cce7ee1a1afcd8e0ef367",
   "environment": {
     "node": "v24.22.1",
     "platform": "linux",
     "cpus": 4,
     "cpuModel": "AMD EPYC 7763 64-Core Processor",
-    "totalMemoryBytes": 16759443456
+    "totalMemoryBytes": 16759439360
   },
   "workload": {
     "channels": 100,
@@ -22,41 +22,41 @@
     "burstMultiplier": 10,
     "notifications": 12180,
     "acked": 12180,
-    "elapsedMs": 59907.96281799999,
+    "elapsedMs": 59907.27181599999,
     "requestsPerSecond": 203
   },
   "callbackMs": {
     "samples": 12180,
-    "p50": 124.53165199999785,
-    "p95": 222.767468,
-    "p99": 396.9381910000011,
-    "max": 694.6535800000001
+    "p50": 135.42039599999407,
+    "p95": 226.53436800000054,
+    "p99": 335.901441,
+    "max": 533.5395979999994
   },
   "acceptedToObservedCommitMs": {
     "samples": 12180,
-    "p50": 286,
-    "p95": 721,
-    "p99": 1991,
-    "max": 3378
+    "p50": 279,
+    "p95": 598,
+    "p99": 1202,
+    "max": 3488
   },
   "publicMutationCommitMs": {
-    "samples": 720,
-    "p50": 391,
-    "p95": 827,
-    "p99": 1159,
-    "max": 1393
+    "samples": 640,
+    "p50": 379,
+    "p95": 891,
+    "p99": 1179,
+    "max": 1383
   },
   "publicFrameMs": {
-    "samples": 720,
-    "p50": 452,
-    "p95": 888,
-    "p99": 1303,
-    "max": 1398
+    "samples": 640,
+    "p50": 503,
+    "p95": 984,
+    "p99": 1385,
+    "max": 1425
   },
   "convergedSockets": 300,
   "remainingAcknowledged": 0,
   "reconnectSnapshots": 30,
-  "frames": 4813,
+  "frames": 4571,
   "duplicateCommitments": 0,
   "crashRecovery": {
     "exit": {
@@ -74,11 +74,11 @@
   "serverErrors": "",
   "openSockets": 300,
   "database": {
-    "bytes": 55211711,
+    "bytes": 56063679,
     "blks_read": "106",
-    "blks_hit": "3627265",
-    "tup_inserted": "65179",
-    "tup_updated": "40617"
+    "blks_hit": "3671811",
+    "tup_inserted": "65573",
+    "tup_updated": "40658"
   },
   "rowSizes": [
     {
@@ -88,28 +88,34 @@
     },
     {
       "record": "accepted_event",
-      "avg_bytes": 714.4181105448844,
+      "avg_bytes": 713.5484907879263,
       "p95_bytes": 825
     },
     {
       "record": "public_projection",
-      "avg_bytes": 1210.5861003861005,
-      "p95_bytes": 2878.3
+      "avg_bytes": 1280.669135802469,
+      "p95_bytes": 2884.3
     }
   ],
   "server": {
     "stats": true,
     "cpu": {
-      "user": 24275882,
-      "system": 7185640
+      "user": 23875455,
+      "system": 6922833
     },
-    "elapsedMs": 67277.725879,
+    "elapsedMs": 71478.05206,
     "memory": {
-      "rss": 412725248,
-      "heapTotal": 268115968,
-      "heapUsed": 161873752,
-      "external": 20966943,
-      "arrayBuffers": 10522537
+      "rss": 407449600,
+      "heapTotal": 231043072,
+      "heapUsed": 104002592,
+      "external": 15958427,
+      "arrayBuffers": 5514021
+    },
+    "pool": {
+      "maxConnections": 48,
+      "sampleIntervalMs": 50,
+      "peakWaiting": 85,
+      "peakBusyOrConnecting": 48
     }
   },
   "configurationHash": "f442d8296981c63dfa8fde4dc0c7f75fe8c767280241cc8c08539b6ddcf680b6",

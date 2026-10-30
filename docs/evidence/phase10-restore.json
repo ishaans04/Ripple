@@ -2,26 +2,26 @@
   "synthetic": true,
   "method": "PostgreSQL custom pg_dump -> separate empty PostgreSQL database -> erasure ledger -> accepted-record replay",
   "postgres": "PostgreSQL 18.6 (Debian 18.6-1.pgdg13+2) on x86_64-pc-linux-gnu, compiled by gcc (Debian 14.2.0-19) 14.2.0, 64-bit",
-  "dumpBytes": 237247,
-  "dumpSha256": "05a97000d6cd812fea0e0aa60b8cf1d38da386e27523760aa33ad5daa1cfede3",
-  "dumpMs": 220.96910200000002,
-  "restoreMs": 386.9906820000001,
-  "replayMs": 412.31232699999964,
+  "dumpBytes": 237401,
+  "dumpSha256": "0f2ae8db372269e6486b0fc8b560337b156e5c331014d32d5255b1531e3dd416",
+  "dumpMs": 225.70463599999994,
+  "restoreMs": 396.1510940000003,
+  "replayMs": 414.5111219999999,
   "channels": [
     {
-      "channelId": "379e741d-ef02-4bd6-a3ee-3ebe0dd374ac",
+      "channelId": "563d33c9-1275-4611-8bf8-38364429e763",
       "equal": true
     },
     {
-      "channelId": "43a0f297-37e1-4f73-90f2-afe5da5f9359",
+      "channelId": "8c71a177-672f-42fb-80db-1ff80859c02c",
       "equal": true
     }
   ],
   "projectionSha256": [
-    "4e0b73dca64e9b94c80bd83bbd22b7c4f2fd1912babc007e8f4636ccda2fd8cb",
-    "d6bc9d37088db6a8b5dcd5666b052689b994b459863fc8b361f8f0c9cee9c7ae"
+    "46301b31f446f07521ace44011a090c7812b7447445c238e49b6444ec07218a7",
+    "375c05c044225046683cd459d55226d8c3d74c010ff4c4c5793127ff1b3ddc28"
   ],
-  "acceptedBundleSha256": "a7eda0e6020ab78cf41edf07473c1c6d18bada5e36dd7dad83f0ecd59f69c1d6",
+  "acceptedBundleSha256": "e5d3054d7d859a39751a0bc926b449b4f05b25748a2bcdfff95b5663817a97b5",
   "postBackupErasureReapplied": true,
   "lostAcknowledgedInputs": 0,
   "rpo": "Quiescent fixture snapshot; no live RPO claim",
