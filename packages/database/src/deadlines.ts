@@ -36,10 +36,15 @@ export async function claimDeadlines(
       order by d.due_at,d.world_id,d.id limit $1 for update of d skip locked`,
       [limit, scope?.worldId ?? null, scope?.channelId ?? null],
     );
-    for (const job of jobs.rows)
+    if (jobs.rows.length)
       await client.query(
-        `update deadlines set status='leased',lease_owner=$3,lease_until=clock_timestamp()+$4*interval '1 millisecond',attempts=attempts+1 where world_id=$1 and id=$2`,
-        [job.world_id, job.id, owner, leaseMs],
+        `update deadlines d set status='leased',lease_owner=$2,lease_until=clock_timestamp()+$3*interval '1 millisecond',attempts=attempts+1
+         from jsonb_to_recordset($1::jsonb) j(world_id uuid,id uuid) where d.world_id=j.world_id and d.id=j.id`,
+        [
+          JSON.stringify(jobs.rows.map((job) => ({ world_id: job.world_id, id: job.id }))),
+          owner,
+          leaseMs,
+        ],
       );
     return jobs.rows;
   });
@@ -79,7 +84,34 @@ export async function scanDeadlines(
   scope?: { worldId: string; channelId?: string },
 ): Promise<number> {
   const jobs = await claimDeadlines(pool, owner, 32, 15_000, scope);
+  const grouped = new Map<string, DeadlineLease[]>();
+  for (const job of jobs) {
+    const key = `${job.world_id}:${job.channel_id}`,
+      group = grouped.get(key) ?? [];
+    group.push(job);
+    grouped.set(key, group);
+  }
+  const groups = [...grouped.values()],
+    failures: unknown[] = [];
+  let next = 0;
   let delivered = 0;
-  for (const job of jobs) if (await deliverDeadline(pool, job, owner)) delivered++;
+  // Different channels may dispatch together; each channel retains claimed due order.
+  // Wait for every runner before surfacing a failure, so a new runtime cycle cannot overlap it.
+  async function dispatch(): Promise<void> {
+    while (next < groups.length) {
+      const group = groups[next++];
+      if (!group) return;
+      for (const job of group) {
+        try {
+          if (await deliverDeadline(pool, job, owner)) delivered++;
+        } catch (error) {
+          failures.push(error);
+          break;
+        }
+      }
+    }
+  }
+  await Promise.all(Array.from({ length: Math.min(8, groups.length) }, dispatch));
+  if (failures.length) throw failures[0];
   return delivered;
 }

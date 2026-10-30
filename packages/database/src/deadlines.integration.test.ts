@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import pg from 'pg';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
-import { claimDeadlines, deliverDeadline } from './deadlines.ts';
+import { claimDeadlines, deliverDeadline, scanDeadlines } from './deadlines.ts';
 import { runMigrations } from './migrate.ts';
 import { createTemporaryDatabase, createTestChannel, type TemporaryDatabase } from './testing.ts';
 
@@ -59,5 +59,39 @@ describe('leased durable deadlines', () => {
     await pool.query(`update deadlines set status='cancelled'`);
     expect(await deliverDeadline(pool, job, owner)).toBe(false);
     expect(await claimDeadlines(pool, randomUUID())).toEqual([]);
+  });
+  it('dispatches a cohort across channels while preserving each channel order and unique receipts', async () => {
+    const scopes = [];
+    for (let channel = 0; channel < 8; channel++) {
+      const scope = await createTestChannel(pool, 'sandbox');
+      scopes.push(scope);
+      for (let step = 0; step < 4; step++)
+        await pool.query(
+          `insert into deadlines(world_id,channel_id,id,job_key,command,due_at,remaining_ms)
+          select $1,$2,$3,$4,$5,clock_at-interval '1 second'+$6*interval '1 millisecond',0 from worlds where id=$1`,
+          [
+            scope.worldId,
+            scope.channelId,
+            randomUUID(),
+            `cohort-${step}`,
+            JSON.stringify({ type: 'activity', actorKey: String(step) }),
+            step,
+          ],
+        );
+    }
+    expect(await scanDeadlines(pool)).toBe(32);
+    expect(await scanDeadlines(pool)).toBe(0);
+    for (const scope of scopes) {
+      const rows = await pool.query<{ sequence: number; command: { actorKey: string } }>(
+        'select sequence,command from inbox where world_id=$1 and channel_id=$2 order by sequence',
+        [scope.worldId, scope.channelId],
+      );
+      expect(rows.rows.map((row) => [row.sequence, row.command.actorKey])).toEqual([
+        [1, '0'],
+        [2, '1'],
+        [3, '2'],
+        [4, '3'],
+      ]);
+    }
   });
 });
