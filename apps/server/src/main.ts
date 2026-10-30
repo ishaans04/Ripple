@@ -25,6 +25,7 @@ const config = readConfig();
 const database = createDatabase({
   connectionString: config.databaseUrl,
   applicationName: 'ripple-server',
+  maxConnections: config.databasePoolMax,
   onIdleClientError: (error) => {
     app.log.error({ err: error }, 'idle database client failed');
   },

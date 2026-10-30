@@ -13,7 +13,7 @@ export async function queueAnnouncement(
   result: CommandEffect,
   sequence: number,
 ): Promise<void> {
-  if (result.code !== 'APPLIED') return;
+  if (result.code !== 'APPLIED' || result.updateType === null) return;
   const { channel, client, round, organism } = context;
   const live = await client.query("select 1 from worlds where id=$1 and mode='live'", [
     channel.world_id,
@@ -21,8 +21,6 @@ export async function queueAnnouncement(
   if (live.rowCount !== 1) return;
   let message: string | undefined;
   switch (result.updateType) {
-    case null:
-      return;
     case 'ballot.opened':
       if (round !== null) {
         const special = round.checkpoint.specialBallot,

@@ -12,6 +12,7 @@ const environmentSchema = z.object({
   HOST: z.string().min(1).default('0.0.0.0'),
   PORT: z.coerce.number().int().min(1).max(65_535).default(3000),
   LOG_LEVEL: z.enum(logLevels).default('info'),
+  DATABASE_POOL_MAX: z.coerce.number().int().min(8).max(64).default(32),
   /** Time allowed to drain requests and release resources before a forced exit. */
   SHUTDOWN_GRACE_MS: z.coerce.number().int().min(1_000).max(120_000).default(15_000),
   /** Directory holding the built web application; omit to serve the API only. */
@@ -24,6 +25,7 @@ const environmentSchema = z.object({
 
 export interface ServerConfig {
   databaseUrl: string;
+  databasePoolMax: number;
   host: string;
   port: number;
   logLevel: (typeof logLevels)[number];
@@ -71,6 +73,7 @@ export function loadConfig(env: Record<string, string | undefined>): ServerConfi
   }
   return {
     databaseUrl: parsed.DATABASE_URL,
+    databasePoolMax: parsed.DATABASE_POOL_MAX,
     host: parsed.HOST,
     port: parsed.PORT,
     logLevel: parsed.LOG_LEVEL,

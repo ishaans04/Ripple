@@ -49,28 +49,35 @@ export async function runGameCycle(
     await pool.query<ScopeRow>(`select c.world_id,c.id from channels c join worlds w on w.id=c.world_id
     where c.processed_sequence<c.intake_sequence and w.mode<>'replay' and (w.expires_at is null or w.expires_at>clock_timestamp()) order by c.world_id,c.id limit 128`);
   let processed = 0;
-  for (const channel of channels.rows) {
-    if (!(await acquireRuntimeLease(pool, owner)).acquired) break;
-    try {
-      // A bounded batch per channel prevents a large chat from starving its neighbors.
-      for (let count = 0; count < 32; count++) {
-        const result = await processNextInput(pool, channel.world_id, channel.id);
-        if (result === null) break;
-        processed++;
-        if (result.effect.updateType !== null) committed();
+  let next = 0;
+  const processChannels = async () => {
+    while (next < channels.rows.length) {
+      const channel = channels.rows[next++];
+      if (channel === undefined || !(await acquireRuntimeLease(pool, owner)).acquired) return;
+      try {
+        // A bounded batch per channel prevents a large chat from starving its neighbors.
+        for (let count = 0; count < 32; count++) {
+          const result = await processNextInput(pool, channel.world_id, channel.id);
+          if (result === null) break;
+          processed++;
+          if (result.effect.updateType !== null) committed();
+        }
+      } catch (error) {
+        // Failure metadata does not advance the ordered cursor or discard its input.
+        await pool.query(
+          `update inbox set attempts=attempts+1,error_code='PROCESSING_FAILED' where world_id=$1 and channel_id=$2 and sequence=(select processed_sequence+1 from channels where world_id=$1 and id=$2)`,
+          [channel.world_id, channel.id],
+        );
+        logger.error(
+          { err: error, worldId: channel.world_id, channelId: channel.id },
+          'ordered channel processing failed',
+        );
       }
-    } catch (error) {
-      // Failure metadata does not advance the ordered cursor or discard its input.
-      await pool.query(
-        `update inbox set attempts=attempts+1,error_code='PROCESSING_FAILED' where world_id=$1 and channel_id=$2 and sequence=(select processed_sequence+1 from channels where world_id=$1 and id=$2)`,
-        [channel.world_id, channel.id],
-      );
-      logger.error(
-        { err: error, worldId: channel.world_id, channelId: channel.id },
-        'ordered channel processing failed',
-      );
     }
-  }
+  };
+  // Independent channels may make progress together. processNextInput still takes the sorted
+  // transaction lock set (including both sides of a raid), so per-channel replay stays ordered.
+  await Promise.all(Array.from({ length: Math.min(8, channels.rows.length) }, processChannels));
   return processed;
 }
 export function startGameRuntime(

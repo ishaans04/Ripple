@@ -347,7 +347,8 @@ export async function processNextInput(
       ).rows[0];
       if (input === undefined) throw new Error('The next accepted sequence is missing.');
       const intent = chatIntentSchema.safeParse(input.command);
-      const studioBallot = intent.success ? await openStudioBallot(context) : null;
+      const studioBallot =
+        intent.success && intent.data.action === 'vote' ? await openStudioBallot(context) : null;
       const ballotId = studioBallot?.ballot_round_id ?? context.round?.id ?? 'none';
       let command: GameCommand = liveRaid.success
         ? {
@@ -377,9 +378,7 @@ export async function processNextInput(
               }
           : gameCommandSchema.parse(input.command);
       if (command.type === 'raid') command = { ...command, destinationChannelId: lockedTarget };
-      const mode = (
-        await client.query<{ mode: string }>('select mode from worlds where id=$1', [worldId])
-      ).rows[0]?.mode;
+      const mode = context.worldMode;
       if (command.type === 'raid')
         command = {
           ...command,
@@ -491,7 +490,8 @@ export async function processNextInput(
         result,
         analyticsFor(command, result, context, { online: wasOnline }, channel.online),
       );
-      await reconcileRoundDeadline(context);
+      // Activity changes only bounded observation membership, never clocks or durable deadlines.
+      if (command.type !== 'activity') await reconcileRoundDeadline(context);
       await queueAnnouncement(
         context,
         opened ? effect('APPLIED', 'ballot.opened') : result,

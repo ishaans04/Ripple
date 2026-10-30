@@ -267,3 +267,5 @@ Phase 10 data protection: artist sign-in uses erasable identity/credit mappings 
 Artist participants can erase their sign-in and credit mapping with **Forget my artist identity** in a connected studio. The public [/privacy](/privacy) page explains camera locality, actual retention and deletion, and the effect on accepted designs.
 
 Retention runs automatically every 30 seconds. The privacy CLI supports targeted erasure, expired-world purge and a separately retained erasure ledger for safe backup recovery; see [privacy operations](docs/privacy-operations.md).
+
+Ordered workers process up to eight independent channels concurrently; sorted transaction locks still serialize every channel and both sides of a raid. The shared PostgreSQL pool defaults to 32 connections, configurable with DATABASE_POOL_MAX (8-64). Immutable configuration validation is bounded and cached by both bytes and hash, and ordinary activity avoids unrelated clock and studio-ballot queries.
