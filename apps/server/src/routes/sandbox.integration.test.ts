@@ -6,6 +6,7 @@ import { runMigrations } from '@ripple/database';
 import { createTemporaryDatabase, type TemporaryDatabase } from '@ripple/database/testing';
 import { channelViewSchema, founderShell, studioStateSchema } from '@ripple/contracts';
 import { buildApp } from '../app.ts';
+import { createSyntheticWorld } from '../game/sandbox.ts';
 
 interface Judge {
   worldId: string;
@@ -182,5 +183,23 @@ describe('judge sandbox API', () => {
         })
       ).statusCode,
     ).toBe(400);
+  });
+
+  it('serializes concurrent capacity checks and preserves one account vote across repeated actions', async () => {
+    const judge = await create();
+    await ok(judge, { action: 'vote', channelId: judge.channelId, choice: 1, crowd: true });
+    await ok(judge, { action: 'vote', channelId: judge.channelId, choice: 2, crowd: true });
+    expect((await view(judge)).round?.counts.reduce((sum, n) => sum + n, 0)).toBe(4);
+    const count = (
+      await pool.query<{ n: number }>(
+        "select count(*)::int n from worlds where mode='sandbox' and expires_at>clock_timestamp()",
+      )
+    ).rows[0]!.n;
+    const results = await Promise.allSettled([
+      createSyntheticWorld(pool, { maxActiveWorlds: count + 1 }),
+      createSyntheticWorld(pool, { maxActiveWorlds: count + 1 }),
+    ]);
+    expect(results.filter((result) => result.status === 'fulfilled')).toHaveLength(1);
+    expect(results.filter((result) => result.status === 'rejected')).toHaveLength(1);
   });
 });

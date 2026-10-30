@@ -92,15 +92,10 @@ async function channelsOf(pool: pg.Pool, worldId: string): Promise<string[]> {
 export async function createJudgeWorld(
   pool: pg.Pool,
 ): Promise<SyntheticWorld & { neighborId: string }> {
-  const active =
-    (
-      await pool.query<{ count: number }>(
-        "select count(*)::int as count from worlds where mode='sandbox' and expires_at>clock_timestamp()",
-      )
-    ).rows[0]?.count ?? 0;
-  if (active >= MAX_SANDBOX_WORLDS)
-    throw new ApiError('CAPACITY_FULL', 429, 'All sandbox slots are in use. Try again later.');
-  const world = await createSyntheticWorld(pool, { mechanicsVersion: 1 });
+  const world = await createSyntheticWorld(pool, {
+    mechanicsVersion: 1,
+    maxActiveWorlds: MAX_SANDBOX_WORLDS,
+  }).catch(sandboxFailure);
   const neighbor = await createSyntheticPeer(
     pool,
     world,
@@ -160,7 +155,7 @@ async function commandFor(
       return (action.crowd ? ['judge', 'crowd-1', 'crowd-2', 'crowd-3'] : ['judge']).map(
         (name) => ({
           type: 'vote',
-          actorKey: actor(`${name}:${randomUUID()}`),
+          actorKey: actor(name),
           choice: action.choice,
         }),
       );

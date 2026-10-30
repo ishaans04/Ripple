@@ -39,7 +39,12 @@ export function capabilityMatches(capability: string, hash: string): boolean {
 /** Internal versioned fixture factory; public CLI creation explicitly chooses the current genesis. */
 export async function createSyntheticWorld(
   pool: pg.Pool,
-  options: { seed?: string; timings?: RoundTimings; mechanicsVersion?: 0 | 1 } = {},
+  options: {
+    seed?: string;
+    timings?: RoundTimings;
+    mechanicsVersion?: 0 | 1;
+    maxActiveWorlds?: number;
+  } = {},
 ): Promise<SyntheticWorld> {
   const worldId = randomUUID(),
     channelId = randomUUID();
@@ -49,6 +54,16 @@ export async function createSyntheticWorld(
     hash = rulesetHash(rules);
   const timings = roundTimingsSchema.parse(options.timings ?? syntheticTimings);
   await transaction(pool, async (client) => {
+    if (options.maxActiveWorlds !== undefined) {
+      await client.query("select pg_advisory_xact_lock(hashtext('ripple-sandbox-capacity'))");
+      const active =
+        (
+          await client.query<{ count: number }>(
+            "select count(*)::int as count from worlds where mode='sandbox' and expires_at>clock_timestamp()",
+          )
+        ).rows[0]?.count ?? 0;
+      if (active >= options.maxActiveWorlds) throw new SandboxError('CAPACITY_FULL');
+    }
     await client.query(
       'insert into rulesets (hash,version,engine_version,canonical) values ($1,$2,$3,$4) on conflict do nothing',
       [hash, rules.version, rules.engineVersion, rulesetCanonicalJson(rules)],
