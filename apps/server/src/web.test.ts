@@ -71,6 +71,10 @@ describe('web application serving', () => {
     expect(studio.headers['permissions-policy']).toBe('camera=(self), microphone=()');
     expect(studio.headers['content-security-policy']).toContain("'wasm-unsafe-eval'");
     expect(studio.headers['content-security-policy']).toContain("worker-src 'self'");
+    const sandbox = await app.inject({ url: '/sandbox' });
+    expect(sandbox.statusCode).toBe(200);
+    expect(sandbox.headers['permissions-policy']).toBe('camera=(self), microphone=()');
+    expect(sandbox.headers['content-security-policy']).toContain("worker-src 'self'");
     const home = await app.inject({ url: '/' });
     expect(home.headers['permissions-policy']).toBe('camera=(), microphone=()');
     expect(home.headers['content-security-policy']).not.toContain('wasm-unsafe-eval');

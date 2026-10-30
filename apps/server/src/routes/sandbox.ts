@@ -45,6 +45,7 @@ const actionSchema = z.discriminatedUnion('action', [
   z.strictObject({ action: z.literal('studioStop'), channelId: channel }),
   z.strictObject({
     action: z.literal('propose'),
+    inputMode: z.enum(['camera', 'pointer']).optional(),
     channelId: channel,
     blueprint: blueprintSchema,
     creditOptIn: z.boolean(),
@@ -67,7 +68,13 @@ function sandboxFailure(error: unknown): never {
   if (error instanceof SandboxError)
     throw new ApiError(
       error.code,
-      error.code === 'UNAUTHORIZED' ? 401 : error.code === 'WORLD_EXPIRED' ? 410 : 409,
+      error.code === 'UNAUTHORIZED'
+        ? 401
+        : error.code === 'WORLD_EXPIRED'
+          ? 410
+          : error.code === 'CAPACITY_FULL'
+            ? 429
+            : 409,
       error.code === 'WORLD_EXPIRED'
         ? 'This sandbox expired. Start a new one.'
         : 'Sandbox access refused.',
@@ -91,7 +98,7 @@ async function channelsOf(pool: pg.Pool, worldId: string): Promise<string[]> {
 /** A labelled synthetic world with a resident, a seeded neighbor and an enabled studio. */
 export async function createJudgeWorld(
   pool: pg.Pool,
-): Promise<SyntheticWorld & { neighborId: string }> {
+): Promise<SyntheticWorld & { neighborId: string; neighborReadCapability: string }> {
   const world = await createSyntheticWorld(pool, {
     mechanicsVersion: 1,
     maxActiveWorlds: MAX_SANDBOX_WORLDS,
@@ -131,7 +138,11 @@ export async function createJudgeWorld(
     });
   }
   await settleSyntheticWorld(pool, world);
-  return { ...world, neighborId: neighbor.channelId };
+  return {
+    ...world,
+    neighborId: neighbor.channelId,
+    neighborReadCapability: neighbor.readCapability,
+  };
 }
 
 async function commandFor(
@@ -200,6 +211,7 @@ async function commandFor(
           artistKey: actor('judge-artist'),
           credit: 'synthetic-judge',
           creditOptIn: action.creditOptIn,
+          ...(action.inputMode === undefined ? {} : { inputMode: action.inputMode }),
           blueprint: action.blueprint,
         },
       ];
@@ -236,6 +248,8 @@ export function registerSandboxRoutes(app: FastifyInstance, pool: pg.Pool): void
         channelId: world.channelId,
         neighborId: world.neighborId,
         capability: world.ownerCapability,
+        readCapability: world.readCapability,
+        neighborReadCapability: world.neighborReadCapability,
       });
     },
   );
@@ -326,6 +340,8 @@ export function registerSandboxRoutes(app: FastifyInstance, pool: pg.Pool): void
         channelId: world.channelId,
         neighborId: world.neighborId,
         capability: world.ownerCapability,
+        readCapability: world.readCapability,
+        neighborReadCapability: world.neighborReadCapability,
       });
     },
   );
@@ -342,6 +358,19 @@ export function registerSandboxRoutes(app: FastifyInstance, pool: pg.Pool): void
       if (first === undefined) throw new ApiError('NOT_FOUND', 404, 'Sandbox not found.');
       await authorize(pool, { worldId, channelId: first }, owner);
       const report = await runReplay(pool, await exportAcceptedWorld(pool, worldId));
+      if (report.sourceComparison?.every((item) => item.equal))
+        await transaction(pool, async (client) => {
+          await authorizeSynthetic(client, { worldId, channelId: first }, owner);
+          await client.query(
+            `insert into analytics_events(world_id,channel_id,id,type,aggregates)
+          select $1,$2,$3,'sandbox_completed','{"sandbox":true}'::jsonb
+          where exists(select 1 from rounds where world_id=$1 and resolution is not null)
+          and exists(select 1 from transfers where world_id=$1)
+          and exists(select 1 from studio_sessions where world_id=$1 and phase='COMPLETED')
+          and not exists(select 1 from analytics_events where world_id=$1 and type='sandbox_completed')`,
+            [worldId, first, randomUUID()],
+          );
+        });
       return { synthetic: true, ...report };
     },
   );

@@ -40,10 +40,12 @@ export function StudioStatus({
   channel,
   now,
   showLink,
+  syntheticControls = false,
 }: {
   channel: ChannelView;
   now: number;
   showLink: boolean;
+  syntheticControls?: boolean;
 }) {
   const session = channel.studio?.session;
   const hatch = channel.round?.studioHatch;
@@ -115,7 +117,11 @@ export function StudioStatus({
             </li>
           </ol>
           <p>
-            Vote in chat: {session.finalists.map((f) => `!ripple ${f.index}`).join(', ')} or !ripple{' '}
+            {syntheticControls ? 'Use Synthetic vote above: ' : 'Vote in chat: '}
+            {session.finalists
+              .map((f) => (syntheticControls ? String(f.index) : `!ripple ${f.index}`))
+              .join(', ')}{' '}
+            or {syntheticControls ? '' : '!ripple '}
             {session.finalists.length + 1} · closes in {clock(session.votingCloseAtMs, now) ?? '—'}{' '}
             · {votes} votes
           </p>

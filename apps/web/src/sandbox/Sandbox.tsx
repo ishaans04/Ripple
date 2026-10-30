@@ -40,6 +40,20 @@ export default function Sandbox() {
   const [message, setMessage] = useState('');
   const [replay, setReplay] = useState<Replay | null>(null);
   const channelId = selected ?? judge?.channelId;
+  useEffect(() => {
+    const changed = () => {
+      setJudge(judgeFromHash(location.hash));
+      setSelected(null);
+      setChannel(null);
+      setStudio(null);
+      setMessage('');
+      setReplay(null);
+    };
+    window.addEventListener('hashchange', changed);
+    return () => {
+      window.removeEventListener('hashchange', changed);
+    };
+  }, []);
   async function refresh(current: Judge, id: string) {
     const next = await snapshot(current, id);
     setChannel(next);
@@ -121,6 +135,10 @@ export default function Sandbox() {
     </button>
   );
   const phase = channel?.studio?.session?.phase;
+  useEffect(() => {
+    const session = studio?.challenge?.studioSessionId;
+    if (session) track('editor_opened', { kind: 'studio', sessionId: session });
+  }, [studio?.challenge?.studioSessionId]);
   return (
     <div className={styles.page}>
       <main>
@@ -241,6 +259,7 @@ export default function Sandbox() {
                   channel={channel}
                   now={studio?.serverTimeMs ?? Date.now()}
                   showLink={false}
+                  syntheticControls
                 />
               </>
             )}
@@ -306,8 +325,8 @@ export default function Sandbox() {
               if (studio.challenge)
                 track(event, { kind: 'studio', sessionId: studio.challenge.studioSessionId });
             },
-            submit: (blueprint, creditOptIn) =>
-              void run(() => action({ action: 'propose', blueprint, creditOptIn })),
+            submit: (blueprint, creditOptIn, inputMode) =>
+              void run(() => action({ action: 'propose', blueprint, creditOptIn, inputMode })),
           }}
         />
       )}

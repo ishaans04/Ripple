@@ -128,6 +128,14 @@ describe('judge sandbox API', () => {
         .json<{ sourceComparison: { equal: boolean }[] }>()
         .sourceComparison.every((item) => item.equal),
     ).toBe(true);
+    expect(
+      (
+        await pool.query(
+          "select 1 from analytics_events where world_id=$1 and type='sandbox_completed'",
+          [judge.worldId],
+        )
+      ).rowCount,
+    ).toBe(1);
     // Reset ends the old world and starts a fresh one.
     const reset = await app.inject({
       method: 'POST',
