@@ -222,7 +222,7 @@ The overlay displays actual energy, numbered choices/trade-offs, aggregate votes
 
 ## Cocoon Studio
 
-Cocoon Studio is off until the broadcaster enables it in the controller, where they also choose review or restricted automatic approval, creation, voting and review windows, the return-during-voting policy (finish or cancel), the cosmetic-only policy, proposal limits and the OBS break and active scene names. **Start break studio** and **End break** work without any OBS automation.
+Cocoon Studio is available unless the installation sets `ENABLE_COCOON_STUDIO=false`, and stays off for each channel until the broadcaster enables it in the controller, where they also choose review or restricted automatic approval, creation, voting and review windows, the return-during-voting policy (finish or cancel), the cosmetic-only policy, proposal limits and the OBS break and active scene names. **Start break studio** and **End break** work without any OBS automation.
 
 Opening a studio records the break, pauses the round at its checkpoint and captures the creature's genome, design version, appearance, ruleset and next mutation slot. Only currently legal shell trade-offs (Grit +2 against Pulse, Calm or Drift −2) are offered; when none is legal the studio is a labelled appearance-only one or is deferred. Studio activity never counts as habitat activity. The studio link appears on the overlay and in a bot announcement. Artists sign in with Twitch purely for identity (no scopes); anyone can edit locally, and drafts never reach the server until an explicit confirmation sends one bounded declarative blueprint. Each artist has one active proposal, replaceable at a bounded rate until creation closes; the broadcaster can remove proposals and block artists.
 

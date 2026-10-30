@@ -19,7 +19,11 @@ const sessionParams = z.strictObject({ id: z.uuid().transform((id) => id.toLower
  * The studio link is shared publicly in chat and on the overlay, so the unguessable session ID is
  * its read capability. It exposes the captured challenge and public studio state only.
  */
-export function registerStudioPublicRoutes(app: FastifyInstance, pool: pg.Pool): void {
+export function registerStudioPublicRoutes(
+  app: FastifyInstance,
+  pool: pg.Pool,
+  studioEnabled = true,
+): void {
   app.get(
     '/api/studios/:id',
     { config: { rateLimit: { max: 120, timeWindow: '1 minute' } } },
@@ -124,7 +128,7 @@ export function registerStudioPublicRoutes(app: FastifyInstance, pool: pg.Pool):
       ).rows[0];
       if (bridge === undefined)
         throw new ApiError('BRIDGE_UNAUTHORIZED', 401, 'The studio bridge capability is invalid.');
-      if (!bridge.enabled)
+      if (!studioEnabled || !bridge.enabled)
         throw new ApiError(
           'STUDIO_DISABLED',
           409,

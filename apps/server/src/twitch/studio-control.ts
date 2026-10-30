@@ -121,6 +121,10 @@ export function registerStudioControl(
   config: TwitchConfig,
 ): void {
   const limited = { config: { rateLimit: { max: 30, timeWindow: '1 minute' } } };
+  // The installation flag closes every way into a new studio; existing records stay readable.
+  const requireStudio = () => {
+    if (config.studio === false) throw new ControlError(409, 'STUDIO_DISABLED');
+  };
   async function ownerChannel(request: FastifyRequest): Promise<OwnerSession> {
     const owner = await ownerSession(pool, request, config, true);
     const params = parse(idParam, request.params);
@@ -140,7 +144,13 @@ export function registerStudioControl(
         : await ownerChannel(request);
       if (studioScoped) await studioOwner(pool, owner, parse(idParam, request.params).id);
       const key = idempotencyKey(request);
+      if (action === 'studio.start') requireStudio();
       const body = parse(schema, request.body);
+      if (
+        action === 'studio.settings' &&
+        settingsBody.safeParse(body).data?.settings.enabled === true
+      )
+        requireStudio();
       const receipt = await queueOwnerCommand(pool, owner, key, action, body, () =>
         Promise.resolve(command(body as never, request, owner)),
       );
@@ -244,6 +254,7 @@ export function registerStudioControl(
     { config: { rateLimit: { max: 5, timeWindow: '1 minute' } } },
     async (request) => {
       const owner = await ownerChannel(request);
+      requireStudio();
       const capability = opaqueToken();
       await transaction(pool, async (client) => {
         await client.query('select id from channels where world_id=$1 and id=$2 for update', [
@@ -449,6 +460,7 @@ export function registerStudioControl(
     { config: { rateLimit: { max: 10, timeWindow: '1 minute' } } },
     async (request, reply) => {
       const artist = await artistSession(pool, request, config, true);
+      requireStudio();
       const params = parse(idParam, request.params);
       const key = idempotencyKey(request);
       if (

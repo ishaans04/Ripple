@@ -41,7 +41,7 @@ export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
   await registerGateway(app, options.pool);
   registerHealthRoutes(app, options.pool);
   registerGameReadRoutes(app, options.pool);
-  registerStudioPublicRoutes(app, options.pool);
+  registerStudioPublicRoutes(app, options.pool, options.config.twitch?.studio !== false);
   app.get('/api/connection', (_request, reply) => {
     reply.header('Cache-Control', 'no-store');
     return reply.send({ liveEnabled: options.config.twitch !== undefined });

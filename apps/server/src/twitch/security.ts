@@ -42,6 +42,8 @@ export interface TwitchConfig {
   sessionSecret: string;
   /** Optional paid-event celebrations; off unless ENABLE_CELEBRATIONS=true. */
   celebrations?: boolean;
+  /** Installation-wide Cocoon Studio flag; on unless ENABLE_COCOON_STUDIO=false. */
+  studio?: boolean;
 }
 export function readTwitchConfig(
   env: Record<string, string | undefined>,
@@ -57,6 +59,8 @@ export function readTwitchConfig(
   }
   if (!['true', 'false', '', undefined].includes(env.ENABLE_CELEBRATIONS))
     throw new Error('ENABLE_CELEBRATIONS must be true or false');
+  if (!['true', 'false', '', undefined].includes(env.ENABLE_COCOON_STUDIO))
+    throw new Error('ENABLE_COCOON_STUDIO must be true or false');
   const parsed = liveEnvironment.safeParse(env);
   if (!parsed.success)
     throw new Error(
@@ -77,6 +81,7 @@ export function readTwitchConfig(
     operatorSecret: p.OPERATOR_SECRET,
     sessionSecret: p.SESSION_SECRET,
     celebrations: env.ENABLE_CELEBRATIONS === 'true',
+    studio: env.ENABLE_COCOON_STUDIO !== 'false',
   };
 }
 const envelopeSchema = z.strictObject({

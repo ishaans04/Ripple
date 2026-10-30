@@ -387,6 +387,49 @@ describe('studio routes', () => {
     });
   });
 
+  it('closes new studios, submissions and bridge links when the installation flag is off', async () => {
+    const closed = await buildApp({
+      config: { logLevel: 'silent', webRoot: undefined, twitch: { ...config, studio: false } },
+      pool,
+    });
+    try {
+      const post = (url: string, payload: Record<string, unknown>) =>
+        closed.inject({
+          method: 'POST',
+          url,
+          cookies: ownerCookies,
+          headers: {
+            origin: config.origin,
+            'x-csrf-token': owner.csrf,
+            'idempotency-key': randomUUID(),
+          },
+          payload,
+        });
+      expect(
+        (
+          await post(`/api/channels/${channel}/studio/start`, { expectedVersion: await version() })
+        ).json(),
+      ).toMatchObject({
+        error: { code: 'STUDIO_DISABLED' },
+      });
+      expect(
+        (
+          await post(`/api/channels/${channel}/studio/settings`, {
+            expectedVersion: await version(),
+            settings: { ...defaultStudioSettings, enabled: true },
+          })
+        ).json(),
+      ).toMatchObject({ error: { code: 'STUDIO_DISABLED' } });
+      expect(
+        (await post(`/api/channels/${channel}/studio/bridge-capability`, {})).json(),
+      ).toMatchObject({
+        error: { code: 'STUDIO_DISABLED' },
+      });
+    } finally {
+      await closed.close();
+    }
+  });
+
   it('reviews only an owned studio with its current session version', async () => {
     const session = (
       await pool.query<{ id: string; version: number }>(

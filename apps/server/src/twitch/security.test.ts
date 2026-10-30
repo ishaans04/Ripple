@@ -29,6 +29,12 @@ describe('live credential boundaries', () => {
     expect(() => readTwitchConfig({ ...env, RULESET_VERSION: 'unknown' })).toThrow(
       'RULESET_VERSION',
     );
+    // Cocoon Studio is available by default and can be closed for the whole installation.
+    expect(readTwitchConfig(env)?.studio).toBe(true);
+    expect(readTwitchConfig({ ...env, ENABLE_COCOON_STUDIO: 'false' })?.studio).toBe(false);
+    expect(() => readTwitchConfig({ ...env, ENABLE_COCOON_STUDIO: 'off' })).toThrow(
+      'ENABLE_COCOON_STUDIO',
+    );
   });
   it('keeps local evaluation independent of Twitch secrets', () => {
     expect(readTwitchConfig({})).toBeUndefined();
