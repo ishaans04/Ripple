@@ -21,7 +21,7 @@ afterAll(async () => {
   await pool.end();
   await temporary.drop();
 });
-it('erases artist identity without rewriting accepted history and re-sign-in creates an unrelated pseudonym', async () => {
+it('erases artist credit without rewriting history or resetting the scoped participation identity', async () => {
   const world = await createSyntheticWorld(pool);
   await acceptSyntheticCommand(
     pool,
@@ -60,9 +60,34 @@ it('erases artist identity without rewriting accepted history and re-sign-in cre
   });
   expect(await canonicalGameProjection(pool, world)).toEqual(before);
   const fresh = await registerArtistIdentity(pool, world.worldId, 'subject-hash', 'PrivateArtist');
-  expect(fresh.artist_key).not.toBe(identity.artist_key);
+  expect(fresh.artist_key).toBe(identity.artist_key);
   expect(fresh.credit_token).not.toBe(identity.credit_token);
   expect(await resolvePublicCredits(pool, projection)).toMatchObject({ credit: 'Former artist' });
+});
+it('cannot bypass an artist block by forgetting and signing into the same account again', async () => {
+  const world = await createSyntheticWorld(pool);
+  const identity = await registerArtistIdentity(
+    pool,
+    world.worldId,
+    'blocked-subject',
+    'PrivateName',
+  );
+  await pool.query(
+    'insert into studio_artist_blocks(world_id,channel_id,artist_key) values($1,$2,$3)',
+    [world.worldId, world.channelId, identity.artist_key],
+  );
+  await forgetArtist(pool, world.worldId, identity.artist_key);
+  const fresh = await registerArtistIdentity(pool, world.worldId, 'blocked-subject', 'PrivateName');
+  expect(
+    (
+      await pool.query(
+        'select 1 from studio_artist_blocks where world_id=$1 and channel_id=$2 and artist_key=$3',
+        [world.worldId, world.channelId, fresh.artist_key],
+      )
+    ).rowCount,
+  ).toBe(1);
+  expect(fresh.credit_token).not.toBe(identity.credit_token);
+  expect(await resolvePublicCredits(pool, identity.credit_token)).toBe('Former artist');
 });
 it('keeps identity lookup world-scoped and expires credit independently of game state', async () => {
   const first = await createSyntheticWorld(pool),

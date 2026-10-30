@@ -1,4 +1,4 @@
-import { randomBytes } from 'node:crypto';
+import { createHash, randomBytes } from 'node:crypto';
 import { transaction } from '@ripple/database';
 import type pg from 'pg';
 
@@ -25,7 +25,11 @@ export async function registerArtistIdentity(
       [
         worldId,
         subjectHash,
-        randomBytes(32).toString('hex'),
+        // The input is already an installation-secret account HMAC, never a raw Twitch ID.
+        // Keep proposal uniqueness and moderation stable across forgetting/re-authentication.
+        createHash('sha256')
+          .update(`ripple-artist:${worldId.toLowerCase()}:${subjectHash}`)
+          .digest('hex'),
         `artist:${randomBytes(16).toString('hex')}`,
         login.slice(0, 40),
       ],
