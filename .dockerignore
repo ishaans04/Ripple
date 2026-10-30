@@ -7,7 +7,9 @@
 .vscode
 .idea
 tmp
-docs
+docs/*
+!docs/licenses/
+!docs/licenses/**
 .env
 .env.*
 *.log
