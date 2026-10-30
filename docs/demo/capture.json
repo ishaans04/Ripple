@@ -1,0 +1,99 @@
+{
+  "synthetic": true,
+  "mockedRequests": 0,
+  "elapsedMs": 128942,
+  "browser": "156.0.8078.74",
+  "journey": "landing-mutation-habitat-raid-studio-pointer-confirm-vote-approve-hatch-replay-lineage-reset",
+  "liveAcceptance": false,
+  "timeline": [
+    {
+      "atMs": 7760,
+      "action": "Synthetic vote 1"
+    },
+    {
+      "atMs": 10712,
+      "action": "Next scheduled step"
+    },
+    {
+      "atMs": 12575,
+      "action": "Add local chat"
+    },
+    {
+      "atMs": 13821,
+      "action": "Change habitat"
+    },
+    {
+      "atMs": 15642,
+      "action": "Next scheduled step"
+    },
+    {
+      "atMs": 19788,
+      "action": "Start break studio"
+    },
+    {
+      "atMs": 21584,
+      "action": "Review and submit"
+    },
+    {
+      "atMs": 23140,
+      "action": "Submit proposal"
+    },
+    {
+      "atMs": 25404,
+      "action": "Next scheduled step"
+    },
+    {
+      "atMs": 27372,
+      "action": "Synthetic vote 1"
+    },
+    {
+      "atMs": 30212,
+      "action": "Next scheduled step"
+    },
+    {
+      "atMs": 31994,
+      "action": "Approve design"
+    },
+    {
+      "atMs": 34766,
+      "action": "Next scheduled step"
+    },
+    {
+      "atMs": 37166,
+      "action": "Next scheduled step"
+    },
+    {
+      "atMs": 43102,
+      "action": "End break"
+    },
+    {
+      "atMs": 46266,
+      "action": "Simulate raid to other channel"
+    },
+    {
+      "atMs": 48625,
+      "action": "Neighbor channel"
+    },
+    {
+      "atMs": 55139,
+      "action": "Next scheduled step"
+    },
+    {
+      "atMs": 65758,
+      "action": "Next scheduled step"
+    },
+    {
+      "atMs": 67392,
+      "action": "Home channel"
+    },
+    {
+      "atMs": 83573,
+      "action": "Replay and verify"
+    },
+    {
+      "atMs": 127705,
+      "action": "Reset sandbox"
+    }
+  ],
+  "footage": "Actual installed app and PostgreSQL. Pointer creation, synthetic votes/raids and accelerated time. Physical hand/Twitch/OBS footage remains deferred."
+}

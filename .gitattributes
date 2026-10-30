@@ -6,3 +6,4 @@
 *.woff2 binary
 *.wasm binary
 *.task binary
+*.webm binary
