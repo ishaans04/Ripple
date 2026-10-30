@@ -1,5 +1,12 @@
 import { z } from 'zod';
-import { lineageNodeSchema, lineagePageSchema, type LineagePage } from '@ripple/contracts';
+import {
+  lineageCatalogItemSchema,
+  lineageCatalogSchema,
+  lineageNodeSchema,
+  lineagePageSchema,
+  type LineageCatalog,
+  type LineagePage,
+} from '@ripple/contracts';
 import type pg from 'pg';
 import type { WorldScope } from './sandbox.ts';
 
@@ -11,6 +18,47 @@ export const lineageVisibleSql = `(l.origin_channel_id=$2 or exists(
   select 1 from transfers transfer join organisms witness on witness.world_id=transfer.world_id and witness.id=transfer.child_id
   where transfer.world_id=l.world_id and witness.lineage_id=l.id and (transfer.source_channel_id=$2 or transfer.destination_channel_id=$2)
 ))`;
+
+export async function readLineageCatalog(
+  pool: pg.Pool,
+  scope: WorldScope,
+  limit: number,
+  after?: { createdAt: string; id: string },
+): Promise<LineageCatalog | null> {
+  const row = (
+    await pool.query<{ payload: unknown }>(
+      `select jsonb_build_object('schemaVersion',1,'worldId',w.id,'channelId',$2::uuid,'mode',w.mode,
+    'total',(select count(*) from lineages l where l.world_id=w.id and ${lineageVisibleSql}),
+    'lineages',coalesce((select jsonb_agg(item order by created_at,id) from (
+      select l.created_at,l.id,jsonb_build_object('lineageId',l.id,'createdAt',l.created_at,'origin',jsonb_build_object('channelId',origin.id,'label',origin.label),
+        'founder',jsonb_build_object('id',founder.id,'name',founder.name,'status',founder.status),
+        'counts',(select jsonb_build_object('total',count(*),'alive',count(*) filter(where status='ALIVE'),'harbor',count(*) filter(where status='HARBOR'),'fossil',count(*) filter(where status='FOSSIL'),'archived',count(*) filter(where status='ARCHIVED')) from organisms where world_id=l.world_id and lineage_id=l.id)
+      ) as item from lineages l join channels origin on origin.world_id=l.world_id and origin.id=l.origin_channel_id
+      join organisms founder on founder.world_id=l.world_id and founder.lineage_id=l.id and founder.parent_id is null
+      where l.world_id=w.id and ${lineageVisibleSql} and ($3::timestamptz is null or (l.created_at,l.id)>($3::timestamptz,$4::uuid))
+      order by l.created_at,l.id limit $5
+    ) page),'[]'::jsonb)) as payload from worlds w where w.id=$1 and (w.expires_at is null or w.expires_at>clock_timestamp())`,
+      [scope.worldId, scope.channelId, after?.createdAt ?? null, after?.id ?? null, limit + 1],
+    )
+  ).rows[0];
+  if (row === undefined) return null;
+  const saved = lineageCatalogSchema
+      .extend({
+        lineages: z.array(lineageCatalogItemSchema).max(51),
+        next: z.string().nullable().default(null),
+      })
+      .parse(row.payload),
+    lineages = saved.lineages.slice(0, limit),
+    last = lineages.at(-1);
+  return lineageCatalogSchema.parse({
+    ...saved,
+    lineages,
+    next:
+      saved.lineages.length > limit && last !== undefined
+        ? `${last.createdAt}|${last.lineageId}`
+        : null,
+  });
+}
 
 export async function readLineage(
   pool: pg.Pool,

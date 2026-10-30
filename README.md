@@ -180,6 +180,8 @@ Mutation-preview rules use only a recorded recent valid profile and a known trac
 
 ## Lineage reads
 
+`GET /api/lineages?worldId=…&channelId=…` lists every lineage the channel originated or encountered in that world, oldest first, with its origin channel, founder name/status and alive/harbor/fossil/archived branch counts. `limit` is 1–50 (default 20); pass the returned `next` as `after` to continue. `total` counts all visible lineages. Responses are `no-store` and never include other worlds' lineages.
+
 `GET /api/lineages/:id?worldId=…&channelId=…` uses the channel's read capability to return approved origin/branch names, parent/founder/generation, saved genome/appearance/energy/status, current or last ended host, birth/admission provenance, branch counts and earned trace attribution after expiry. Access is limited to that world's lineages the channel originated or encountered; it does not expose unrelated lineages, voter identities, raw transfer snapshots or unenrolled destination identities.
 
 Pages default to 25 branches, with `limit` from 1–50. Pass the returned `next` as `after` to continue in generation/ID order. Each page uses one committed database snapshot; refresh from the first page to include newly born branches. Historical fossils preserve their actual saved appearance and energy, including contest losses above zero. The full passport and lineage UI remain Phase 7 work.

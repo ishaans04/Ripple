@@ -4,7 +4,7 @@ import type { FastifyInstance } from 'fastify';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { runMigrations } from '@ripple/database';
 import { createTemporaryDatabase, type TemporaryDatabase } from '@ripple/database/testing';
-import { lineagePageSchema } from '@ripple/contracts';
+import { lineageCatalogSchema, lineagePageSchema } from '@ripple/contracts';
 import { buildApp } from '../app.ts';
 import {
   acceptSyntheticCommand,
@@ -85,6 +85,79 @@ describe('capability-scoped lineage ancestry reads', () => {
       headers: { authorization: `Bearer ${capability}` },
     });
   }
+  function catalog(world: SyntheticWorld, query = '') {
+    return app.inject({
+      url: `/api/lineages?worldId=${world.worldId}&channelId=${world.channelId}${query}`,
+      headers: { authorization: `Bearer ${world.readCapability}` },
+    });
+  }
+  it('discovers multiple local and encountered lineages with bounded stable pages and no unrelated worlds', async () => {
+    const { world, seed } = await start(),
+      host = await peer(world),
+      rival = syntheticSeedCommand(),
+      other = await start();
+    expect(lineageCatalogSchema.parse((await catalog(host)).json())).toMatchObject({
+      total: 0,
+      lineages: [],
+      next: null,
+    });
+    await send(host, { ...rival, name: 'Approved competing strain' });
+    expect(lineageCatalogSchema.parse((await catalog(host)).json())).toMatchObject({
+      total: 1,
+      lineages: [{ lineageId: rival.lineageId, founder: { name: 'Approved competing strain' } }],
+    });
+    await raid(world, host);
+    const before = await canonicalGameProjection(pool, host),
+      response = await catalog(host, '&limit=1'),
+      first = lineageCatalogSchema.parse(response.json());
+    expect(response.statusCode).toBe(200);
+    expect(response.headers['cache-control']).toBe('no-store');
+    expect(first).toMatchObject({
+      mode: 'sandbox',
+      worldId: world.worldId,
+      channelId: host.channelId,
+      total: 2,
+    });
+    expect(first.lineages).toHaveLength(1);
+    expect(first.next).not.toBeNull();
+    const second = lineageCatalogSchema.parse(
+      (await catalog(host, `&limit=1&after=${encodeURIComponent(first.next!)}`)).json(),
+    );
+    expect(second.lineages).toHaveLength(1);
+    expect(second.next).toBeNull();
+    expect(new Set([...first.lineages, ...second.lineages].map((item) => item.lineageId))).toEqual(
+      new Set([seed.lineageId, rival.lineageId]),
+    );
+    expect(
+      [...first.lineages, ...second.lineages].find((item) => item.lineageId === seed.lineageId),
+    ).toMatchObject({ counts: { total: 2, alive: 1, harbor: 1 } });
+    expect(
+      lineageCatalogSchema
+        .parse((await catalog(world)).json())
+        .lineages.map((item) => item.lineageId),
+    ).toEqual([seed.lineageId]);
+    expect(
+      lineageCatalogSchema
+        .parse((await catalog(other.world)).json())
+        .lineages.map((item) => item.lineageId),
+    ).toEqual([other.seed.lineageId]);
+    expect(response.body).not.toMatch(
+      /private-lineage-seed|ownerCapability|actorKey|twitchId|receiptId/,
+    );
+    expect(await canonicalGameProjection(pool, host)).toBe(before);
+    for (const query of [
+      '&limit=51',
+      '&after=invalid',
+      '&after=2026-01-01T00:00:00Z|bad',
+      '&unexpected=true',
+    ])
+      expect((await catalog(host, query)).statusCode).toBe(400);
+    await pool.query(
+      'update overlay_capabilities set revoked_at=clock_timestamp() where world_id=$1 and channel_id=$2',
+      [world.worldId, host.channelId],
+    );
+    expect((await catalog(host)).statusCode).toBe(401);
+  });
   it('paginates actual retained branches without voter identities, private snapshots or gameplay writes', async () => {
     const { world, seed } = await start();
     const transfers = [];

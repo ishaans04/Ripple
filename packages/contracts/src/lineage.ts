@@ -61,6 +61,40 @@ export const lineagePageSchema = z.object({
   next: z.string().nullable(),
 });
 export type LineagePage = z.infer<typeof lineagePageSchema>;
+export const lineageCatalogItemSchema = z.object({
+  lineageId: z.uuid(),
+  origin: host,
+  createdAt: z.iso.datetime({ offset: true }),
+  founder: z.object({
+    id: z.uuid(),
+    name: z.string(),
+    status: z.enum(['ALIVE', 'HARBOR', 'FOSSIL', 'ARCHIVED']),
+  }),
+  counts: lineagePageSchema.shape.counts,
+});
+export const lineageCatalogSchema = z.object({
+  schemaVersion: z.literal(1),
+  worldId: z.uuid(),
+  channelId: z.uuid(),
+  mode: z.enum(['live', 'sandbox', 'replay']),
+  total: z.int().nonnegative(),
+  lineages: z.array(lineageCatalogItemSchema).max(50),
+  next: z.string().nullable(),
+});
+export type LineageCatalog = z.infer<typeof lineageCatalogSchema>;
+export const lineageCatalogCursorSchema = z
+  .string()
+  .max(120)
+  .transform((value) => {
+    const [createdAt, id, extra] = value.split('|');
+    return { createdAt: extra === undefined ? createdAt : '', id };
+  })
+  .pipe(
+    z.strictObject({
+      createdAt: z.iso.datetime({ offset: true }),
+      id: z.uuid().transform((id) => id.toLowerCase()),
+    }),
+  );
 export const lineageCursorSchema = z
   .string()
   .max(80)
