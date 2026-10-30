@@ -132,8 +132,9 @@ export async function readSnapshot(
     } | null;
     studio: unknown;
     server_time: Date;
-  }>(
-    `select c.state_version,c.label,w.mode,c.online,c.healthy,c.paused,c.rules_hash,(c.configuration->>'graceMs')::int as grace_ms,
+  }>({
+    name: 'ripple-channel-snapshot-v1',
+    text: `select c.state_version,c.label,w.mode,c.online,c.healthy,c.paused,c.rules_hash,(c.configuration->>'graceMs')::int as grace_ms,
     (select jsonb_build_object('id',o.id,'version',o.version,'name',o.name,'pulse',o.pulse,'calm',o.calm,'grit',o.grit,'drift',o.drift,'health',o.health,'status',o.status,'appearance',o.appearance,
       'appearanceMapping',o.appearance_mapping,'origin',${organismOriginSql},'hosts',${organismHostsSql})
       from residencies r join organisms o on o.world_id=r.world_id and o.id=r.organism_id
@@ -147,8 +148,8 @@ export async function readSnapshot(
     jsonb_build_object('version',cp.mechanics_version,'enableRequested',cp.mechanics_requested,'tracesEnabled',cp.traces_enabled,'state',${mechanicsStateProjectionSql}) as mechanics,
     date_trunc('milliseconds',clock_timestamp()) as server_time
     from channels c join worlds w on w.id=c.world_id join channel_play cp on cp.world_id=c.world_id and cp.channel_id=c.id where c.world_id=$1 and c.id=$2 and (w.expires_at is null or w.expires_at>clock_timestamp())`,
-    [worldId, channelId],
-  );
+    values: [worldId, channelId],
+  });
   const row = result.rows[0];
   if (row === undefined) return null;
   const organism = row.organism;

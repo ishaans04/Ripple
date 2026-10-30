@@ -92,8 +92,9 @@ export async function loadContext(
         active_round: RoundRow | null;
         round_organism: OrganismRow | null;
       }
-    >(
-      `select c.*,w.mode as world_mode,coalesce(w.replay_of,w.id) as studio_world_id,s.canonical as rules_canonical,
+    >({
+      name: 'ripple-game-context-v1',
+      text: `select c.*,w.mode as world_mode,coalesce(w.replay_of,w.id) as studio_world_id,s.canonical as rules_canonical,
       m.canonical as policy_canonical,wm.policy_hash,p.mechanics_version,p.mechanics_requested,p.traces_enabled,
       to_jsonb(o) as resident,to_jsonb(r) as active_round,to_jsonb(ro) as round_organism
       from channels c join worlds w on w.id=c.world_id join rulesets s on s.hash=c.rules_hash
@@ -104,8 +105,8 @@ export async function loadContext(
       left join rounds r on r.world_id=c.world_id and r.channel_id=c.id and r.completed_at is null and r.kind<>'STUDIO_SELECTION'
       left join organisms ro on ro.world_id=r.world_id and ro.id=r.organism_id
       where c.world_id=$1 and c.id=$2`,
-      [worldId, channelId],
-    )
+      values: [worldId, channelId],
+    })
   ).rows[0];
   if (channel === undefined) throw new Error('Missing locked channel.');
   const rules = storedRules(channel.rules_hash, channel.rules_canonical);
