@@ -1,5 +1,6 @@
 import { readFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
+import { expectAccessible } from './axe.ts';
 import { test, expect, type Page } from '@playwright/test';
 
 declare global {
@@ -76,6 +77,7 @@ test('local editor recovers a draft, supports keyboard undo, and requires confir
   const response = await page.goto('/studio');
   expect(response?.headers()['permissions-policy']).toBe('camera=(self), microphone=()');
   await expect(page.getByRole('heading', { name: 'Shape what travels next.' })).toBeVisible();
+  await expectAccessible(page);
   await page.getByRole('slider', { name: 'Shell width', exact: true }).focus();
   await page.keyboard.press('End');
   await page.getByRole('button', { name: 'bands', exact: true }).click();

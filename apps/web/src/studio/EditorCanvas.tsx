@@ -48,7 +48,7 @@ export function EditorCanvas({
   }
   return (
     <div className={styles.canvas} data-testid="editor-canvas">
-      <ShellRenderer part={part}>
+      <ShellRenderer part={part} interactive label="Shell editor">
         {(Object.keys(handles) as ShellParameter[]).map((key) => (
           <g
             key={key}

@@ -1,3 +1,4 @@
+import { expectAccessible } from './axe.ts';
 import { test, expect } from '@playwright/test';
 import {
   channelViewSchema,
@@ -97,6 +98,7 @@ test('transparent overlay uses scoped state, server-aligned deadlines and honest
   await expect(page.getByRole('button')).toHaveCount(0);
   await expect(page.locator('body')).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
   await page.screenshot({ path: testInfo.outputPath('overlay.png'), omitBackground: true });
+  await expectAccessible(page);
   if (push === undefined || disconnect === undefined) throw new Error('Missing scoped connection');
   current = { ...initial, round: { ...initial.round, voteCloseAtMs: serverTime - 1 } };
   push();
@@ -261,6 +263,7 @@ test('overlay draws persisted gene-linked parts and bounded ancestry marks with 
   await expect(creature).toHaveAttribute('data-appendages', 'stubs');
   await expect(creature.locator('[data-mark="origin"]')).toHaveCount(1);
   await expect(creature.locator('[data-mark="ancestry"]')).toHaveCount(2);
+  await expectAccessible(page);
   const moving = page.locator('[data-movement="quick"]');
   await expect(moving).not.toHaveCSS('animation-name', 'none');
   await page.emulateMedia({ reducedMotion: 'reduce' });

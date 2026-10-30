@@ -26,6 +26,7 @@ export function ShellRenderer({
   rendererVersion = 'shell-v1',
   parts,
   label = 'Community shell preview',
+  interactive = false,
   children,
 }: {
   part: ShellPart;
@@ -33,6 +34,8 @@ export function ShellRenderer({
   /** Gene-linked parts from a persisted appearance mapping version. */
   parts?: GeneAppearance;
   label?: string;
+  /** Editable drawings expose their focusable handles as a group; static art is one image. */
+  interactive?: boolean;
   children?: ReactNode;
 }) {
   const clipId = 'shell-' + useId().replace(/[^a-zA-Z0-9_-]/g, '');
@@ -48,7 +51,7 @@ export function ShellRenderer({
   return (
     <svg
       viewBox="0 0 1000 1000"
-      role="img"
+      role={interactive ? 'group' : 'img'}
       aria-label={label}
       data-renderer="shell-v1"
       data-appendages={parts?.appendages}

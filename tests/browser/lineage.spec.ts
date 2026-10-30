@@ -1,3 +1,4 @@
+import { expectAccessible } from './axe.ts';
 import { test, expect, type Page } from '@playwright/test';
 import {
   founderShell,
@@ -265,6 +266,7 @@ test('lineage map shows competing lineages, fossils, trace attribution and the h
   await passportView.getByRole('button', { name: 'Show older decisions' }).click();
   await expect(passportView).toContainText('Round 1 at Mira channel: Selection not recorded');
   await expect(passportView.getByRole('button', { name: 'Show older decisions' })).toHaveCount(0);
+  await expectAccessible(page);
   expect(requests.some((item) => item.includes('before=2'))).toBe(true);
   expect(requests.every((item) => !item.includes(capability))).toBe(true);
   await page.getByLabel('Lineage (2)').selectOption(id(200));

@@ -20,4 +20,13 @@ describe('versioned shell renderer', () => {
       renderToStaticMarkup(<ShellRenderer part={founderShell} rendererVersion="shell-v9" />),
     ).toContain('unsupported');
   });
+  it('exposes editable drawings as a labelled group so their handles stay reachable', () => {
+    const editable = renderToStaticMarkup(
+        <ShellRenderer part={founderShell} interactive label="Shell editor" />,
+      ),
+      still = renderToStaticMarkup(<ShellRenderer part={founderShell} />);
+    expect(editable).toContain('role="group"');
+    expect(editable).toContain('aria-label="Shell editor"');
+    expect(still).toContain('role="img"');
+  });
 });

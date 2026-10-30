@@ -1,3 +1,4 @@
+import { expectAccessible } from './axe.ts';
 import { test, expect } from '@playwright/test';
 import { mechanicsStateSchema, roundAnalysisSchema } from '@ripple/contracts';
 import {
@@ -889,6 +890,7 @@ test('display preferences send a versioned presentation request and keep keyboar
   const panel = page.getByRole('region', { name: 'Overlay display' }),
     save = panel.getByRole('button', { name: 'Save display preferences' });
   await expect(panel).toContainText('Compact layout · subtle motion · family news shown');
+  await expectAccessible(page);
   await expect(save).toBeDisabled();
   const expanded = panel.getByRole('radio', { name: /Expanded/ });
   await panel.getByRole('radio', { name: /Compact/ }).focus();
@@ -903,4 +905,15 @@ test('display preferences send a versioned presentation request and keep keyboar
   await expect(panel).toContainText('Expanded layout · motion reduced · family news hidden');
   await expect(save).toBeDisabled();
   await expect(expanded).toBeChecked();
+});
+
+test('landing page and the read-only preview pass automated WCAG 2.1 AA checks', async ({
+  page,
+}) => {
+  await page.goto('/');
+  await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
+  await expectAccessible(page);
+  await page.goto('/preview');
+  await expect(page.getByRole('status')).toContainText('unsupported');
+  await expectAccessible(page);
 });
