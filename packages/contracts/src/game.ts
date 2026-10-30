@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { celebrationKinds, displayPreferencesSchema } from './control.ts';
+import { studioSettingsSchema } from './studio-session.ts';
 
 export const roundTimingsSchema = z
   .strictObject({
@@ -120,8 +121,89 @@ export const propagationCommandSchema = z.discriminatedUnion('type', [
   }),
 ]);
 export type PropagationCommand = z.infer<typeof propagationCommandSchema>;
+const studioArtistKey = z.string().regex(/^[a-f0-9]{64}$/);
+/**
+ * Cocoon Studio commands (addendum 8.4, 19). Every one passes through the ordered channel inbox,
+ * so availability, deadlines, proposals, votes and reviews apply in one recorded order.
+ */
+export const studioCommandSchema = z.discriminatedUnion('type', [
+  z.strictObject({
+    type: z.literal('studioSettings'),
+    settings: studioSettingsSchema,
+    expectedVersion: z.int().nonnegative().optional(),
+  }),
+  z.strictObject({
+    type: z.literal('studioStart'),
+    trigger: z.enum(['manual', 'bridge']),
+    sessionId: z.uuid(),
+    expectedVersion: z.int().nonnegative().optional(),
+  }),
+  z.strictObject({
+    type: z.literal('studioReturn'),
+    trigger: z.enum(['manual', 'bridge']),
+    expectedVersion: z.int().nonnegative().optional(),
+  }),
+  z.strictObject({
+    type: z.literal('bridgeScene'),
+    scene: z.string().min(1).max(100),
+    sessionId: z.uuid(),
+  }),
+  z.strictObject({ type: z.literal('bridgeStale') }),
+  z.strictObject({
+    type: z.literal('studioDeadline'),
+    sessionId: z.uuid(),
+    phase: z.enum(['CREATING', 'VOTING', 'REVIEW']),
+    version: z.int().nonnegative(),
+    ballotRoundId: z.uuid(),
+  }),
+  z.strictObject({
+    type: z.literal('studioProposal'),
+    sessionId: z.uuid(),
+    proposalId: z.uuid(),
+    artistKey: studioArtistKey,
+    credit: z.string().min(1).max(40),
+    creditOptIn: z.boolean(),
+    // Untrusted until the worker validates it against the captured challenge (addendum 24.3).
+    blueprint: z.unknown(),
+  }),
+  z.strictObject({
+    type: z.literal('studioWithdraw'),
+    sessionId: z.uuid(),
+    proposalId: z.uuid(),
+    artistKey: studioArtistKey,
+  }),
+  z.strictObject({
+    type: z.literal('studioRemoveProposal'),
+    sessionId: z.uuid(),
+    proposalId: z.uuid(),
+    expectedVersion: z.int().nonnegative().optional(),
+  }),
+  z.strictObject({
+    type: z.literal('studioBlockArtist'),
+    artistKey: studioArtistKey,
+    blocked: z.boolean(),
+    expectedVersion: z.int().nonnegative().optional(),
+  }),
+  z.strictObject({
+    type: z.literal('studioReview'),
+    sessionId: z.uuid(),
+    sessionVersion: z.int().nonnegative(),
+    decision: z.enum(['approve', 'keep']),
+    adaptationId: z.uuid(),
+    expectedVersion: z.int().nonnegative().optional(),
+  }),
+  z.strictObject({
+    type: z.literal('studioRelease'),
+    sessionId: z.uuid(),
+    sessionVersion: z.int().nonnegative(),
+    expectedVersion: z.int().nonnegative().optional(),
+  }),
+]);
+export type StudioCommand = z.infer<typeof studioCommandSchema>;
+
 export const gameCommandSchema = z.discriminatedUnion('type', [
   ...propagationCommandSchema.options,
+  ...studioCommandSchema.options,
   z.strictObject({
     type: z.literal('seed'),
     organismId: z.uuid(),
@@ -187,6 +269,19 @@ export const gameResultCodes = [
   'NOT_CLAIM_DESTINATION',
   'CLAIM_EXPIRED',
   'CLAIM_CAPACITY',
+  'STUDIO_DISABLED',
+  'STUDIO_ACTIVE',
+  'STUDIO_DEFERRED',
+  'STUDIO_UNAVAILABLE',
+  'STUDIO_WRONG_PHASE',
+  'BASE_STATE_CHANGED',
+  'MUTATION_NOT_LEGAL',
+  'INVALID_BLUEPRINT',
+  'PROPOSAL_LIMIT_REACHED',
+  'PROPOSAL_RATE_LIMITED',
+  'ARTIST_BLOCKED',
+  'PENDING_ADAPTATION_EXISTS',
+  'REVIEW_EXPIRED',
 ] as const;
 export type GameResultCode = (typeof gameResultCodes)[number];
 

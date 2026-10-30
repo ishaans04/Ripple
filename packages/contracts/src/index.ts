@@ -1,6 +1,7 @@
 export * from './errors.ts';
 export * from './health.ts';
 export * from './studio.ts';
+export * from './studio-session.ts';
 export * from './game.ts';
 export * from './live.ts';
 export * from './control.ts';

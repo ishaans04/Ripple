@@ -6,6 +6,7 @@ import { mechanicsStateSchema } from './mechanics-view.ts';
 import { appearanceMappingVersionSchema, appearanceMarksSchema } from './appearance.ts';
 import { familyDigestSchema } from './family.ts';
 import { celebrationSchema, displayPreferencesSchema } from './control.ts';
+import { studioViewSchema } from './studio-session.ts';
 export const choicePreviewSchema = z
   .object({
     label: z.literal('Based on recent activity'),
@@ -68,6 +69,8 @@ export const channelViewSchema = z.object({
   display: displayPreferencesSchema.optional(),
   // The latest accepted celebration; viewers show it briefly after its server time.
   celebration: celebrationSchema.nullable().optional(),
+  // Cocoon Studio state; older retained public updates predate it.
+  studio: studioViewSchema.optional(),
   organism: z
     .object({
       id: z.uuid(),
