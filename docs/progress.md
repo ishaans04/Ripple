@@ -227,7 +227,7 @@ Two CI incidents were resolved rather than retried away. The two intermediate ce
 
 Pending under the live deferral (not claimed): real OBS capture readability, real paid-event delivery, and real Twitch chat and raid acceptance. Next is Phase 8 (connected Cocoon Studio) only.
 
-## Phase 8 — connected Cocoon Studio (in progress)
+## Phase 8 — connected Cocoon Studio (complete; live two-channel acceptance pending)
 
 Started only after the Phase 7 exit `805f49f` was pushed. Scope is S01–S17 and S19 (remaining parts) plus the S18 records. No Phase 9 work has started.
 
@@ -242,6 +242,40 @@ Decisions settled in this phase:
 - **Identity.** Artist sign-in requests no scopes, never stores the token, and keys the Twitch account with an HMAC so proposals never contain the account ID. Channel credit is the default; artist credit is opt-in.
 - **Replay identity.** Blueprints bind their world, so replay worlds record their source world (migration 0034) and studio challenges use it, reproducing hashes while state stays isolated.
 - **Dormant designs.** A qualifying losing finalist in a different direction becomes a dormant capture with its design. When offered later it is revalidated and adopted only if chat selects that card. Cosmetic finalists and losers in the winner's direction create no dormant genes.
+
+### Phase 8 exit — 30 October 2026
+
+All applicable Phase 8 exit checks pass on code `f7ccb7b`. Sixteen focused commits make up the phase (fifteen implementation, test, tooling and documentation commits and this exit record), with no empty commits. Every author and committer is `ishaans04 <sharmaishaaan04@gmail.com>`, with no co-author trailers.
+
+| Requirement | Completed behavior and evidence |
+| --- | --- |
+| S01 enablement | Installation flag `ENABLE_COCOON_STUDIO` (default on) plus per-channel opt-in with break/active scenes, review or restricted automatic approval, creation/voting/review windows, finish/cancel return policy, cosmetic offer/defer, proposal cap and replacement cooldown (bounded, validated). Normal play is unaffected when disabled. Route and settings tests. |
+| S02 availability | ACTIVE/REST/UNKNOWN kept apart from broadcast status; offline closes creation and voting without a result and keeps review/pending results; lost input health is UNKNOWN and suspends bridge transitions. Lifecycle journeys. |
+| S03 manual controls | Start break studio / End break owner routes and controller buttons, working without OBS. Route and browser journeys. |
+| S04 OBS bridge | `/bridge` browser source with a separate revocable per-channel capability that may only report scene, heartbeat and hidden; reconciles on load/reconnect, debounces, ignores unconfigured scenes; stale never implies a return. The overlay read credential and the bridge cannot reach owner controls. Unit, route and browser tests. |
+| S05 lifecycle | Server-authoritative phases with guarded transitions, an append-only transition log, version-checked reviews/releases, durable creation/voting/review deadlines, one nonterminal studio per channel and restart recovery from PostgreSQL. |
+| S06 game clock | `studio_hold` pauses the round checkpoint; studio activity never counts; one reservation per organism; repeated breaks add no change; committing still needs the intervening observation (property tests and journeys). |
+| S07 legal challenge | Opening captures genome, design version, appearance, rules and next slot; only legal directions; cosmetic-only offer or deferral; revalidation at approval and hatch holds back incompatible bases without rebasing. |
+| S08 blueprint contract | Declarative blueprints validated in channel order against the captured challenge, payload and phase; canonical hash; immutable storage; SVG/HTML/extra fields and unsupported renderers rejected. |
+| S09 studio page | Live page with creature, trade-offs, countdown, rules and privacy statement; hand and pointer produce identical submissions only after confirmation; drafts stay local; lost connections keep the draft and retry only while creation is open; camera stops when the studio closes. |
+| S10 hand tracking | Phase 2 worker tracking, now stopped on session close. |
+| S11 artist identity | Scope-free Twitch sign-in, token never stored, HMAC-keyed identity, separate cookies/CSRF from broadcaster sessions. |
+| S12 proposals | One active proposal per artist, bounded replacement, withdrawal, cap, payload limit, creation-only, broadcaster removal and artist blocks, each explained. |
+| S13 shortlist and vote | Seeded shortlist preferring different directions; `STUDIO_SELECTION` ballot reusing vote uniqueness beside the paused ordinary round; Keep current default and tie winner; chat-only voting. |
+| S14 review and hatch | Review with trade-off and credit, finite lifetime, restricted automatic approval, visibly pending cocoon, hatch replacing the next mutation slot in one transaction, duplicate-safe; rejection, release, expiry and fossil cancellation recorded. |
+| S15 inheritance and provenance | Children inherit only committed designs; passports show studio, creating channel, trade-off, parent, history and opt-in credit; fossils keep their design. |
+| S16 mechanic connections | Losing finalists become dormant captures with revalidated art; traces record emitter design without studio activity counting; analysis recognizes hatch rounds. |
+| S17 events and presentation | Public update types and snapshot studio view (finalists and committed/pending designs only); overlay invitation, vote, cocoon and hatch; controller review/moderation; bot announcements. Reconnect restores state. |
+| S18 records | Studio records replay exactly in an isolated replay world (source world identity, migration 0034). Replay tooling remains Phase 9. |
+| S19 (Phase 8 parts) | No camera data or landmarks reach the server; untrusted blueprints; no prize or power from gesture use. Retention/deletion remain Phase 10. |
+
+Evidence on code `f7ccb7b`: lint, formatting, all workspace/browser types, 454 unit tests, all 198 real-PostgreSQL integration tests (52 files plus the studio edge-case file), and all 86 Windows Chrome/Edge journeys with zero retries. All three jobs of [CI run 41073609756](https://github.com/ishaans04/Ripple/actions/runs/41073609756) pass, as did [41072754272](https://github.com/ishaans04/Ripple/actions/runs/41072754272) on the preceding code. The local production image rebuilt with all 35 migrations and healthy services, and the installed game, raids, mechanics and new studio smoke tools pass. A pre-migration backup is retained at ignored `tmp/ripple-before-phase8.dump`; this is not a restore rehearsal.
+
+Section 22 coverage: return during creation and voting (both policies), offline, stale bridge, no proposals, no votes, rejection, review expiry, release, fossil, incompatible base, raid before hatch, duplicate commit and approval, restart and unsupported renderer are real-PostgreSQL journeys; hand-tracking loss, network loss and camera denial are browser journeys.
+
+One incident during development: a full integration run under heavy concurrent host load failed the existing Phase 4 grant-refresh test once, because its two refresh calls ran sequentially rather than overlapping. It passed 3/3 in isolation and in the final serial run; no test or timeout was changed.
+
+Pending under the live deferral (not claimed): the two-channel studio rehearsal in the [Twitch setup guide](twitch-setup.md) (real break, hand-built proposal, chat selection, approval, hatch, real raid and inherited design), real OBS bridge behavior and capture, and all earlier live gates. Next is Phase 9 only.
 
 ## Live acceptance deferral requested by the user
 
