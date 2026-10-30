@@ -1,6 +1,11 @@
 import { z } from 'zod';
 import { appearanceViewSchema } from './live.ts';
 import { studioGenomeSchema } from './studio.ts';
+import {
+  appearanceMappingVersionSchema,
+  appearanceMarksSchema,
+  markHostSchema,
+} from './appearance.ts';
 
 const host = z.object({ channelId: z.uuid(), label: z.string() });
 export const lineageNodeSchema = z.object({
@@ -13,6 +18,10 @@ export const lineageNodeSchema = z.object({
   health: z.int().min(0).max(100),
   status: z.enum(['ALIVE', 'HARBOR', 'FOSSIL', 'ARCHIVED']),
   appearance: appearanceViewSchema,
+  appearanceMapping: appearanceMappingVersionSchema,
+  marks: appearanceMarksSchema,
+  // Every host the ancestry chain was admitted to, in first-admission order.
+  hosts: z.array(markHostSchema).max(17),
   createdAt: z.iso.datetime({ offset: true }),
   lastHost: host
     .extend({

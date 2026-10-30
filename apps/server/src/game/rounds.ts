@@ -1,4 +1,4 @@
-import type { GameCommand } from '@ripple/contracts';
+import { APPEARANCE_MAPPING_VERSION, type GameCommand } from '@ripple/contracts';
 import {
   activeElapsed,
   advanceRoundClock,
@@ -41,8 +41,8 @@ export async function seedResident(
     [channel.world_id, command.lineageId, channel.id, channel.rules_hash, new Date(atMs)],
   );
   await client.query(
-    `insert into organisms (world_id,id,lineage_id,founder_id,generation,founding_genome,pulse,calm,grit,drift,health,status,appearance,mutation_slots,created_at)
-    values ($1,$2,$3,$2,0,$4,$5,$6,$7,$8,$9,'ALIVE',$10,$11,$12)`,
+    `insert into organisms (world_id,id,lineage_id,founder_id,generation,founding_genome,pulse,calm,grit,drift,health,status,appearance,mutation_slots,created_at,appearance_mapping)
+    values ($1,$2,$3,$2,0,$4,$5,$6,$7,$8,$9,'ALIVE',$10,$11,$12,$13)`,
     [
       channel.world_id,
       command.organismId,
@@ -56,6 +56,7 @@ export async function seedResident(
       JSON.stringify(founderAppearance),
       JSON.stringify(initialMutationSlots),
       new Date(atMs),
+      APPEARANCE_MAPPING_VERSION,
     ],
   );
   await client.query(

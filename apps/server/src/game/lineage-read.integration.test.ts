@@ -209,6 +209,9 @@ describe('capability-scoped lineage ancestry reads', () => {
         generation: 1,
         status: 'HARBOR',
         lastHost: { channelId: transfer.destinationChannelId, role: 'harbor', endedAt: null },
+        // Waiting in a harbor is not admission, so it earns no ancestry mark.
+        hosts: [{ channelId: world.channelId }],
+        marks: { origin: { channelId: world.channelId }, ancestry: [] },
         birth: {
           transferId: transfer.transferId,
           source: { channelId: world.channelId },
@@ -333,6 +336,66 @@ describe('capability-scoped lineage ancestry reads', () => {
       latestTrace: null,
     });
   }, 20000);
+  it('derives bounded ancestry marks from actually admitted hosts across real raid generations', async () => {
+    const { world, seed } = await start(),
+      hosts = [await peer(world, 'Second host'), await peer(world, 'Third host')];
+    hosts.push(await peer(world, 'Fourth host'));
+    let source: SyntheticWorld = world;
+    const children: string[] = [];
+    for (const host of hosts) {
+      await send(host, { type: 'policy', visitorPolicy: 'accept', expectedVersion: 0 });
+      children.push((await raid(source, host)).childId);
+      await advance(host, 3200);
+      await observe(host);
+      await advance(host, 800);
+      source = host;
+    }
+    const page = lineagePageSchema.parse((await get(world, seed.lineageId)).json()),
+      node = (id: string) => page.nodes.find((item) => item.id === id),
+      label = (host: SyntheticWorld, name: string) => ({
+        channelId: host.channelId,
+        label: `Synthetic ${name}`,
+      }),
+      origin = { channelId: world.channelId, label: expect.any(String) as string },
+      [second, third, fourth] = [
+        label(hosts[0]!, 'Second host'),
+        label(hosts[1]!, 'Third host'),
+        label(hosts[2]!, 'Fourth host'),
+      ];
+    expect(node(seed.organismId)).toMatchObject({
+      appearanceMapping: 1,
+      hosts: [origin],
+      marks: { origin, ancestry: [] },
+    });
+    expect(node(children[0]!)).toMatchObject({
+      generation: 1,
+      hosts: [origin, second],
+      marks: { origin, ancestry: [second] },
+    });
+    expect(node(children[1]!)).toMatchObject({
+      generation: 2,
+      hosts: [origin, second, third],
+      marks: { ancestry: [second, third] },
+    });
+    expect(node(children[2]!)).toMatchObject({
+      generation: 3,
+      appearanceMapping: 1,
+      hosts: [origin, second, third, fourth],
+      marks: { origin, ancestry: [second, fourth] },
+    });
+    const snapshot = (
+      await app.inject({
+        url: `/api/worlds/${world.worldId}/snapshot?channelId=${hosts[2]!.channelId}`,
+        headers: { authorization: `Bearer ${hosts[2]!.readCapability}` },
+      })
+    ).json<{ payload: { organism: unknown } }>();
+    expect(snapshot.payload.organism).toMatchObject({
+      id: children[2],
+      appearanceMapping: 1,
+      marks: { origin, ancestry: [second, fourth] },
+    });
+    expect(snapshot.payload.organism).not.toHaveProperty('hosts');
+  }, 30000);
   it('shows an unclaimed branch to its source without revealing an unenrolled destination identity', async () => {
     const { world, seed } = await start(),
       unrelated = await peer(world);

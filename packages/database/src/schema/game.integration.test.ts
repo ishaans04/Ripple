@@ -113,4 +113,26 @@ describe('game identity invariants in PostgreSQL', () => {
       ]),
     ).rejects.toMatchObject({ code: '23514' });
   });
+
+  it('records the appearance mapping version once and rejects unknown or rewritten versions', async () => {
+    const saved = await pool.query<{ appearance_mapping: number }>(
+      'select appearance_mapping from organisms where world_id=$1 and id=$2',
+      [world, organism],
+    );
+    expect(saved.rows[0]?.appearance_mapping).toBe(1);
+    await expect(
+      pool.query('update organisms set appearance_mapping=2 where world_id=$1 and id=$2', [
+        world,
+        organism,
+      ]),
+    ).rejects.toMatchObject({ code: '23514' });
+    const unknown = randomUUID();
+    await expect(
+      pool.query(
+        `insert into organisms (world_id,id,lineage_id,founder_id,generation,founding_genome,pulse,calm,grit,drift,health,status,appearance,mutation_slots,appearance_mapping)
+         values ($1,$2,$3,$2,0,$4,6,6,6,6,50,'ALIVE','{}','[]',2)`,
+        [world, unknown, lineage, '{"pulse":6,"calm":6,"grit":6,"drift":6}'],
+      ),
+    ).rejects.toMatchObject({ code: '23514' });
+  });
 });

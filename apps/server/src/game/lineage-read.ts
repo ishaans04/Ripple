@@ -9,6 +9,11 @@ import {
 } from '@ripple/contracts';
 import type pg from 'pg';
 import type { WorldScope } from './sandbox.ts';
+import {
+  organismAppearanceProvenance,
+  organismHostsSql,
+  organismOriginSql,
+} from './appearance-projection.ts';
 
 /** The read capability grants family history only for lineages this channel originated or encountered. */
 export const lineageVisibleSql = `(l.origin_channel_id=$2 or exists(
@@ -60,6 +65,10 @@ export async function readLineageCatalog(
   });
 }
 
+const savedLineageNodeSchema = lineageNodeSchema
+  .omit({ appearanceMapping: true, marks: true, hosts: true })
+  .extend({ appearanceMapping: z.unknown(), origin: z.unknown(), hosts: z.unknown() });
+
 export async function readLineage(
   pool: pg.Pool,
   scope: WorldScope,
@@ -76,6 +85,7 @@ export async function readLineage(
     'nodes',coalesce((select jsonb_agg(item order by generation,id) from (
       select o.generation,o.id,jsonb_build_object('id',o.id,'parentId',o.parent_id,'founderId',o.founder_id,'generation',o.generation,'name',o.name,
         'genome',jsonb_build_object('pulse',o.pulse,'calm',o.calm,'grit',o.grit,'drift',o.drift),'health',o.health,'status',o.status,'appearance',o.appearance,'createdAt',o.created_at,
+        'appearanceMapping',o.appearance_mapping,'origin',${organismOriginSql},'hosts',${organismHostsSql},
         'lastHost',(select jsonb_build_object('channelId',c.id,'label',c.label,'role',r.role,'startedAt',r.started_at,'endedAt',r.ended_at)
           from residencies r join channels c on c.world_id=r.world_id and c.id=r.channel_id where r.world_id=o.world_id and r.organism_id=o.id
           order by (r.ended_at is null) desc,r.started_at desc,r.id desc limit 1),
@@ -108,11 +118,14 @@ export async function readLineage(
   if (row === undefined) return null;
   const saved = lineagePageSchema
       .extend({
-        nodes: z.array(lineageNodeSchema).max(51),
+        nodes: z.array(savedLineageNodeSchema).max(51),
         next: z.string().nullable().default(null),
       })
       .parse(row.payload),
-    nodes = saved.nodes.slice(0, limit),
+    nodes = saved.nodes.slice(0, limit).map(({ appearanceMapping, origin, hosts, ...node }) => ({
+      ...node,
+      ...organismAppearanceProvenance({ appearanceMapping, origin, hosts }, { includeHosts: true }),
+    })),
     last = nodes.at(-1);
   return lineagePageSchema.parse({
     ...saved,

@@ -3,6 +3,7 @@ import { shellPartSchema, studioGenomeSchema } from './studio.ts';
 import { propagationViewSchema, transferViewSchema } from './propagation-view.ts';
 import { roundAnalysisSchema } from './analysis.ts';
 import { mechanicsStateSchema } from './mechanics-view.ts';
+import { appearanceMappingVersionSchema, appearanceMarksSchema } from './appearance.ts';
 export const choicePreviewSchema = z
   .object({
     label: z.literal('Based on recent activity'),
@@ -67,6 +68,9 @@ export const channelViewSchema = z.object({
       status: z.string(),
       genome: studioGenomeSchema,
       appearance: appearanceViewSchema,
+      // Older retained public updates predate gene-linked appearance; fresh snapshots include both.
+      appearanceMapping: appearanceMappingVersionSchema.optional(),
+      marks: appearanceMarksSchema.optional(),
     })
     .nullable(),
   round: z
