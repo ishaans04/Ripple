@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { gameCommandSchema, type GameCommand } from '@ripple/contracts';
+import { CELEBRATION_COOLDOWN_MS, gameCommandSchema, type GameCommand } from '@ripple/contracts';
 import { ENGINE_VERSION, canonicalJson, mechanicsPolicyHash, sha256Hex } from '@ripple/engine';
 import { acceptInputInTransaction, lockChannels, transaction } from '@ripple/database';
 import type pg from 'pg';
@@ -38,6 +38,18 @@ async function apply(
       return clearHabitatTraces(context, sequence, atMs);
     case 'setTraces':
       return setHabitatTraces(context, command.enabled, sequence, atMs);
+    case 'celebration': {
+      // Presentation only and capped: never genes, energy, votes or habitat activity.
+      const shown = await context.client.query(
+        `update channel_play set celebration=jsonb_build_object('kind',$3::text,'atMs',$4::bigint)
+        where world_id=$1 and channel_id=$2 and (display->>'celebrations')::boolean
+        and (celebration is null or (celebration->>'atMs')::bigint<=$4::bigint-$5::bigint)`,
+        [context.channel.world_id, context.channel.id, command.kind, atMs, CELEBRATION_COOLDOWN_MS],
+      );
+      return shown.rowCount === 1
+        ? effect('APPLIED', 'celebration', { kind: command.kind })
+        : effect('NO_CHANGE');
+    }
     case 'display': {
       // Presentation only: the snapshot republishes the choice; no game state changes.
       const changed = await context.client.query(

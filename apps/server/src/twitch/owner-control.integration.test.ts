@@ -167,13 +167,19 @@ describe('owner preparation and admission controls', () => {
     const displayPost = (payload: Record<string, unknown>, key?: string, channel?: string) =>
       post(payload, key, channel, '127.0.0.3');
     const before = await readSnapshot(pool, worldId, target),
-      preferences = { layout: 'expanded', reducedMotion: true, familyNews: false },
+      preferences = {
+        layout: 'expanded',
+        reducedMotion: true,
+        familyNews: false,
+        celebrations: false,
+      },
       body = { action: 'display', preferences, expectedVersion: await version() },
       key = randomUUID();
     expect(before?.payload.display).toEqual({
       layout: 'compact',
       reducedMotion: false,
       familyNews: true,
+      celebrations: true,
     });
     expect((await displayPost(body, key, source)).statusCode).toBe(403);
     for (const invalid of [
@@ -206,7 +212,7 @@ describe('owner preparation and admission controls', () => {
     ).rejects.toMatchObject({ code: '23514' });
   });
   function defaults() {
-    return { layout: 'compact', reducedMotion: false, familyNews: true };
+    return { layout: 'compact', reducedMotion: false, familyNews: true, celebrations: true };
   }
   it('requires an owner, CSRF and exact versioned bodies for mechanics requests, with retry-stable acceptance', async () => {
     const body = { action: 'enableMechanics', expectedVersion: await version() },

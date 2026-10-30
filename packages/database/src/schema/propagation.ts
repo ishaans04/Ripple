@@ -54,7 +54,11 @@ export const channelPlay = pgTable(
     // Presentation-only broadcaster choices; validated as DisplayPreferences at every boundary.
     display: jsonb('display')
       .notNull()
-      .default(sql`'{"layout":"compact","reducedMotion":false,"familyNews":true}'::jsonb`),
+      .default(
+        sql`'{"layout":"compact","reducedMotion":false,"familyNews":true,"celebrations":true}'::jsonb`,
+      ),
+    // Latest accepted paid-event celebration: presentation only, capped by the worker.
+    celebration: jsonb('celebration'),
   },
   (t) => [
     check('channel_mechanics_version_valid', sql`${t.mechanicsVersion} in (0,1)`),
@@ -67,7 +71,11 @@ export const channelPlay = pgTable(
     check('non_mutation_rounds_valid', sql`${t.nonMutationRounds}>=0`),
     check(
       'channel_display_valid',
-      sql`${t.display} ?& array['layout','reducedMotion','familyNews'] and ${t.display}->>'layout' in ('compact','expanded') and jsonb_typeof(${t.display}->'reducedMotion')='boolean' and jsonb_typeof(${t.display}->'familyNews')='boolean'`,
+      sql`${t.display} ?& array['layout','reducedMotion','familyNews','celebrations'] and ${t.display}->>'layout' in ('compact','expanded') and jsonb_typeof(${t.display}->'reducedMotion')='boolean' and jsonb_typeof(${t.display}->'familyNews')='boolean' and jsonb_typeof(${t.display}->'celebrations')='boolean'`,
+    ),
+    check(
+      'channel_celebration_valid',
+      sql`${t.celebration} is null or (${t.celebration}->>'kind' in ('cheer','subscription','hype_train') and jsonb_typeof(${t.celebration}->'atMs')='number')`,
     ),
   ],
 );

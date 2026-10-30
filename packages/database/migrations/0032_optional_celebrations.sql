@@ -1,0 +1,6 @@
+ALTER TABLE "channel_play" DROP CONSTRAINT "channel_display_valid";--> statement-breakpoint
+ALTER TABLE "channel_play" ALTER COLUMN "display" SET DEFAULT '{"layout":"compact","reducedMotion":false,"familyNews":true,"celebrations":true}'::jsonb;--> statement-breakpoint
+ALTER TABLE "channel_play" ADD COLUMN "celebration" jsonb;--> statement-breakpoint
+UPDATE "channel_play" SET "display" = "display" || '{"celebrations":true}'::jsonb WHERE NOT "display" ? 'celebrations';--> statement-breakpoint
+ALTER TABLE "channel_play" ADD CONSTRAINT "channel_celebration_valid" CHECK ("channel_play"."celebration" is null or ("channel_play"."celebration"->>'kind' in ('cheer','subscription','hype_train') and jsonb_typeof("channel_play"."celebration"->'atMs')='number'));--> statement-breakpoint
+ALTER TABLE "channel_play" ADD CONSTRAINT "channel_display_valid" CHECK ("channel_play"."display" ?& array['layout','reducedMotion','familyNews','celebrations'] and "channel_play"."display"->>'layout' in ('compact','expanded') and jsonb_typeof("channel_play"."display"->'reducedMotion')='boolean' and jsonb_typeof("channel_play"."display"->'familyNews')='boolean' and jsonb_typeof("channel_play"."display"->'celebrations')='boolean');

@@ -5,7 +5,7 @@ import { roundAnalysisSchema } from './analysis.ts';
 import { mechanicsStateSchema } from './mechanics-view.ts';
 import { appearanceMappingVersionSchema, appearanceMarksSchema } from './appearance.ts';
 import { familyDigestSchema } from './family.ts';
-import { displayPreferencesSchema } from './control.ts';
+import { celebrationSchema, displayPreferencesSchema } from './control.ts';
 export const choicePreviewSchema = z
   .object({
     label: z.literal('Based on recent activity'),
@@ -66,6 +66,8 @@ export const channelViewSchema = z.object({
   familyDigest: familyDigestSchema.nullable().optional(),
   // Older retained public updates predate display preferences; viewers then use the defaults.
   display: displayPreferencesSchema.optional(),
+  // The latest accepted celebration; viewers show it briefly after its server time.
+  celebration: celebrationSchema.nullable().optional(),
   organism: z
     .object({
       id: z.uuid(),
@@ -129,5 +131,13 @@ export const controllerStatusSchema = z.object({
   snapshot: z.object({ version: z.int(), payload: channelViewSchema }).nullable(),
   readClients: z.int().nonnegative(),
   historicalOffers: z.array(transferViewSchema).max(10).optional(),
+  // Optional paid-event celebrations: whether the installation enables them and which kinds the
+  // broadcaster's grant actually covers.
+  celebrations: z
+    .object({
+      available: z.boolean(),
+      granted: z.array(z.enum(['cheer', 'subscription', 'hype_train'])).max(3),
+    })
+    .optional(),
 });
 export type ControllerStatus = z.infer<typeof controllerStatusSchema>;

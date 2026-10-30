@@ -225,6 +225,13 @@
       "when": 1793349021640,
       "tag": "0031_channel_display_preferences",
       "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "7",
+      "when": 1793350959433,
+      "tag": "0032_optional_celebrations",
+      "breakpoints": true
     }
   ]
 }

@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { displayPreferencesSchema } from './control.ts';
+import { celebrationKinds, displayPreferencesSchema } from './control.ts';
 
 export const roundTimingsSchema = z
   .strictObject({
@@ -58,6 +58,7 @@ export const propagationCommandSchema = z.discriminatedUnion('type', [
     enabled: z.boolean(),
     expectedVersion: z.int().nonnegative().optional(),
   }),
+  z.strictObject({ type: z.literal('celebration'), kind: z.enum(celebrationKinds) }),
   z.strictObject({
     type: z.literal('display'),
     preferences: displayPreferencesSchema,
