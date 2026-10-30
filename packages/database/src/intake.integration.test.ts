@@ -146,4 +146,53 @@ describe('durable ordered intake', () => {
       (await pool.query('select * from inbox where world_id=$1', [scope.worldId])).rowCount,
     ).toBe(1);
   });
+  it('keeps hot-channel lock waiters out of the pool so an independent channel can accept input', async () => {
+    const hot = await createTestChannel(pool),
+      other = await createTestChannel(pool);
+    const shared = new pg.Pool({ connectionString: temporary.connectionString, max: 2 });
+    const blocker = await pool.connect();
+    await blocker.query('begin');
+    await blocker.query('select id from channels where world_id=$1 and id=$2 for update', [
+      hot.worldId,
+      hot.channelId,
+    ]);
+    const waiting = Array.from({ length: 20 }, (_, i) =>
+      acceptInput(shared, {
+        ...hot,
+        provider: 'queue-test',
+        messageId: String(i),
+        command: { type: 'activity', actorKey: String(i) },
+      }),
+    );
+    let watchdog: ReturnType<typeof setTimeout> | undefined;
+    try {
+      // A deadlock watchdog, not a callback-latency assertion. The hot lock is still held.
+      const receipt = await Promise.race([
+        acceptInput(shared, {
+          ...other,
+          provider: 'queue-test',
+          messageId: 'independent',
+          command: { type: 'resume' },
+        }),
+        new Promise<never>((_, reject) => {
+          watchdog = setTimeout(() => {
+            reject(new Error('Independent channel starved behind hot-channel locks'));
+          }, 5000);
+        }),
+      ]);
+      expect(receipt).toMatchObject({ sequence: 1, duplicate: false });
+      expect(
+        (await pool.query('select 1 from inbox where world_id=$1', [hot.worldId])).rowCount,
+      ).toBe(0);
+    } finally {
+      clearTimeout(watchdog);
+      await blocker.query('rollback');
+      blocker.release();
+      await Promise.allSettled(waiting);
+      await shared.end();
+    }
+    expect(
+      (await pool.query('select 1 from inbox where world_id=$1', [hot.worldId])).rowCount,
+    ).toBe(20);
+  });
 });

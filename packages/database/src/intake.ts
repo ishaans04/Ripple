@@ -24,6 +24,9 @@ export interface IntakeReceipt {
   readonly duplicate: boolean;
   readonly acceptedAtMs: number;
 }
+// Wait for same-process channel ingress before borrowing a connection. PostgreSQL remains
+// the cross-process authority; a hot channel must not fill the shared pool with lock waiters.
+const intakeQueues = new WeakMap<pg.Pool, Map<string, Promise<void>>>();
 
 export async function acceptInputInTransaction(
   client: pg.PoolClient,
@@ -101,6 +104,33 @@ export async function acceptInputInTransaction(
   if (inserted.rowCount !== 1) throw new IntakeError('RECEIPT_CONFLICT');
   return { sequence, duplicate: false, acceptedAtMs: row.accepted_at.getTime() };
 }
+export async function serializeIngress<T>(
+  pool: pg.Pool,
+  key: string,
+  operation: () => Promise<T>,
+): Promise<T> {
+  let queues = intakeQueues.get(pool);
+  if (!queues) {
+    queues = new Map();
+    intakeQueues.set(pool, queues);
+  }
+  const previous = queues.get(key) ?? Promise.resolve();
+  const result = previous.then(operation);
+  const settled = result.then(
+    () => undefined,
+    () => undefined,
+  );
+  queues.set(key, settled);
+  try {
+    return await result;
+  } finally {
+    if (queues.get(key) === settled) queues.delete(key);
+  }
+}
 export async function acceptInput(pool: pg.Pool, input: IntakeInput): Promise<IntakeReceipt> {
-  return transaction(pool, (client) => acceptInputInTransaction(client, input));
+  return serializeIngress(
+    pool,
+    `channel:${input.worldId.toLowerCase()}:${input.channelId.toLowerCase()}`,
+    () => transaction(pool, (client) => acceptInputInTransaction(client, input)),
+  );
 }
