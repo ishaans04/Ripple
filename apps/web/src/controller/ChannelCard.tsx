@@ -5,7 +5,13 @@ import styles from './Controller.module.css';
 import { PropagationCard } from './PropagationCard.tsx';
 import { RoundAnalysisCard } from './RoundAnalysisCard.tsx';
 import { MechanicsCard } from './MechanicsCard.tsx';
-export function ChannelCard({ channel }: { channel: ChannelView }) {
+export function ChannelCard({
+  channel,
+  worldId = null,
+}: {
+  channel: ChannelView;
+  worldId?: string | null;
+}) {
   const creature = channel.organism,
     round = channel.round;
   return (
@@ -103,7 +109,10 @@ export function ChannelCard({ channel }: { channel: ChannelView }) {
             </>
           )}
           {round.analysis !== undefined && round.analysis !== null ? (
-            <RoundAnalysisCard analysis={round.analysis} />
+            <RoundAnalysisCard
+              analysis={round.analysis}
+              scope={worldId === null ? null : { worldId, channelId: channel.channelId }}
+            />
           ) : round.explanation !== null ? (
             <p>{round.explanation.headline}</p>
           ) : null}

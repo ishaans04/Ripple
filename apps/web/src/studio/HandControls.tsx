@@ -20,11 +20,14 @@ export function HandControls({
   part,
   dispatch,
   available = true,
+  onCamera,
 }: {
   part: ShellPart;
   dispatch: Dispatch<EditorAction>;
   /** False once a live studio closes: the camera stops and cannot restart for it. */
   available?: boolean;
+  /** Reports camera use for anonymous studio metrics; it never affects a proposal. */
+  onCamera?: (event: 'camera_enabled' | 'camera_failed') => void;
 }) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const session = useRef<CameraSession | null>(null);
@@ -58,8 +61,14 @@ export function HandControls({
     setError('');
     session.current?.stop();
     const next = new CameraSession(videoRef.current, {
-      onStatus: setStatus,
-      onError: setError,
+      onStatus: (next) => {
+        setStatus(next);
+        if (next === 'tracking') onCamera?.('camera_enabled');
+      },
+      onError: (message) => {
+        setError(message);
+        if (message !== '') onCamera?.('camera_failed');
+      },
       onHands: (hands) => {
         const result = interpretHands(
           gesture.current,

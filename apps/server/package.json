@@ -12,6 +12,7 @@
     "smoke:game": "node --env-file-if-exists=../../.env --conditions=ripple-source src/cli/smoke-game.ts",
     "smoke:raids": "node --env-file-if-exists=../../.env --conditions=ripple-source src/cli/smoke-raids.ts",
     "smoke:mechanics": "node --env-file-if-exists=../../.env --conditions=ripple-source src/cli/smoke-mechanics.ts",
+    "metrics": "node --env-file-if-exists=../../.env --conditions=ripple-source src/cli/metrics.ts",
     "replay": "node --env-file-if-exists=../../.env --conditions=ripple-source src/cli/replay.ts",
     "smoke:studio": "node --env-file-if-exists=../../.env --conditions=ripple-source src/cli/smoke-studio.ts"
   },

@@ -23,6 +23,7 @@ import { operationId } from './operation-id.ts';
 import { claimHistoricalRaid } from './historical-adoption.ts';
 import { clearHabitatTraces, setHabitatTraces } from './trace-control.ts';
 import { requestMechanics } from './mechanics-rollout.ts';
+import { analyticsFor, recordAnalytics } from './analytics.ts';
 import {
   acceptStudioVote,
   applyBridgeScene,
@@ -416,6 +417,7 @@ export async function processNextInput(
           checkedAtMs: identity.checked_at.getTime(),
         };
       }
+      const wasOnline = channel.online;
       let result =
         'expectedVersion' in command &&
         command.expectedVersion !== undefined &&
@@ -483,6 +485,12 @@ export async function processNextInput(
           },
           ...(mode === 'live' ? {} : { acceptedAtMs: input.accepted_at.getTime() }),
         });
+      await recordAnalytics(
+        context,
+        mode,
+        result,
+        analyticsFor(command, result, context, { online: wasOnline }, channel.online),
+      );
       await reconcileRoundDeadline(context);
       await queueAnnouncement(
         context,

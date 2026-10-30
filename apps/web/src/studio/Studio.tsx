@@ -54,6 +54,8 @@ export interface LiveEditor {
   canSubmit: boolean;
   cameraAvailable: boolean;
   submit: (blueprint: AppearanceBlueprint, creditOptIn: boolean) => void;
+  /** Anonymous editor events for studio metrics. */
+  onEvent?: (event: 'camera_enabled' | 'camera_failed' | 'fallback_selected') => void;
 }
 export default function Studio() {
   const params = new URLSearchParams(window.location.search);
@@ -87,6 +89,7 @@ export function StudioEditor({
       : (challenge.mutationTemplateIds[0] ?? 'cosmetic-only'),
   );
   const [creditOptIn, setCreditOptIn] = useState(false);
+  const cameraUsed = useRef(false);
   const [confirming, setConfirming] = useState(false);
   const dialog = useRef<HTMLDialogElement>(null);
   useEffect(() => {
@@ -224,6 +227,10 @@ export function StudioEditor({
             part={state.part}
             dispatch={dispatch}
             available={live?.cameraAvailable ?? true}
+            onCamera={(event) => {
+              if (event === 'camera_enabled') cameraUsed.current = true;
+              live?.onEvent?.(event);
+            }}
           />
           <section>
             <p className={styles.eyebrow}>01 / The trade-off</p>
@@ -367,6 +374,7 @@ export function StudioEditor({
               autoFocus
               disabled={!live.canSubmit}
               onClick={() => {
+                if (!cameraUsed.current) live.onEvent?.('fallback_selected');
                 live.submit(blueprint, creditOptIn);
                 setConfirming(false);
               }}

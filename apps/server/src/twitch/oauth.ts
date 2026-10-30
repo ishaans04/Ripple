@@ -146,6 +146,14 @@ export function registerOAuth(
         const channel =
           purpose === 'broadcaster' ? await enrollChannel(client, worldId, subject, login) : null;
         await storeGrant(client, api.config, worldId, channel, purpose, tokens, identity);
+        // Onboarding starts once per channel, when its broadcaster first authorizes Ripple.
+        if (channel !== null)
+          await client.query(
+            `insert into analytics_events(world_id,channel_id,id,type,aggregates)
+            select $1,$2,gen_random_uuid(),'onboarding_started','{"sandbox":false}'::jsonb
+            where not exists(select 1 from analytics_events where world_id=$1 and channel_id=$2 and type='onboarding_started')`,
+            [worldId, channel],
+          );
         if (channel !== null)
           await createOwnerSession(
             client,

@@ -14,6 +14,7 @@ import { ownerControlCommand } from './owner-control.ts';
 import { registerOwnerBlocks } from './owner-blocks.ts';
 import { registerStudioControl } from './studio-control.ts';
 import { historicalOffers } from '../game/historical-adoption.ts';
+import { computeMetrics } from '../game/metrics.ts';
 
 const seedBody = z.strictObject({ expectedVersion: z.int().nonnegative(), name: strainNameSchema });
 const versionBody = z.strictObject({ expectedVersion: z.int().nonnegative() });
@@ -104,6 +105,14 @@ export function registerController(
           query.data.claim,
         ),
       };
+    },
+  );
+  app.get(
+    '/api/controller/metrics',
+    { config: { rateLimit: { max: 30, timeWindow: '1 minute' } } },
+    async (request) => {
+      const owner = await ownerSession(pool, request, config);
+      return computeMetrics(pool, owner.world_id, owner.channel_id, 'live');
     },
   );
   app.get('/api/controller/commands/:key', async (request) => {

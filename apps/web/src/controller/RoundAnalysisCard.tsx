@@ -1,3 +1,4 @@
+import { track } from '../realtime/analytics.ts';
 import { founderShell, type RoundAnalysis } from '@ripple/contracts';
 import { ShellRenderer } from '../studio/ShellRenderer.tsx';
 import styles from './Controller.module.css';
@@ -14,7 +15,18 @@ function Genes({ score }: { score: Score }) {
     </p>
   );
 }
-export function RoundAnalysisCard({ analysis }: { analysis: RoundAnalysis }) {
+export function RoundAnalysisCard({
+  analysis,
+  scope = null,
+}: {
+  analysis: RoundAnalysis;
+  /** When given, opening a saved comparison records an anonymous trial_opened event. */
+  scope?: { worldId: string; channelId: string } | null;
+}) {
+  const opened = (event: React.SyntheticEvent<HTMLDetailsElement>) => {
+    if (event.currentTarget.open && scope !== null)
+      track('trial_opened', { kind: 'channel', ...scope });
+  };
   if (analysis.status === 'cancelled')
     return (
       <section aria-label="Round analysis" className={styles.analysis}>
@@ -48,7 +60,7 @@ export function RoundAnalysisCard({ analysis }: { analysis: RoundAnalysis }) {
                 <li key={index}>{cause.text}</li>
               ))}
             </ul>
-            <details>
+            <details onToggle={opened}>
               <summary>Complete recorded calculation</summary>
               <dl>
                 {actual.explanation.calculation.map((row, index) => (
@@ -113,7 +125,7 @@ export function RoundAnalysisCard({ analysis }: { analysis: RoundAnalysis }) {
                     </li>
                   </ul>
                 )}
-                <details>
+                <details onToggle={opened}>
                   <summary>Saved comparison identity</summary>
                   <p>
                     Engine {ancestor.engineVersion} · rules <code>{ancestor.rulesHash}</code>

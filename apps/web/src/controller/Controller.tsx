@@ -248,7 +248,9 @@ export default function Controller() {
               ))}
             </ul>
           </section>
-          {status.snapshot !== null && <ChannelCard channel={status.snapshot.payload} />}
+          {status.snapshot !== null && (
+            <ChannelCard channel={status.snapshot.payload} worldId={status.worldId} />
+          )}
           <section className={styles.panel}>
             <h2>Strain controls</h2>
             <label>

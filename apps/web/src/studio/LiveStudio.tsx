@@ -11,6 +11,7 @@ import {
   withdrawProposal,
 } from './studioApi.ts';
 import styles from './Studio.module.css';
+import { track } from '../realtime/analytics.ts';
 
 const RETURN_KEY = 'ripple:studio-session';
 const phaseText: Record<string, string> = {
@@ -60,6 +61,9 @@ export function LiveStudio({ sessionId }: { sessionId: string }) {
   const [now, setNow] = useState(() => Date.now());
   const attempt = useRef<{ key: string; proposalId: string; body: string } | null>(null);
 
+  useEffect(() => {
+    track('editor_opened', { kind: 'studio', sessionId });
+  }, [sessionId]);
   useEffect(() => {
     sessionStorage.setItem(RETURN_KEY, sessionId);
     const controller = new AbortController();
@@ -340,6 +344,9 @@ export function LiveStudio({ sessionId }: { sessionId: string }) {
         canSubmit: creating && artist?.signedIn === true && !offline,
         cameraAvailable: creating,
         submit: send,
+        onEvent: (event) => {
+          track(event, { kind: 'studio', sessionId });
+        },
       }}
     />
   );

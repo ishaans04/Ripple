@@ -5,6 +5,8 @@ import { traceEffectText, traceTitle } from '../realtime/trace-labels.ts';
 import { Creature } from '../creature/Creature.tsx';
 import { familyRemainingText, familyUpdateText } from '../realtime/family-text.ts';
 import { useFreshCelebration } from './useFreshCelebration.ts';
+import { track } from '../realtime/analytics.ts';
+import { readLinkFromHash } from '../realtime/read-link.ts';
 import { StudioStatus, studioHoldsDecision } from '../studio/StudioStatus.tsx';
 
 const celebrationText = {
@@ -123,6 +125,11 @@ export default function Overlay() {
     };
   }, []);
   const fresh = useFreshCelebration(channel);
+  useEffect(() => {
+    const link = readLinkFromHash(location.hash);
+    if (status === 'connected' && link !== null)
+      track('overlay_seen', { kind: 'channel', worldId: link.worldId, channelId: link.channelId });
+  }, [status]);
   const creature = channel?.organism,
     display = channel?.display ?? defaultDisplayPreferences,
     celebration = display.celebrations ? fresh : null,

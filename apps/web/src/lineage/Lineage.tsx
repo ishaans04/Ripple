@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import type { LineageCatalog, LineagePage, Passport as PassportRecord } from '@ripple/contracts';
 import { readLinkFromHash, type ReadLink } from '../realtime/read-link.ts';
+import { track } from '../realtime/analytics.ts';
 import { traceTitle } from '../realtime/trace-labels.ts';
 import { ReadFailure, readCatalog, readLineagePage, readPassport } from './api.ts';
 import { Passport } from './Passport.tsx';
@@ -198,6 +199,11 @@ export default function Lineage() {
     readPassport(link, selectedId, null).then(
       (passport) => {
         if (!stale) setRecord({ organismId: selectedId, passport, problem: null });
+        track('passport_opened', {
+          kind: 'channel',
+          worldId: link.worldId,
+          channelId: link.channelId,
+        });
       },
       (error: unknown) => {
         if (!stale) setRecord({ organismId: selectedId, passport: null, problem: kind(error) });
