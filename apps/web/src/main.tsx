@@ -12,12 +12,17 @@ const Overlay = lazy(() => import('./overlay/Overlay.tsx'));
 const Lineage = lazy(() => import('./lineage/Lineage.tsx'));
 const Bridge = lazy(() => import('./bridge/Bridge.tsx'));
 const Sandbox = lazy(() => import('./sandbox/Sandbox.tsx'));
+const Privacy = lazy(() => import('./privacy/Privacy.tsx'));
 if (window.location.pathname === '/overlay' || window.location.pathname === '/bridge')
   document.documentElement.dataset.surface = 'overlay';
 
 createRoot(container).render(
   <StrictMode>
-    {window.location.pathname === '/sandbox' ? (
+    {window.location.pathname === '/privacy' ? (
+      <Suspense fallback={<p role="status">Opening privacy policy…</p>}>
+        <Privacy />
+      </Suspense>
+    ) : window.location.pathname === '/sandbox' ? (
       <Suspense fallback={<p role="status">Opening sandbox…</p>}>
         <Sandbox />
       </Suspense>

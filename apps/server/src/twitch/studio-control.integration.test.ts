@@ -460,4 +460,30 @@ describe('studio routes', () => {
         .statusCode,
     ).toBe(404);
   });
+  it('requires artist CSRF for identity erasure and invalidates the erased session', async () => {
+    const url = '/api/artist/forget';
+    expect(
+      (await app.inject({ method: 'POST', url, cookies: artistCookies, payload: {} })).statusCode,
+    ).toBe(403);
+    const response = await app.inject({
+      method: 'POST',
+      url,
+      cookies: artistCookies,
+      headers: { origin: config.origin, 'x-csrf-token': artist.csrf },
+      payload: {},
+    });
+    expect(response.statusCode, response.body).toBe(200);
+    expect(response.json()).toMatchObject({ forgotten: true, sessionsDeleted: 1 });
+    expect(
+      (
+        await app.inject({
+          method: 'POST',
+          url,
+          cookies: artistCookies,
+          headers: { origin: config.origin, 'x-csrf-token': artist.csrf },
+          payload: {},
+        })
+      ).statusCode,
+    ).toBe(401);
+  });
 });

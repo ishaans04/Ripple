@@ -14,6 +14,16 @@ export class StudioRequestError extends Error {
     this.name = 'StudioRequestError';
   }
 }
+export async function forgetArtistIdentity(csrfToken: string) {
+  await json(
+    await fetch('/api/artist/forget', {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: { 'content-type': 'application/json', 'x-csrf-token': csrfToken },
+      body: '{}',
+    }),
+  );
+}
 
 async function json(response: Response): Promise<unknown> {
   const body: unknown = await response.json().catch(() => null);

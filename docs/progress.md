@@ -306,3 +306,5 @@ No Phase 10 work has started. Next: fault/adversarial and load/performance suite
 
 ## Phase 10 - hardening and release (in progress)
 Started after Phase 9 exit 1662f8f and its green final CI. The user authorizes completion of all non-deferred release work, local startup and a deployment recommendation; genuine Twitch/OBS/account/HTTPS acceptance remains their deferred gate. Work is sequential within Phase 10: privacy/retention and operations, failure/adversarial verification, server and browser performance, restore rehearsal, deployment/runbooks, labeled demo/submission artifacts, final CI and local walkthrough. No public deployment or live acceptance is claimed. Artist names will be separated from accepted replay records using opaque credit tokens and erasable identity mappings, preserving deterministic replay through deletion.
+
+Phase 10 privacy UI: the authenticated, origin/CSRF-protected Forget action invalidates artist sessions and removes credit lookup; camera/data retention is explained on /privacy. Eight targeted PostgreSQL privacy/route tests and the privacy accessibility journey in both Windows Chrome and Edge pass.

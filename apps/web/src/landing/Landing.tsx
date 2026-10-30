@@ -31,6 +31,9 @@ export function Landing() {
       </header>
 
       <ServiceStatusPanel />
+      <p>
+        <a href="/privacy">Privacy and data deletion</a>
+      </p>
       <section className={styles.panel}>
         <h2 className={styles.panelHeading}>Try an expedition</h2>
         <p>

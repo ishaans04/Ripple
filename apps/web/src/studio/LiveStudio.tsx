@@ -9,6 +9,7 @@ import {
   proposalMessages,
   submitProposal,
   withdrawProposal,
+  forgetArtistIdentity,
 } from './studioApi.ts';
 import styles from './Studio.module.css';
 import { track } from '../realtime/analytics.ts';
@@ -282,6 +283,23 @@ export function LiveStudio({ sessionId }: { sessionId: string }) {
       ) : artist?.signedIn === true ? (
         <p className={styles.muted}>
           Signed in as {artist.login}.{' '}
+          <button
+            onClick={() => {
+              if (artist.csrfToken === null) return;
+              void forgetArtistIdentity(artist.csrfToken)
+                .then(() => {
+                  setArtist(null);
+                  setMessage(
+                    'Artist identity and sign-in removed. Accepted designs remain with Former artist credit.',
+                  );
+                })
+                .catch(() => {
+                  setMessage('Identity deletion failed. Please try again.');
+                });
+            }}
+          >
+            Forget my artist identity
+          </button>{' '}
           {active !== undefined && (
             <>
               Your proposal (revision {active.revision}) is in.{' '}
