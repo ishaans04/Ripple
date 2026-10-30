@@ -3,12 +3,20 @@
   "physicalCamera": false,
   "cpuSlowdown": 4,
   "browser": "edge",
-  "inputRoundTripP95Ms": 1123.7878,
-  "inputToNextFrameP95Ms": 64,
-  "animationFrameP95Ms": 33.5,
-  "inferenceP95Ms": 291.90000009536743,
+  "environment": {
+    "browserVersion": "155.0.4283.62",
+    "node": "v24.22.1",
+    "os": "10.0.26100",
+    "cpu": "AMD EPYC 7763 64-Core Processor                ",
+    "logicalCpus": 4,
+    "totalMemoryBytes": 17174360064
+  },
+  "inputRoundTripP95Ms": 216.9956999999995,
+  "inputToNextFrameP95Ms": 43.79999999998836,
+  "animationFrameP95Ms": 33.40000000000009,
+  "inferenceP95Ms": 474.70000000001164,
   "maxInFlight": 1,
-  "frames": 26,
+  "frames": 14,
   "editingWrites": 0,
-  "limits": "CPU emulation on the declared Windows laptop; no claim about all physical low-end cameras/GPUs. Input timing includes Playwright transport."
+  "limits": "4x CPU emulation on the declared Windows host; no claim about all physical low-end cameras/GPUs. InputRoundTrip includes Playwright transport; inputToNextFrame is measured inside the page."
 }

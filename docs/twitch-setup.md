@@ -50,7 +50,7 @@ Also rehearse historical adoption: before the receiving account connects Ripple,
 - Bot output is limited to twelve attempts/minute globally and one/ten seconds/channel. Expired ballot announcements are discarded. A send whose response is lost is marked uncertain and not blindly resent; inspect `bot_messages` status without dumping credentials or message payloads into public logs.
 - Owner commands use CSRF, an expected state version and a UUID idempotency key. A 202 response means durable acceptance; the controller waits for the worker's actual result. If the connection drops, **Retry pending command** resends the same key and body. A stale-version rejection requires reviewing current state before a new command.
 
-Backup/restore rehearsal, retention policy enforcement, physical-device measurements, OBS readability and final release acceptance remain Phase 10 work. No public deployment has been claimed or created by these instructions.
+The Phase 10 [backup/restore rehearsal, retention enforcement and automated client/server measurements](evidence/phase10.md) are complete. Verify the intended physical camera/laptop, real OBS readability, hosted recovery and authentic Twitch acceptance on the chosen deployment using [operations](operations.md) and [submission handoff](submission.md). No public deployment has been claimed or created by these instructions.
 
 ## Optional celebrations
 
