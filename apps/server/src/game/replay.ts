@@ -5,7 +5,7 @@ import {
   type GameCommand,
   type RoundTimings,
 } from '@ripple/contracts';
-import { acceptInput, transaction } from '@ripple/database';
+import { IntakeError, acceptInput, transaction } from '@ripple/database';
 import {
   assertCompatibleRuleset,
   canonicalJson,
@@ -222,32 +222,50 @@ export async function replayAcceptedChannel(
       `insert into worlds (id,mode,rules_hash,expires_at,replay_of) values ($1,'replay',$2,clock_timestamp()+interval '1 day',$3)`,
       [worldId, bundle.rulesHash, bundle.sourceWorldId ?? null],
     );
-    await client.query(
-      `insert into channels (world_id,id,label,rules_hash,seed,configuration,online,healthy,paused,initial_online,initial_healthy,initial_paused,initial_mechanics_version)
-      values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$7,$8,$9,$10)`,
-      [
-        worldId,
-        channelId,
-        bundle.label,
-        bundle.rulesHash,
-        bundle.seed,
-        JSON.stringify(bundle.timings),
-        bundle.initialOnline,
-        bundle.initialHealthy,
-        bundle.initialPaused,
-        bundle.initialMechanicsVersion ?? 0,
-      ],
-    );
-    const policy = (
-      await client.query<{ policy_hash: string }>(
-        'select policy_hash from world_mechanics_policies where world_id=$1',
-        [worldId],
-      )
-    ).rows[0];
-    if (bundle.mechanicsPolicy !== undefined && policy?.policy_hash !== bundle.mechanicsPolicy.hash)
-      throw new ReplayIntegrityError('Replay world mechanics policy differs from the export.');
+    await createReplayChannel(client, worldId, bundle);
   });
-  for (const record of bundle.records) {
+  for (const record of bundle.records) await replayRecord(pool, worldId, channelId, record);
+  return { worldId, channelId };
+}
+/** Creates one replayed channel with its exported genesis inside an existing replay world. */
+export async function createReplayChannel(
+  client: pg.PoolClient,
+  worldId: string,
+  bundle: ChannelReplay,
+): Promise<void> {
+  await client.query(
+    `insert into channels (world_id,id,label,rules_hash,seed,configuration,online,healthy,paused,initial_online,initial_healthy,initial_paused,initial_mechanics_version)
+      values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$7,$8,$9,$10)`,
+    [
+      worldId,
+      bundle.channelId,
+      bundle.label,
+      bundle.rulesHash,
+      bundle.seed,
+      JSON.stringify(bundle.timings),
+      bundle.initialOnline,
+      bundle.initialHealthy,
+      bundle.initialPaused,
+      bundle.initialMechanicsVersion ?? 0,
+    ],
+  );
+  const policy = (
+    await client.query<{ policy_hash: string }>(
+      'select policy_hash from world_mechanics_policies where world_id=$1',
+      [worldId],
+    )
+  ).rows[0];
+  if (bundle.mechanicsPolicy !== undefined && policy?.policy_hash !== bundle.mechanicsPolicy.hash)
+    throw new ReplayIntegrityError('Replay world mechanics policy differs from the export.');
+}
+/** Accepts one exported record in order and requires the identical checksum chain. */
+export async function replayRecord(
+  pool: pg.Pool,
+  worldId: string,
+  channelId: string,
+  record: AcceptedRecord,
+): Promise<void> {
+  try {
     await acceptInput(pool, {
       worldId,
       channelId,
@@ -257,11 +275,28 @@ export async function replayAcceptedChannel(
       acceptedAtMs: record.acceptedAtMs,
       requiredMode: 'replay',
     });
-    const result = await processNextInput(pool, worldId, channelId);
-    if (result?.checksum !== record.checksum)
-      throw new ReplayIntegrityError(`Replayed transition differs at sequence ${record.sequence}.`);
+  } catch (error) {
+    // A replayed raid already delivered this input in its original raw form. Process that
+    // delivery; the checksum below proves the worker re-derived the identical command.
+    if (!(error instanceof IntakeError) || error.code !== 'RECEIPT_CONFLICT') throw error;
+    const delivered = (
+      await pool.query<{ channel_id: string; sequence: number; next: number }>(
+        `select i.channel_id,i.sequence,c.processed_sequence+1 as next from inbox i
+        join channels c on c.world_id=i.world_id and c.id=i.channel_id
+        where i.world_id=$1 and i.provider=$2 and i.message_id=$3 and i.processed_at is null`,
+        [worldId, record.provider, record.messageId],
+      )
+    ).rows[0];
+    if (
+      delivered?.channel_id !== channelId ||
+      delivered.sequence !== record.sequence ||
+      delivered.next !== record.sequence
+    )
+      throw error;
   }
-  return { worldId, channelId };
+  const result = await processNextInput(pool, worldId, channelId);
+  if (result?.checksum !== record.checksum)
+    throw new ReplayIntegrityError(`Replayed transition differs at sequence ${record.sequence}.`);
 }
 /** Canonical gameplay equality excludes outbox delivery, worker leases and world identity. */
 export async function canonicalGameProjection(pool: pg.Pool, scope: WorldScope): Promise<string> {
