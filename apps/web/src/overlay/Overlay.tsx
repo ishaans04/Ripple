@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import type { ChannelView } from '@ripple/contracts';
 import { useReadChannel } from '../realtime/useReadChannel.ts';
 import { traceEffectText, traceTitle } from '../realtime/trace-labels.ts';
-import { ShellRenderer } from '../studio/ShellRenderer.tsx';
+import { Creature } from '../creature/Creature.tsx';
 import styles from './Overlay.module.css';
 
 const ballotTitle: Readonly<Record<string, string>> = {
@@ -114,18 +114,16 @@ export default function Overlay() {
     };
   }, []);
   const creature = channel?.organism,
-    design =
-      creature?.appearance.kind === 'studio' ? creature.appearance.blueprint : creature?.appearance,
     ancestry = channel?.propagation?.resident,
     trace = channel?.mechanics?.state?.activeTrace;
   return (
     <main className={styles.stage} aria-label="Ripple broadcast overlay">
       <section className={styles.corner}>
-        {design !== undefined && (
+        {creature !== undefined && creature !== null && (
           <div
-            className={`${styles.creature} ${creature?.status === 'FOSSIL' ? styles.fossil : ''}`}
+            className={`${styles.creature} ${creature.status === 'FOSSIL' ? styles.fossil : ''}`}
           >
-            <ShellRenderer part={design.part} rendererVersion={design.rendererVersion} />
+            <Creature organism={creature} />
           </div>
         )}
         <div className={styles.panel}>

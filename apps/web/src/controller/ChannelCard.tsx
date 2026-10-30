@@ -1,5 +1,5 @@
 import type { ChannelView } from '@ripple/contracts';
-import { ShellRenderer } from '../studio/ShellRenderer.tsx';
+import { Creature, markSummary } from '../creature/Creature.tsx';
 import styles from './Controller.module.css';
 import { PropagationCard } from './PropagationCard.tsx';
 import { RoundAnalysisCard } from './RoundAnalysisCard.tsx';
@@ -7,8 +7,6 @@ import { MechanicsCard } from './MechanicsCard.tsx';
 export function ChannelCard({ channel }: { channel: ChannelView }) {
   const creature = channel.organism,
     round = channel.round;
-  const design =
-    creature?.appearance.kind === 'studio' ? creature.appearance.blueprint : creature?.appearance;
   return (
     <section className={styles.panel} aria-label="Channel state">
       <h2>{channel.label}</h2>
@@ -24,10 +22,9 @@ export function ChannelCard({ channel }: { channel: ChannelView }) {
         <>
           <h3>{creature.name}</h3>
           <div className={styles.creature}>
-            {design !== undefined && (
-              <ShellRenderer part={design.part} rendererVersion={design.rendererVersion} />
-            )}
+            <Creature organism={creature} />
           </div>
+          {creature.marks !== undefined && <p>{markSummary(creature.marks)}</p>}
           <p>
             Energy {creature.health}/100 · {creature.status}
           </p>

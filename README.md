@@ -186,6 +186,12 @@ Mutation-preview rules use only a recorded recent valid profile and a known trac
 
 Pages default to 25 branches, with `limit` from 1–50. Pass the returned `next` as `after` to continue in generation/ID order. Each page uses one committed database snapshot; refresh from the first page to include newly born branches. Historical fossils preserve their actual saved appearance and energy, including contest losses above zero. The full passport and lineage UI remain Phase 7 work.
 
+## Inherited appearance
+
+Every organism stores the appearance mapping version it was created under (`1` today); children inherit their parent's version and the database rejects any later rewrite, so fossils keep rendering as they lived. Version 1 maps genes to authored parts: Pulse against Calm sets movement (settled, sway or quick), Grit sets shell plating (smooth, ridged or armored) and Drift sets appendages (stubs, fins or streamers). Shell geometry and markings still come from the committed founder or studio design.
+
+Each creature shows its lineage's origin mark and at most two ancestry marks: the first host the ancestry chain was admitted to after leaving the origin and the most recent one. Waiting in a harbor earns no mark. Marks are drawn from a small authored glyph set derived from the channel ID and always carry the channel name as text. Snapshots expose `appearanceMapping` and `marks`; lineage reads also return each branch's full admitted `hosts` list. The overlay and controller draw these parts, hold fossils still and stop movement under reduced-motion settings.
+
 ## Broadcast overlay
 
 Create or rotate a read-only preview link in `/controller`; the same operation now provides an **OBS browser source URL** for `/overlay`. Paste it into a 1920×1080 browser source. The canvas is transparent, with the creature and a compact decision panel in the lower corner. Both links share one scoped capability; rotation revokes both. Capabilities remain in URL fragments and authorized headers, never ordinary page-query parameters. Overlay links cannot send owner controls or votes.

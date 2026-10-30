@@ -218,3 +218,51 @@ test('overlay rejects an invalid link and re-authorizes a changed fragment witho
   await expect(page.getByRole('button')).toHaveCount(0);
   await expect(page.getByText('Vote in chat:', { exact: false })).toHaveCount(0);
 });
+test('overlay draws persisted gene-linked parts and bounded ancestry marks with text alternatives', async ({
+  page,
+}) => {
+  const current = fixture();
+  if (current.organism === null) throw new Error('Missing fixture organism');
+  current.organism = {
+    ...current.organism,
+    genome: { pulse: 10, calm: 2, grit: 11, drift: 1 },
+    appearanceMapping: 1,
+    marks: {
+      origin: { channelId, label: 'Mira channel' },
+      ancestry: [
+        { channelId: world, label: 'Second host' },
+        { channelId: '33333333-3333-4333-8333-333333333333', label: 'Latest host' },
+      ],
+    },
+  };
+  await page.route('**/api/overlay/exchange', (route) =>
+    route.fulfill({ json: { ticket: 't'.repeat(43), expiresAt: '2099-01-01T00:00:00.000Z' } }),
+  );
+  await page.routeWebSocket('**/api/live?*', (socket) => {
+    socket.send(
+      JSON.stringify({
+        protocolVersion: 1,
+        eventId: channelId,
+        worldId: world,
+        topic: `channel:${channelId}`,
+        stateVersion: 1,
+        type: 'snapshot',
+        serverTime: new Date().toISOString(),
+        payload: current,
+      }),
+    );
+  });
+  await page.goto(`/overlay#${fragment}`);
+  const creature = page.getByRole('img', {
+    name: '<Shell & Tide>. quick movement, armored plating, stubs. Origin mark: Mira channel; ancestry marks: Second host, Latest host',
+    exact: true,
+  });
+  await expect(creature).toBeVisible();
+  await expect(creature).toHaveAttribute('data-appendages', 'stubs');
+  await expect(creature.locator('[data-mark="origin"]')).toHaveCount(1);
+  await expect(creature.locator('[data-mark="ancestry"]')).toHaveCount(2);
+  const moving = page.locator('[data-movement="quick"]');
+  await expect(moving).not.toHaveCSS('animation-name', 'none');
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await expect(moving).toHaveCSS('animation-name', 'none');
+});

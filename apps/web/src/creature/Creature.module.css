@@ -1,0 +1,42 @@
+.creature {
+  width: 100%;
+  transform-origin: 50% 90%;
+}
+.creature svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+/* Version-one movement: subtle, slow and never flashing. */
+.creature[data-movement='settled'] {
+  animation: settle 7s ease-in-out infinite;
+}
+.creature[data-movement='sway'] {
+  animation: sway 4.5s ease-in-out infinite;
+}
+.creature[data-movement='quick'] {
+  animation: hop 1.8s ease-in-out infinite;
+}
+@keyframes settle {
+  50% {
+    transform: scaleY(0.985);
+  }
+}
+@keyframes sway {
+  25% {
+    transform: rotate(-1.5deg);
+  }
+  75% {
+    transform: rotate(1.5deg);
+  }
+}
+@keyframes hop {
+  50% {
+    transform: translateY(-2.5%);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .creature[data-movement] {
+    animation: none;
+  }
+}
