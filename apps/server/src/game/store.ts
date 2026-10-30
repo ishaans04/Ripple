@@ -58,6 +58,8 @@ export interface GameContext {
   round: RoundRow | null;
   rules: Ruleset;
   timings: RoundTimings;
+  /** The world identity bound into studio challenges and blueprints; a replay keeps its source's. */
+  studioWorldId: string;
   mechanics: {
     version: 0 | 1;
     requested: boolean;
@@ -85,6 +87,13 @@ export async function loadContext(
     ])
   ).rows[0];
   if (channel === undefined) throw new Error('Missing locked channel.');
+  const world = (
+    await client.query<{ studio_world_id: string }>(
+      'select coalesce(replay_of,id) as studio_world_id from worlds where id=$1',
+      [worldId],
+    )
+  ).rows[0];
+  if (world === undefined) throw new Error('Missing channel world.');
   const stored = (
     await client.query<{ canonical: string }>('select canonical from rulesets where hash=$1', [
       channel.rules_hash,
@@ -142,6 +151,7 @@ export async function loadContext(
     round,
     rules,
     timings: roundTimingsSchema.parse(channel.configuration),
+    studioWorldId: world.studio_world_id,
     mechanics: {
       version: mechanics.mechanics_version,
       requested: mechanics.mechanics_requested,

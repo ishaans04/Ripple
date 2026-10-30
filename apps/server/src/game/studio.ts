@@ -354,7 +354,7 @@ export async function startStudio(
   if (resident === null) throw new Error('Eligible studio without a resident.');
   const challenge = createStudioChallenge(
     {
-      worldId: context.channel.world_id,
+      worldId: context.studioWorldId,
       studioSessionId: command.sessionId,
       baseOrganismId: resident.id,
       baseOrganismVersion: resident.design_version,

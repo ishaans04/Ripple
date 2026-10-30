@@ -49,6 +49,8 @@ export interface ChannelReplay {
   /** Missing in pre-mechanics exports; those histories retain version zero. */
   initialMechanicsVersion?: 0 | 1;
   mechanicsPolicy?: { hash: string; canonical: string };
+  /** The source world bound into studio blueprints; absent in exports that predate the studio. */
+  sourceWorldId?: string;
   checksum: string;
   records: readonly AcceptedRecord[];
 }
@@ -66,6 +68,13 @@ export function verifyAcceptedRecords(bundle: ChannelReplay): void {
     throw new ReplayIntegrityError('Rules hash mismatch.');
   roundTimingsSchema.parse(bundle.timings);
   z.union([z.literal(0), z.literal(1)]).parse(bundle.initialMechanicsVersion ?? 0);
+  z.uuid().optional().parse(bundle.sourceWorldId);
+  // Studio blueprints bind their world; reconstruction needs that identity to reproduce hashes.
+  if (
+    bundle.sourceWorldId === undefined &&
+    bundle.records.some((record) => record.command.type === 'studioProposal')
+  )
+    throw new ReplayIntegrityError('Studio records require their source world identity.');
   if (bundle.mechanicsPolicy !== undefined) {
     const policy = mechanicsPolicySchema.parse(JSON.parse(bundle.mechanicsPolicy.canonical));
     if (mechanicsPolicyHash(policy) !== bundle.mechanicsPolicy.hash)
@@ -157,6 +166,13 @@ export async function exportAcceptedChannel(
       `select e.*,i.provider,i.message_id from game_events e join inbox i on i.world_id=e.world_id and i.channel_id=e.channel_id and i.sequence=e.sequence where e.world_id=$1 and e.channel_id=$2 and e.sequence<=$3 order by e.sequence`,
       [scope.worldId, scope.channelId, row.processed_sequence],
     );
+    const sourceWorldId = (
+      await client.query<{ id: string }>(
+        'select coalesce(replay_of,id) as id from worlds where id=$1',
+        [scope.worldId],
+      )
+    ).rows[0]?.id;
+    if (sourceWorldId === undefined) throw new ReplayIntegrityError('World is missing.');
     const bundle: ChannelReplay = {
       schemaVersion: 1,
       channelId: scope.channelId,
@@ -170,6 +186,7 @@ export async function exportAcceptedChannel(
       initialPaused: row.initial_paused,
       initialMechanicsVersion: row.initial_mechanics_version,
       mechanicsPolicy: { hash: row.mechanics_policy_hash, canonical: row.mechanics_canonical },
+      sourceWorldId,
       checksum: row.checksum,
       records: events.rows.map((e) => ({
         engineVersion: e.engine_version,
@@ -202,8 +219,8 @@ export async function replayAcceptedChannel(
     channelId = bundle.channelId;
   await transaction(pool, async (client) => {
     await client.query(
-      `insert into worlds (id,mode,rules_hash,expires_at) values ($1,'replay',$2,clock_timestamp()+interval '1 day')`,
-      [worldId, bundle.rulesHash],
+      `insert into worlds (id,mode,rules_hash,expires_at,replay_of) values ($1,'replay',$2,clock_timestamp()+interval '1 day',$3)`,
+      [worldId, bundle.rulesHash, bundle.sourceWorldId ?? null],
     );
     await client.query(
       `insert into channels (world_id,id,label,rules_hash,seed,configuration,online,healthy,paused,initial_online,initial_healthy,initial_paused,initial_mechanics_version)
@@ -263,7 +280,14 @@ export async function canonicalGameProjection(pool: pg.Pool, scope: WorldScope):
     'traces',coalesce((select jsonb_agg(to_jsonb(t)-'world_id' order by t.id) from habitat_traces t where t.world_id=$1 and t.channel_id=$2),'[]'::jsonb),
     'qualifications',coalesce((select jsonb_agg(to_jsonb(q)-'world_id' order by q.lineage_id) from trace_qualifications q where q.world_id=$1 and q.channel_id=$2),'[]'::jsonb),
     'ancestorTrials',coalesce((select jsonb_agg(to_jsonb(a)-'world_id' order by a.round_id,a.organism_id) from ancestor_trials a join rounds r on r.world_id=a.world_id and r.id=a.round_id where a.world_id=$1 and r.channel_id=$2),'[]'::jsonb),
-    'choiceReplays',coalesce((select jsonb_agg(to_jsonb(a)-'world_id' order by a.round_id,a.organism_id) from choice_replays a join rounds r on r.world_id=a.world_id and r.id=a.round_id where a.world_id=$1 and r.channel_id=$2),'[]'::jsonb)
+    'choiceReplays',coalesce((select jsonb_agg(to_jsonb(a)-'world_id' order by a.round_id,a.organism_id) from choice_replays a join rounds r on r.world_id=a.world_id and r.id=a.round_id where a.world_id=$1 and r.channel_id=$2),'[]'::jsonb),
+    'studio',(select to_jsonb(s)-'world_id'-'bridge_seen_at' from channel_studio s where s.world_id=$1 and s.channel_id=$2),
+    'studioSessions',coalesce((select jsonb_agg(to_jsonb(s)-'world_id' order by s.created_at,s.id) from studio_sessions s where s.world_id=$1 and s.channel_id=$2),'[]'::jsonb),
+    'studioTransitions',coalesce((select jsonb_agg(to_jsonb(t)-'world_id' order by t.session_id,t.version) from studio_transitions t join studio_sessions s on s.world_id=t.world_id and s.id=t.session_id where t.world_id=$1 and s.channel_id=$2),'[]'::jsonb),
+    'studioProposals',coalesce((select jsonb_agg(to_jsonb(p)-'world_id' order by p.id) from studio_proposals p join studio_sessions s on s.world_id=p.world_id and s.id=p.session_id where p.world_id=$1 and s.channel_id=$2),'[]'::jsonb),
+    'blueprints',coalesce((select jsonb_agg(to_jsonb(b)-'world_id' order by b.hash) from appearance_blueprints b join studio_sessions s on s.world_id=b.world_id and s.id=b.session_id where b.world_id=$1 and s.channel_id=$2),'[]'::jsonb),
+    'adaptations',coalesce((select jsonb_agg(to_jsonb(a)-'world_id' order by a.id) from pending_adaptations a where a.world_id=$1 and a.channel_id=$2),'[]'::jsonb),
+    'artistBlocks',coalesce((select jsonb_agg(to_jsonb(b)-'world_id'-'created_at' order by b.artist_key) from studio_artist_blocks b where b.world_id=$1 and b.channel_id=$2),'[]'::jsonb)
     ) as projection`,
       [scope.worldId, scope.channelId],
     )

@@ -1,0 +1,6689 @@
+{
+  "id": "80a0c938-ad35-431b-894d-d96edbcdc2ef",
+  "prevId": "cf5de2db-f917-42a0-8e04-5d83e27c4d45",
+  "version": "7",
+  "dialect": "postgresql",
+  "tables": {
+    "public.worlds": {
+      "name": "worlds",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "mode": {
+          "name": "mode",
+          "type": "world_mode",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "owner_capability_hash": {
+          "name": "owner_capability_hash",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "rules_hash": {
+          "name": "rules_hash",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "expires_at": {
+          "name": "expires_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "clock_at": {
+          "name": "clock_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "replay_of": {
+          "name": "replay_of",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "worlds_rules_hash_format": {
+          "name": "worlds_rules_hash_format",
+          "value": "\"worlds\".\"rules_hash\" ~ '^[0-9a-f]{64}$'"
+        },
+        "worlds_live_clock_real": {
+          "name": "worlds_live_clock_real",
+          "value": "\"worlds\".\"mode\" <> 'live' or \"worlds\".\"clock_at\" is null"
+        },
+        "worlds_owner_capability_hash_format": {
+          "name": "worlds_owner_capability_hash_format",
+          "value": "\"worlds\".\"owner_capability_hash\" is null or \"worlds\".\"owner_capability_hash\" ~ '^[0-9a-f]{64}$'"
+        },
+        "worlds_replay_source": {
+          "name": "worlds_replay_source",
+          "value": "\"worlds\".\"replay_of\" is null or \"worlds\".\"mode\" = 'replay'"
+        },
+        "worlds_sandbox_owned_and_expiring": {
+          "name": "worlds_sandbox_owned_and_expiring",
+          "value": "\"worlds\".\"mode\" <> 'sandbox' or (\"worlds\".\"owner_capability_hash\" is not null and \"worlds\".\"expires_at\" is not null)"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.channels": {
+      "name": "channels",
+      "schema": "",
+      "columns": {
+        "initial_mechanics_version": {
+          "name": "initial_mechanics_version",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "world_id": {
+          "name": "world_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "twitch_id": {
+          "name": "twitch_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "label": {
+          "name": "label",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "rules_hash": {
+          "name": "rules_hash",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "seed": {
+          "name": "seed",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "configuration": {
+          "name": "configuration",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "online": {
+          "name": "online",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "healthy": {
+          "name": "healthy",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "paused": {
+          "name": "paused",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "studio_hold": {
+          "name": "studio_hold",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "initial_online": {
+          "name": "initial_online",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "initial_healthy": {
+          "name": "initial_healthy",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "initial_paused": {
+          "name": "initial_paused",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "intake_sequence": {
+          "name": "intake_sequence",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "processed_sequence": {
+          "name": "processed_sequence",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "state_version": {
+          "name": "state_version",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "last_accepted_at": {
+          "name": "last_accepted_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "checksum": {
+          "name": "checksum",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'0000000000000000000000000000000000000000000000000000000000000000'"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "channels_pending_idx": {
+          "name": "channels_pending_idx",
+          "columns": [
+            {
+              "expression": "world_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "where": "\"channels\".\"processed_sequence\" < \"channels\".\"intake_sequence\"",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "channels_world_id_worlds_id_fk": {
+          "name": "channels_world_id_worlds_id_fk",
+          "tableFrom": "channels",
+          "tableTo": "worlds",
+          "columnsFrom": [
+            "world_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "channels_rules_hash_rulesets_hash_fk": {
+          "name": "channels_rules_hash_rulesets_hash_fk",
+          "tableFrom": "channels",
+          "tableTo": "rulesets",
+          "columnsFrom": [
+            "rules_hash"
+          ],
+          "columnsTo": [
+            "hash"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "channels_world_id_id_pk": {
+          "name": "channels_world_id_id_pk",
+          "columns": [
+            "world_id",
+            "id"
+          ]
+        }
+      },
+      "uniqueConstraints": {
+        "channels_world_twitch_unique": {
+          "name": "channels_world_twitch_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "world_id",
+            "twitch_id"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {
+        "channel_initial_mechanics_valid": {
+          "name": "channel_initial_mechanics_valid",
+          "value": "\"channels\".\"initial_mechanics_version\" in (0,1)"
+        },
+        "channels_cursor_order": {
+          "name": "channels_cursor_order",
+          "value": "0 <= \"channels\".\"processed_sequence\" and \"channels\".\"processed_sequence\" <= \"channels\".\"intake_sequence\""
+        },
+        "channels_version_nonnegative": {
+          "name": "channels_version_nonnegative",
+          "value": "\"channels\".\"state_version\" >= 0"
+        },
+        "channels_label_length": {
+          "name": "channels_label_length",
+          "value": "length(\"channels\".\"label\") between 1 and 80"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.lineages": {
+      "name": "lineages",
+      "schema": "",
+      "columns": {
+        "world_id": {
+          "name": "world_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "origin_channel_id": {
+          "name": "origin_channel_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "rules_hash": {
+          "name": "rules_hash",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "lineages_rules_hash_rulesets_hash_fk": {
+          "name": "lineages_rules_hash_rulesets_hash_fk",
+          "tableFrom": "lineages",
+          "tableTo": "rulesets",
+          "columnsFrom": [
+            "rules_hash"
+          ],
+          "columnsTo": [
+            "hash"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "lineages_world_id_origin_channel_id_channels_world_id_id_fk": {
+          "name": "lineages_world_id_origin_channel_id_channels_world_id_id_fk",
+          "tableFrom": "lineages",
+          "tableTo": "channels",
+          "columnsFrom": [
+            "world_id",
+            "origin_channel_id"
+          ],
+          "columnsTo": [
+            "world_id",
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "lineages_world_id_id_pk": {
+          "name": "lineages_world_id_id_pk",
+          "columns": [
+            "world_id",
+            "id"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.organisms": {
+      "name": "organisms",
+      "schema": "",
+      "columns": {
+        "world_id": {
+          "name": "world_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "lineage_id": {
+          "name": "lineage_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'Ripple strain'"
+        },
+        "parent_id": {
+          "name": "parent_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "founder_id": {
+          "name": "founder_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "generation": {
+          "name": "generation",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "founding_genome": {
+          "name": "founding_genome",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "pulse": {
+          "name": "pulse",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "calm": {
+          "name": "calm",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "grit": {
+          "name": "grit",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "drift": {
+          "name": "drift",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "health": {
+          "name": "health",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "status": {
+          "name": "status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "version": {
+          "name": "version",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "appearance": {
+          "name": "appearance",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "appearance_mapping": {
+          "name": "appearance_mapping",
+          "type": "smallint",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 1
+        },
+        "mutation_slots": {
+          "name": "mutation_slots",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "design_version": {
+          "name": "design_version",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "appearance_hash": {
+          "name": "appearance_hash",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "organisms_parent_idx": {
+          "name": "organisms_parent_idx",
+          "columns": [
+            {
+              "expression": "world_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "parent_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "organisms_lineage_idx": {
+          "name": "organisms_lineage_idx",
+          "columns": [
+            {
+              "expression": "world_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "lineage_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "status",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "organisms_lineage_page_idx": {
+          "name": "organisms_lineage_page_idx",
+          "columns": [
+            {
+              "expression": "world_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "lineage_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "generation",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "organisms_world_id_lineage_id_lineages_world_id_id_fk": {
+          "name": "organisms_world_id_lineage_id_lineages_world_id_id_fk",
+          "tableFrom": "organisms",
+          "tableTo": "lineages",
+          "columnsFrom": [
+            "world_id",
+            "lineage_id"
+          ],
+          "columnsTo": [
+            "world_id",
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "organisms_parent_world_fk": {
+          "name": "organisms_parent_world_fk",
+          "tableFrom": "organisms",
+          "tableTo": "organisms",
+          "columnsFrom": [
+            "world_id",
+            "parent_id"
+          ],
+          "columnsTo": [
+            "world_id",
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "organisms_founder_world_fk": {
+          "name": "organisms_founder_world_fk",
+          "tableFrom": "organisms",
+          "tableTo": "organisms",
+          "columnsFrom": [
+            "world_id",
+            "founder_id"
+          ],
+          "columnsTo": [
+            "world_id",
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "organisms_world_id_id_pk": {
+          "name": "organisms_world_id_id_pk",
+          "columns": [
+            "world_id",
+            "id"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "organisms_genome_legal": {
+          "name": "organisms_genome_legal",
+          "value": "\"organisms\".\"pulse\" between 0 and 15 and \"organisms\".\"calm\" between 0 and 15 and \"organisms\".\"grit\" between 0 and 15 and \"organisms\".\"drift\" between 0 and 15 and \"organisms\".\"pulse\"+\"organisms\".\"calm\"+\"organisms\".\"grit\"+\"organisms\".\"drift\"=24"
+        },
+        "organisms_health_bounds": {
+          "name": "organisms_health_bounds",
+          "value": "\"organisms\".\"health\" between 0 and 100"
+        },
+        "organisms_living_health": {
+          "name": "organisms_living_health",
+          "value": "\"organisms\".\"status\" not in ('ALIVE','HARBOR') or \"organisms\".\"health\">0"
+        },
+        "organisms_status_valid": {
+          "name": "organisms_status_valid",
+          "value": "\"organisms\".\"status\" in ('ALIVE','HARBOR','FOSSIL','ARCHIVED')"
+        },
+        "organisms_generation_bounds": {
+          "name": "organisms_generation_bounds",
+          "value": "(\"organisms\".\"parent_id\" is null and \"organisms\".\"generation\"=0 and \"organisms\".\"founder_id\"=\"organisms\".\"id\") or (\"organisms\".\"parent_id\" is not null and \"organisms\".\"parent_id\"<>\"organisms\".\"id\" and \"organisms\".\"founder_id\"<>\"organisms\".\"id\" and \"organisms\".\"generation\" between 1 and 16)"
+        },
+        "organisms_version_nonnegative": {
+          "name": "organisms_version_nonnegative",
+          "value": "\"organisms\".\"version\" >= 0"
+        },
+        "organisms_design_version_nonnegative": {
+          "name": "organisms_design_version_nonnegative",
+          "value": "\"organisms\".\"design_version\" >= 0"
+        },
+        "organisms_appearance_mapping_known": {
+          "name": "organisms_appearance_mapping_known",
+          "value": "\"organisms\".\"appearance_mapping\" = 1"
+        },
+        "organisms_name_length": {
+          "name": "organisms_name_length",
+          "value": "length(\"organisms\".\"name\") between 1 and 40"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.residencies": {
+      "name": "residencies",
+      "schema": "",
+      "columns": {
+        "world_id": {
+          "name": "world_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "channel_id": {
+          "name": "channel_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "organism_id": {
+          "name": "organism_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "role": {
+          "name": "role",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "arrival_snapshot": {
+          "name": "arrival_snapshot",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "completed_valid_rounds": {
+          "name": "completed_valid_rounds",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "trace_qualified": {
+          "name": "trace_qualified",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "started_at": {
+          "name": "started_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "ended_at": {
+          "name": "ended_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "residencies_active_organism": {
+          "name": "residencies_active_organism",
+          "columns": [
+            {
+              "expression": "world_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "organism_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "where": "\"residencies\".\"ended_at\" is null",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "residencies_active_role": {
+          "name": "residencies_active_role",
+          "columns": [
+            {
+              "expression": "world_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "channel_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "role",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "where": "\"residencies\".\"ended_at\" is null and \"residencies\".\"role\" in ('resident','visitor')",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "residencies_world_id_channel_id_channels_world_id_id_fk": {
+          "name": "residencies_world_id_channel_id_channels_world_id_id_fk",
+          "tableFrom": "residencies",
+          "tableTo": "channels",
+          "columnsFrom": [
+            "world_id",
+            "channel_id"
+          ],
+          "columnsTo": [
+            "world_id",
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "residencies_world_id_organism_id_organisms_world_id_id_fk": {
+          "name": "residencies_world_id_organism_id_organisms_world_id_id_fk",
+          "tableFrom": "residencies",
+          "tableTo": "organisms",
+          "columnsFrom": [
+            "world_id",
+            "organism_id"
+          ],
+          "columnsTo": [
+            "world_id",
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "residencies_world_id_id_pk": {
+          "name": "residencies_world_id_id_pk",
+          "columns": [
+            "world_id",
+            "id"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "residencies_role_valid": {
+          "name": "residencies_role_valid",
+          "value": "\"residencies\".\"role\" in ('resident','visitor','harbor')"
+        },
+        "residencies_rounds_nonnegative": {
+          "name": "residencies_rounds_nonnegative",
+          "value": "\"residencies\".\"completed_valid_rounds\" >= 0"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.rulesets": {
+      "name": "rulesets",
+      "schema": "",
+      "columns": {
+        "hash": {
+          "name": "hash",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "version": {
+          "name": "version",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "engine_version": {
+          "name": "engine_version",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "canonical": {
+          "name": "canonical",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "rulesets_version_unique": {
+          "name": "rulesets_version_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "version"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {
+        "rulesets_hash_format": {
+          "name": "rulesets_hash_format",
+          "value": "\"rulesets\".\"hash\" ~ '^[0-9a-f]{64}$'"
+        },
+        "rulesets_engine_positive": {
+          "name": "rulesets_engine_positive",
+          "value": "\"rulesets\".\"engine_version\" > 0"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.activity_contributions": {
+      "name": "activity_contributions",
+      "schema": "",
+      "columns": {
+        "world_id": {
+          "name": "world_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "round_id": {
+          "name": "round_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "observation_epoch": {
+          "name": "observation_epoch",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "bucket": {
+          "name": "bucket",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "actor_key": {
+          "name": "actor_key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "accepted_sequence": {
+          "name": "accepted_sequence",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {
+        "activity_actor_idx": {
+          "name": "activity_actor_idx",
+          "columns": [
+            {
+              "expression": "world_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "round_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "observation_epoch",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "actor_key",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "activity_contributions_world_id_round_id_rounds_world_id_id_fk": {
+          "name": "activity_contributions_world_id_round_id_rounds_world_id_id_fk",
+          "tableFrom": "activity_contributions",
+          "tableTo": "rounds",
+          "columnsFrom": [
+            "world_id",
+            "round_id"
+          ],
+          "columnsTo": [
+            "world_id",
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "activity_contributions_world_id_round_id_observation_epoch_bucket_actor_key_pk": {
+          "name": "activity_contributions_world_id_round_id_observation_epoch_bucket_actor_key_pk",
+          "columns": [
+            "world_id",
+            "round_id",
+            "observation_epoch",
+            "bucket",
+            "actor_key"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "activity_bucket_bounds": {
+          "name": "activity_bucket_bounds",
+          "value": "\"activity_contributions\".\"bucket\" between 0 and 11 and \"activity_contributions\".\"observation_epoch\" >= 0"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.habitat_baselines": {
+      "name": "habitat_baselines",
+      "schema": "",
+      "columns": {
+        "world_id": {
+          "name": "world_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "channel_id": {
+          "name": "channel_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "round_id": {
+          "name": "round_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "contributions": {
+          "name": "contributions",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "burst": {
+          "name": "burst",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "frozen": {
+          "name": "frozen",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "completed_at": {
+          "name": "completed_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {
+        "baselines_recent_idx": {
+          "name": "baselines_recent_idx",
+          "columns": [
+            {
+              "expression": "world_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "channel_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "completed_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "habitat_baselines_world_id_round_id_channel_id_rounds_world_id_id_channel_id_fk": {
+          "name": "habitat_baselines_world_id_round_id_channel_id_rounds_world_id_id_channel_id_fk",
+          "tableFrom": "habitat_baselines",
+          "tableTo": "rounds",
+          "columnsFrom": [
+            "world_id",
+            "round_id",
+            "channel_id"
+          ],
+          "columnsTo": [
+            "world_id",
+            "id",
+            "channel_id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "habitat_baselines_world_id_round_id_pk": {
+          "name": "habitat_baselines_world_id_round_id_pk",
+          "columns": [
+            "world_id",
+            "round_id"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "baselines_counts_valid": {
+          "name": "baselines_counts_valid",
+          "value": "\"habitat_baselines\".\"contributions\" >= 0 and \"habitat_baselines\".\"burst\" between 0 and 1000"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.rounds": {
+      "name": "rounds",
+      "schema": "",
+      "columns": {
+        "world_id": {
+          "name": "world_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "channel_id": {
+          "name": "channel_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "organism_id": {
+          "name": "organism_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "number": {
+          "name": "number",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "kind": {
+          "name": "kind",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "phase": {
+          "name": "phase",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "rules_hash": {
+          "name": "rules_hash",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "seed": {
+          "name": "seed",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "checkpoint": {
+          "name": "checkpoint",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "close_sequence": {
+          "name": "close_sequence",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "vote_count": {
+          "name": "vote_count",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "contributions": {
+          "name": "contributions",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "distinct_accounts": {
+          "name": "distinct_accounts",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "burst": {
+          "name": "burst",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "confidence": {
+          "name": "confidence",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "resolution": {
+          "name": "resolution",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "explanation": {
+          "name": "explanation",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "visitor_result": {
+          "name": "visitor_result",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "opened_at": {
+          "name": "opened_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "completed_at": {
+          "name": "completed_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "rounds_channel_number": {
+          "name": "rounds_channel_number",
+          "columns": [
+            {
+              "expression": "world_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "channel_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "number",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "rounds_one_open": {
+          "name": "rounds_one_open",
+          "columns": [
+            {
+              "expression": "world_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "channel_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "where": "\"rounds\".\"completed_at\" is null and \"rounds\".\"kind\" <> 'STUDIO_SELECTION'",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "rounds_one_open_studio": {
+          "name": "rounds_one_open_studio",
+          "columns": [
+            {
+              "expression": "world_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "channel_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "where": "\"rounds\".\"completed_at\" is null and \"rounds\".\"kind\" = 'STUDIO_SELECTION'",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "rounds_rules_hash_rulesets_hash_fk": {
+          "name": "rounds_rules_hash_rulesets_hash_fk",
+          "tableFrom": "rounds",
+          "tableTo": "rulesets",
+          "columnsFrom": [
+            "rules_hash"
+          ],
+          "columnsTo": [
+            "hash"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "rounds_world_id_channel_id_channels_world_id_id_fk": {
+          "name": "rounds_world_id_channel_id_channels_world_id_id_fk",
+          "tableFrom": "rounds",
+          "tableTo": "channels",
+          "columnsFrom": [
+            "world_id",
+            "channel_id"
+          ],
+          "columnsTo": [
+            "world_id",
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "rounds_world_id_organism_id_organisms_world_id_id_fk": {
+          "name": "rounds_world_id_organism_id_organisms_world_id_id_fk",
+          "tableFrom": "rounds",
+          "tableTo": "organisms",
+          "columnsFrom": [
+            "world_id",
+            "organism_id"
+          ],
+          "columnsTo": [
+            "world_id",
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "rounds_world_id_id_pk": {
+          "name": "rounds_world_id_id_pk",
+          "columns": [
+            "world_id",
+            "id"
+          ]
+        }
+      },
+      "uniqueConstraints": {
+        "rounds_world_id_channel_unique": {
+          "name": "rounds_world_id_channel_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "world_id",
+            "id",
+            "channel_id"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {
+        "rounds_number_positive": {
+          "name": "rounds_number_positive",
+          "value": "\"rounds\".\"number\" > 0"
+        },
+        "rounds_kind_valid": {
+          "name": "rounds_kind_valid",
+          "value": "\"rounds\".\"kind\" in ('MUTATION','WELCOME','TRACE','PREPARATION','STUDIO_SELECTION')"
+        },
+        "rounds_phase_valid": {
+          "name": "rounds_phase_valid",
+          "value": "\"rounds\".\"phase\" in ('VOTING','OBSERVING','REVEAL','INTERRUPTED','COMPLETE')"
+        },
+        "rounds_confidence_valid": {
+          "name": "rounds_confidence_valid",
+          "value": "\"rounds\".\"confidence\" is null or \"rounds\".\"confidence\" in ('confident','limited','interrupted')"
+        },
+        "rounds_counts_nonnegative": {
+          "name": "rounds_counts_nonnegative",
+          "value": "\"rounds\".\"vote_count\" >= 0 and \"rounds\".\"contributions\" >= 0 and \"rounds\".\"distinct_accounts\" >= 0"
+        },
+        "rounds_burst_bounds": {
+          "name": "rounds_burst_bounds",
+          "value": "\"rounds\".\"burst\" is null or \"rounds\".\"burst\" between 0 and 1000"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.votes": {
+      "name": "votes",
+      "schema": "",
+      "columns": {
+        "world_id": {
+          "name": "world_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "channel_id": {
+          "name": "channel_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "round_id": {
+          "name": "round_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "actor_key": {
+          "name": "actor_key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "choice": {
+          "name": "choice",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "accepted_sequence": {
+          "name": "accepted_sequence",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "votes_world_id_round_id_channel_id_rounds_world_id_id_channel_id_fk": {
+          "name": "votes_world_id_round_id_channel_id_rounds_world_id_id_channel_id_fk",
+          "tableFrom": "votes",
+          "tableTo": "rounds",
+          "columnsFrom": [
+            "world_id",
+            "round_id",
+            "channel_id"
+          ],
+          "columnsTo": [
+            "world_id",
+            "id",
+            "channel_id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "votes_world_id_round_id_actor_key_pk": {
+          "name": "votes_world_id_round_id_actor_key_pk",
+          "columns": [
+            "world_id",
+            "round_id",
+            "actor_key"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "votes_choice_bounds": {
+          "name": "votes_choice_bounds",
+          "value": "\"votes\".\"choice\" between 1 and 3"
+        },
+        "votes_sequence_positive": {
+          "name": "votes_sequence_positive",
+          "value": "\"votes\".\"accepted_sequence\" > 0"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.deadlines": {
+      "name": "deadlines",
+      "schema": "",
+      "columns": {
+        "world_id": {
+          "name": "world_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "channel_id": {
+          "name": "channel_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "job_key": {
+          "name": "job_key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "command": {
+          "name": "command",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "due_at": {
+          "name": "due_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "remaining_ms": {
+          "name": "remaining_ms",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "status": {
+          "name": "status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'pending'"
+        },
+        "lease_owner": {
+          "name": "lease_owner",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "lease_until": {
+          "name": "lease_until",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "attempts": {
+          "name": "attempts",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        }
+      },
+      "indexes": {
+        "deadlines_due_idx": {
+          "name": "deadlines_due_idx",
+          "columns": [
+            {
+              "expression": "status",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "due_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "lease_until",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "deadlines_world_id_channel_id_channels_world_id_id_fk": {
+          "name": "deadlines_world_id_channel_id_channels_world_id_id_fk",
+          "tableFrom": "deadlines",
+          "tableTo": "channels",
+          "columnsFrom": [
+            "world_id",
+            "channel_id"
+          ],
+          "columnsTo": [
+            "world_id",
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "deadlines_world_id_id_pk": {
+          "name": "deadlines_world_id_id_pk",
+          "columns": [
+            "world_id",
+            "id"
+          ]
+        }
+      },
+      "uniqueConstraints": {
+        "deadlines_job_unique": {
+          "name": "deadlines_job_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "world_id",
+            "channel_id",
+            "job_key"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {
+        "deadlines_status_valid": {
+          "name": "deadlines_status_valid",
+          "value": "\"deadlines\".\"status\" in ('pending','leased','delivered','cancelled')"
+        },
+        "deadlines_counts_nonnegative": {
+          "name": "deadlines_counts_nonnegative",
+          "value": "\"deadlines\".\"remaining_ms\" >= 0 and \"deadlines\".\"attempts\" >= 0"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.game_events": {
+      "name": "game_events",
+      "schema": "",
+      "columns": {
+        "world_id": {
+          "name": "world_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "channel_id": {
+          "name": "channel_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "sequence": {
+          "name": "sequence",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "operation_id": {
+          "name": "operation_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "engine_version": {
+          "name": "engine_version",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "rules_hash": {
+          "name": "rules_hash",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "accepted_at": {
+          "name": "accepted_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "command": {
+          "name": "command",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "result": {
+          "name": "result",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "dependencies": {
+          "name": "dependencies",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "previous_checksum": {
+          "name": "previous_checksum",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "checksum": {
+          "name": "checksum",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "game_events_world_id_channel_id_sequence_inbox_world_id_channel_id_sequence_fk": {
+          "name": "game_events_world_id_channel_id_sequence_inbox_world_id_channel_id_sequence_fk",
+          "tableFrom": "game_events",
+          "tableTo": "inbox",
+          "columnsFrom": [
+            "world_id",
+            "channel_id",
+            "sequence"
+          ],
+          "columnsTo": [
+            "world_id",
+            "channel_id",
+            "sequence"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "game_events_world_id_channel_id_sequence_pk": {
+          "name": "game_events_world_id_channel_id_sequence_pk",
+          "columns": [
+            "world_id",
+            "channel_id",
+            "sequence"
+          ]
+        }
+      },
+      "uniqueConstraints": {
+        "game_events_world_id_unique": {
+          "name": "game_events_world_id_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "world_id",
+            "id"
+          ]
+        },
+        "game_events_operation_unique": {
+          "name": "game_events_operation_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "world_id",
+            "channel_id",
+            "operation_id"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {
+        "game_events_checksums_format": {
+          "name": "game_events_checksums_format",
+          "value": "\"game_events\".\"previous_checksum\" ~ '^[0-9a-f]{64}$' and \"game_events\".\"checksum\" ~ '^[0-9a-f]{64}$'"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.gateway_tickets": {
+      "name": "gateway_tickets",
+      "schema": "",
+      "columns": {
+        "hash": {
+          "name": "hash",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "authority_hash": {
+          "name": "authority_hash",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "''"
+        },
+        "world_id": {
+          "name": "world_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "channel_id": {
+          "name": "channel_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "expires_at": {
+          "name": "expires_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {
+        "gateway_tickets_expiry_idx": {
+          "name": "gateway_tickets_expiry_idx",
+          "columns": [
+            {
+              "expression": "expires_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "gateway_tickets_world_id_channel_id_channels_world_id_id_fk": {
+          "name": "gateway_tickets_world_id_channel_id_channels_world_id_id_fk",
+          "tableFrom": "gateway_tickets",
+          "tableTo": "channels",
+          "columnsFrom": [
+            "world_id",
+            "channel_id"
+          ],
+          "columnsTo": [
+            "world_id",
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.inbox": {
+      "name": "inbox",
+      "schema": "",
+      "columns": {
+        "world_id": {
+          "name": "world_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "channel_id": {
+          "name": "channel_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "sequence": {
+          "name": "sequence",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "provider": {
+          "name": "provider",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "message_id": {
+          "name": "message_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "command": {
+          "name": "command",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "accepted_at": {
+          "name": "accepted_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "processed_at": {
+          "name": "processed_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "attempts": {
+          "name": "attempts",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "error_code": {
+          "name": "error_code",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "inbox_pending_idx": {
+          "name": "inbox_pending_idx",
+          "columns": [
+            {
+              "expression": "world_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "channel_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "sequence",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "where": "\"inbox\".\"processed_at\" is null",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "inbox_world_id_channel_id_channels_world_id_id_fk": {
+          "name": "inbox_world_id_channel_id_channels_world_id_id_fk",
+          "tableFrom": "inbox",
+          "tableTo": "channels",
+          "columnsFrom": [
+            "world_id",
+            "channel_id"
+          ],
+          "columnsTo": [
+            "world_id",
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "inbox_world_id_channel_id_sequence_pk": {
+          "name": "inbox_world_id_channel_id_sequence_pk",
+          "columns": [
+            "world_id",
+            "channel_id",
+            "sequence"
+          ]
+        }
+      },
+      "uniqueConstraints": {
+        "inbox_receipt_unique": {
+          "name": "inbox_receipt_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "world_id",
+            "provider",
+            "message_id"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {
+        "inbox_sequence_positive": {
+          "name": "inbox_sequence_positive",
+          "value": "\"inbox\".\"sequence\" > 0 and \"inbox\".\"attempts\" >= 0"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.public_updates": {
+      "name": "public_updates",
+      "schema": "",
+      "columns": {
+        "world_id": {
+          "name": "world_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "channel_id": {
+          "name": "channel_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "version": {
+          "name": "version",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "event_id": {
+          "name": "event_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "type": {
+          "name": "type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "payload": {
+          "name": "payload",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "public_updates_world_id_channel_id_channels_world_id_id_fk": {
+          "name": "public_updates_world_id_channel_id_channels_world_id_id_fk",
+          "tableFrom": "public_updates",
+          "tableTo": "channels",
+          "columnsFrom": [
+            "world_id",
+            "channel_id"
+          ],
+          "columnsTo": [
+            "world_id",
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "public_updates_world_id_channel_id_version_pk": {
+          "name": "public_updates_world_id_channel_id_version_pk",
+          "columns": [
+            "world_id",
+            "channel_id",
+            "version"
+          ]
+        }
+      },
+      "uniqueConstraints": {
+        "public_updates_event_unique": {
+          "name": "public_updates_event_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "world_id",
+            "event_id"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {
+        "public_updates_version_positive": {
+          "name": "public_updates_version_positive",
+          "value": "\"public_updates\".\"version\" > 0"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.controller_sessions": {
+      "name": "controller_sessions",
+      "schema": "",
+      "columns": {
+        "hash": {
+          "name": "hash",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "world_id": {
+          "name": "world_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "channel_id": {
+          "name": "channel_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "subject": {
+          "name": "subject",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "csrf_hash": {
+          "name": "csrf_hash",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "expires_at": {
+          "name": "expires_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {
+        "controller_sessions_expiry_idx": {
+          "name": "controller_sessions_expiry_idx",
+          "columns": [
+            {
+              "expression": "expires_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "controller_sessions_world_id_channel_id_channels_world_id_id_fk": {
+          "name": "controller_sessions_world_id_channel_id_channels_world_id_id_fk",
+          "tableFrom": "controller_sessions",
+          "tableTo": "channels",
+          "columnsFrom": [
+            "world_id",
+            "channel_id"
+          ],
+          "columnsTo": [
+            "world_id",
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.oauth_grants": {
+      "name": "oauth_grants",
+      "schema": "",
+      "columns": {
+        "world_id": {
+          "name": "world_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "channel_id": {
+          "name": "channel_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "subject": {
+          "name": "subject",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "purpose": {
+          "name": "purpose",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "scopes": {
+          "name": "scopes",
+          "type": "text[]",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "encrypted_tokens": {
+          "name": "encrypted_tokens",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "expires_at": {
+          "name": "expires_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "validated_at": {
+          "name": "validated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "revoked_at": {
+          "name": "revoked_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "refresh_owner": {
+          "name": "refresh_owner",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "refresh_until": {
+          "name": "refresh_until",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "oauth_broadcaster_channel_unique": {
+          "name": "oauth_broadcaster_channel_unique",
+          "columns": [
+            {
+              "expression": "world_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "channel_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "where": "\"oauth_grants\".\"purpose\"='broadcaster'",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "oauth_one_bot_per_world": {
+          "name": "oauth_one_bot_per_world",
+          "columns": [
+            {
+              "expression": "world_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "where": "\"oauth_grants\".\"purpose\"='bot'",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "oauth_grants_world_id_channel_id_channels_world_id_id_fk": {
+          "name": "oauth_grants_world_id_channel_id_channels_world_id_id_fk",
+          "tableFrom": "oauth_grants",
+          "tableTo": "channels",
+          "columnsFrom": [
+            "world_id",
+            "channel_id"
+          ],
+          "columnsTo": [
+            "world_id",
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "oauth_grants_world_id_purpose_subject_pk": {
+          "name": "oauth_grants_world_id_purpose_subject_pk",
+          "columns": [
+            "world_id",
+            "purpose",
+            "subject"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "oauth_grants_purpose_valid": {
+          "name": "oauth_grants_purpose_valid",
+          "value": "\"oauth_grants\".\"purpose\" in ('broadcaster','bot')"
+        },
+        "oauth_grants_scope_valid": {
+          "name": "oauth_grants_scope_valid",
+          "value": "(\"oauth_grants\".\"purpose\"='bot' and \"oauth_grants\".\"channel_id\" is null) or (\"oauth_grants\".\"purpose\"='broadcaster' and \"oauth_grants\".\"channel_id\" is not null)"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.overlay_capabilities": {
+      "name": "overlay_capabilities",
+      "schema": "",
+      "columns": {
+        "hash": {
+          "name": "hash",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "world_id": {
+          "name": "world_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "channel_id": {
+          "name": "channel_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "revoked_at": {
+          "name": "revoked_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "overlay_capabilities_world_id_channel_id_channels_world_id_id_fk": {
+          "name": "overlay_capabilities_world_id_channel_id_channels_world_id_id_fk",
+          "tableFrom": "overlay_capabilities",
+          "tableTo": "channels",
+          "columnsFrom": [
+            "world_id",
+            "channel_id"
+          ],
+          "columnsTo": [
+            "world_id",
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.analytics_events": {
+      "name": "analytics_events",
+      "schema": "",
+      "columns": {
+        "world_id": {
+          "name": "world_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "channel_id": {
+          "name": "channel_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "type": {
+          "name": "type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "aggregates": {
+          "name": "aggregates",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "analytics_type_time_idx": {
+          "name": "analytics_type_time_idx",
+          "columns": [
+            {
+              "expression": "world_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "type",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "created_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "analytics_events_world_id_channel_id_channels_world_id_id_fk": {
+          "name": "analytics_events_world_id_channel_id_channels_world_id_id_fk",
+          "tableFrom": "analytics_events",
+          "tableTo": "channels",
+          "columnsFrom": [
+            "world_id",
+            "channel_id"
+          ],
+          "columnsTo": [
+            "world_id",
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "analytics_events_world_id_id_pk": {
+          "name": "analytics_events_world_id_id_pk",
+          "columns": [
+            "world_id",
+            "id"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.ancestor_trials": {
+      "name": "ancestor_trials",
+      "schema": "",
+      "columns": {
+        "rules_hash": {
+          "name": "rules_hash",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "engine_version": {
+          "name": "engine_version",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 1
+        },
+        "world_id": {
+          "name": "world_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "round_id": {
+          "name": "round_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "organism_id": {
+          "name": "organism_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "ancestor_id": {
+          "name": "ancestor_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "matched_inputs": {
+          "name": "matched_inputs",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "result": {
+          "name": "result",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "ancestor_trials_rules_hash_rulesets_hash_fk": {
+          "name": "ancestor_trials_rules_hash_rulesets_hash_fk",
+          "tableFrom": "ancestor_trials",
+          "tableTo": "rulesets",
+          "columnsFrom": [
+            "rules_hash"
+          ],
+          "columnsTo": [
+            "hash"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "ancestor_trials_world_id_round_id_rounds_world_id_id_fk": {
+          "name": "ancestor_trials_world_id_round_id_rounds_world_id_id_fk",
+          "tableFrom": "ancestor_trials",
+          "tableTo": "rounds",
+          "columnsFrom": [
+            "world_id",
+            "round_id"
+          ],
+          "columnsTo": [
+            "world_id",
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "ancestor_trials_world_id_organism_id_organisms_world_id_id_fk": {
+          "name": "ancestor_trials_world_id_organism_id_organisms_world_id_id_fk",
+          "tableFrom": "ancestor_trials",
+          "tableTo": "organisms",
+          "columnsFrom": [
+            "world_id",
+            "organism_id"
+          ],
+          "columnsTo": [
+            "world_id",
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "ancestor_trials_world_id_ancestor_id_organisms_world_id_id_fk": {
+          "name": "ancestor_trials_world_id_ancestor_id_organisms_world_id_id_fk",
+          "tableFrom": "ancestor_trials",
+          "tableTo": "organisms",
+          "columnsFrom": [
+            "world_id",
+            "ancestor_id"
+          ],
+          "columnsTo": [
+            "world_id",
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "ancestor_trials_world_id_round_id_organism_id_pk": {
+          "name": "ancestor_trials_world_id_round_id_organism_id_pk",
+          "columns": [
+            "world_id",
+            "round_id",
+            "organism_id"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.descendant_cursors": {
+      "name": "descendant_cursors",
+      "schema": "",
+      "columns": {
+        "world_id": {
+          "name": "world_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "channel_id": {
+          "name": "channel_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "lineage_id": {
+          "name": "lineage_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "version": {
+          "name": "version",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "descendant_cursors_world_id_channel_id_channels_world_id_id_fk": {
+          "name": "descendant_cursors_world_id_channel_id_channels_world_id_id_fk",
+          "tableFrom": "descendant_cursors",
+          "tableTo": "channels",
+          "columnsFrom": [
+            "world_id",
+            "channel_id"
+          ],
+          "columnsTo": [
+            "world_id",
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "descendant_cursors_world_id_lineage_id_lineages_world_id_id_fk": {
+          "name": "descendant_cursors_world_id_lineage_id_lineages_world_id_id_fk",
+          "tableFrom": "descendant_cursors",
+          "tableTo": "lineages",
+          "columnsFrom": [
+            "world_id",
+            "lineage_id"
+          ],
+          "columnsTo": [
+            "world_id",
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "descendant_cursors_world_id_channel_id_lineage_id_pk": {
+          "name": "descendant_cursors_world_id_channel_id_lineage_id_pk",
+          "columns": [
+            "world_id",
+            "channel_id",
+            "lineage_id"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "descendant_cursors_nonnegative": {
+          "name": "descendant_cursors_nonnegative",
+          "value": "\"descendant_cursors\".\"version\" >= 0"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.dormant_mutations": {
+      "name": "dormant_mutations",
+      "schema": "",
+      "columns": {
+        "lifetime": {
+          "name": "lifetime",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "version": {
+          "name": "version",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "consumption": {
+          "name": "consumption",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "world_id": {
+          "name": "world_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "organism_id": {
+          "name": "organism_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "source_round_id": {
+          "name": "source_round_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "template": {
+          "name": "template",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "provenance": {
+          "name": "provenance",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "remaining_hops": {
+          "name": "remaining_hops",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "remaining_rounds": {
+          "name": "remaining_rounds",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "status": {
+          "name": "status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "offered": {
+          "name": "offered",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "blueprint_hash": {
+          "name": "blueprint_hash",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "dormant_one_active": {
+          "name": "dormant_one_active",
+          "columns": [
+            {
+              "expression": "world_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "organism_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "where": "\"dormant_mutations\".\"status\"='active'",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "dormant_mutations_world_id_organism_id_organisms_world_id_id_fk": {
+          "name": "dormant_mutations_world_id_organism_id_organisms_world_id_id_fk",
+          "tableFrom": "dormant_mutations",
+          "tableTo": "organisms",
+          "columnsFrom": [
+            "world_id",
+            "organism_id"
+          ],
+          "columnsTo": [
+            "world_id",
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "dormant_mutations_world_id_source_round_id_rounds_world_id_id_fk": {
+          "name": "dormant_mutations_world_id_source_round_id_rounds_world_id_id_fk",
+          "tableFrom": "dormant_mutations",
+          "tableTo": "rounds",
+          "columnsFrom": [
+            "world_id",
+            "source_round_id"
+          ],
+          "columnsTo": [
+            "world_id",
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "dormant_mutations_world_id_id_pk": {
+          "name": "dormant_mutations_world_id_id_pk",
+          "columns": [
+            "world_id",
+            "id"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "dormant_lifetime_nonnegative": {
+          "name": "dormant_lifetime_nonnegative",
+          "value": "\"dormant_mutations\".\"remaining_hops\" >= 0 and \"dormant_mutations\".\"remaining_rounds\" >= 0"
+        },
+        "dormant_status_valid": {
+          "name": "dormant_status_valid",
+          "value": "\"dormant_mutations\".\"status\" in ('active','consumed','expired','replaced')"
+        },
+        "dormant_lifetime_bounds": {
+          "name": "dormant_lifetime_bounds",
+          "value": "\"dormant_mutations\".\"remaining_rounds\"<=3 and \"dormant_mutations\".\"remaining_hops\"<=16 and \"dormant_mutations\".\"version\">=0"
+        },
+        "dormant_lifetime_consistent": {
+          "name": "dormant_lifetime_consistent",
+          "value": "valid_mechanic_lifetime(\"dormant_mutations\".\"lifetime\",\"dormant_mutations\".\"source_round_id\",\"dormant_mutations\".\"remaining_rounds\")"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.family_digests": {
+      "name": "family_digests",
+      "schema": "",
+      "columns": {
+        "world_id": {
+          "name": "world_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "channel_id": {
+          "name": "channel_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "captured_at": {
+          "name": "captured_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "items": {
+          "name": "items",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "remaining": {
+          "name": "remaining",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "family_digests_world_id_channel_id_channels_world_id_id_fk": {
+          "name": "family_digests_world_id_channel_id_channels_world_id_id_fk",
+          "tableFrom": "family_digests",
+          "tableTo": "channels",
+          "columnsFrom": [
+            "world_id",
+            "channel_id"
+          ],
+          "columnsTo": [
+            "world_id",
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "family_digests_world_id_channel_id_pk": {
+          "name": "family_digests_world_id_channel_id_pk",
+          "columns": [
+            "world_id",
+            "channel_id"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "family_digests_remaining_nonnegative": {
+          "name": "family_digests_remaining_nonnegative",
+          "value": "\"family_digests\".\"remaining\" >= 0"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.habitat_traces": {
+      "name": "habitat_traces",
+      "schema": "",
+      "columns": {
+        "lifetime": {
+          "name": "lifetime",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "qualifying_round_id": {
+          "name": "qualifying_round_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "world_id": {
+          "name": "world_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "channel_id": {
+          "name": "channel_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "emitter_id": {
+          "name": "emitter_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "template": {
+          "name": "template",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "status": {
+          "name": "status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "remaining_rounds": {
+          "name": "remaining_rounds",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "version": {
+          "name": "version",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "decision": {
+          "name": "decision",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "provenance": {
+          "name": "provenance",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {
+        "traces_one_active": {
+          "name": "traces_one_active",
+          "columns": [
+            {
+              "expression": "world_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "channel_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "where": "\"habitat_traces\".\"status\"='active'",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "traces_host_status_idx": {
+          "name": "traces_host_status_idx",
+          "columns": [
+            {
+              "expression": "world_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "channel_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "status",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "traces_emitter_idx": {
+          "name": "traces_emitter_idx",
+          "columns": [
+            {
+              "expression": "world_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "emitter_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "habitat_traces_world_id_channel_id_channels_world_id_id_fk": {
+          "name": "habitat_traces_world_id_channel_id_channels_world_id_id_fk",
+          "tableFrom": "habitat_traces",
+          "tableTo": "channels",
+          "columnsFrom": [
+            "world_id",
+            "channel_id"
+          ],
+          "columnsTo": [
+            "world_id",
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "habitat_traces_world_id_emitter_id_organisms_world_id_id_fk": {
+          "name": "habitat_traces_world_id_emitter_id_organisms_world_id_id_fk",
+          "tableFrom": "habitat_traces",
+          "tableTo": "organisms",
+          "columnsFrom": [
+            "world_id",
+            "emitter_id"
+          ],
+          "columnsTo": [
+            "world_id",
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "habitat_traces_world_id_qualifying_round_id_rounds_world_id_id_fk": {
+          "name": "habitat_traces_world_id_qualifying_round_id_rounds_world_id_id_fk",
+          "tableFrom": "habitat_traces",
+          "tableTo": "rounds",
+          "columnsFrom": [
+            "world_id",
+            "qualifying_round_id"
+          ],
+          "columnsTo": [
+            "world_id",
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "habitat_traces_world_id_id_pk": {
+          "name": "habitat_traces_world_id_id_pk",
+          "columns": [
+            "world_id",
+            "id"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "traces_template_valid": {
+          "name": "traces_template_valid",
+          "value": "\"habitat_traces\".\"template\" in ('charged','recovery','shelter')"
+        },
+        "traces_status_valid": {
+          "name": "traces_status_valid",
+          "value": "\"habitat_traces\".\"status\" in ('pending','active','cleared','expired','replaced','rejected')"
+        },
+        "traces_counts_nonnegative": {
+          "name": "traces_counts_nonnegative",
+          "value": "\"habitat_traces\".\"remaining_rounds\" >= 0 and \"habitat_traces\".\"version\" >= 0"
+        },
+        "trace_lifetime_bounds": {
+          "name": "trace_lifetime_bounds",
+          "value": "\"habitat_traces\".\"remaining_rounds\"<=3"
+        },
+        "trace_lifetime_consistent": {
+          "name": "trace_lifetime_consistent",
+          "value": "valid_mechanic_lifetime(\"habitat_traces\".\"lifetime\",\"habitat_traces\".\"qualifying_round_id\",\"habitat_traces\".\"remaining_rounds\")"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.lineage_updates": {
+      "name": "lineage_updates",
+      "schema": "",
+      "columns": {
+        "world_id": {
+          "name": "world_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "lineage_id": {
+          "name": "lineage_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "sequence": {
+          "name": "sequence",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "kind": {
+          "name": "kind",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "organism_id": {
+          "name": "organism_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "channel_id": {
+          "name": "channel_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "trace_id": {
+          "name": "trace_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "lineage_updates_world_id_lineage_id_lineages_world_id_id_fk": {
+          "name": "lineage_updates_world_id_lineage_id_lineages_world_id_id_fk",
+          "tableFrom": "lineage_updates",
+          "tableTo": "lineages",
+          "columnsFrom": [
+            "world_id",
+            "lineage_id"
+          ],
+          "columnsTo": [
+            "world_id",
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "lineage_updates_world_id_organism_id_organisms_world_id_id_fk": {
+          "name": "lineage_updates_world_id_organism_id_organisms_world_id_id_fk",
+          "tableFrom": "lineage_updates",
+          "tableTo": "organisms",
+          "columnsFrom": [
+            "world_id",
+            "organism_id"
+          ],
+          "columnsTo": [
+            "world_id",
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "lineage_updates_world_id_channel_id_channels_world_id_id_fk": {
+          "name": "lineage_updates_world_id_channel_id_channels_world_id_id_fk",
+          "tableFrom": "lineage_updates",
+          "tableTo": "channels",
+          "columnsFrom": [
+            "world_id",
+            "channel_id"
+          ],
+          "columnsTo": [
+            "world_id",
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "lineage_updates_world_id_lineage_id_sequence_pk": {
+          "name": "lineage_updates_world_id_lineage_id_sequence_pk",
+          "columns": [
+            "world_id",
+            "lineage_id",
+            "sequence"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "lineage_updates_sequence_positive": {
+          "name": "lineage_updates_sequence_positive",
+          "value": "\"lineage_updates\".\"sequence\" > 0"
+        },
+        "lineage_updates_kind_valid": {
+          "name": "lineage_updates_kind_valid",
+          "value": "\"lineage_updates\".\"kind\" in ('born','admitted','fossilized','archived','trace_earned')"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.transfers": {
+      "name": "transfers",
+      "schema": "",
+      "columns": {
+        "world_id": {
+          "name": "world_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "receipt_id": {
+          "name": "receipt_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "source_channel_id": {
+          "name": "source_channel_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "destination_channel_id": {
+          "name": "destination_channel_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "destination_twitch_id": {
+          "name": "destination_twitch_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "source_version": {
+          "name": "source_version",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "parent_id": {
+          "name": "parent_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "child_id": {
+          "name": "child_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "version": {
+          "name": "version",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "destination_sequence": {
+          "name": "destination_sequence",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "approved_at": {
+          "name": "approved_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "claimed_at": {
+          "name": "claimed_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "outcome": {
+          "name": "outcome",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "snapshot": {
+          "name": "snapshot",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "expires_at": {
+          "name": "expires_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "transfers_pending_idx": {
+          "name": "transfers_pending_idx",
+          "columns": [
+            {
+              "expression": "world_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "destination_channel_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "outcome",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "expires_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "transfers_world_id_source_channel_id_channels_world_id_id_fk": {
+          "name": "transfers_world_id_source_channel_id_channels_world_id_id_fk",
+          "tableFrom": "transfers",
+          "tableTo": "channels",
+          "columnsFrom": [
+            "world_id",
+            "source_channel_id"
+          ],
+          "columnsTo": [
+            "world_id",
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "transfers_world_id_destination_channel_id_channels_world_id_id_fk": {
+          "name": "transfers_world_id_destination_channel_id_channels_world_id_id_fk",
+          "tableFrom": "transfers",
+          "tableTo": "channels",
+          "columnsFrom": [
+            "world_id",
+            "destination_channel_id"
+          ],
+          "columnsTo": [
+            "world_id",
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "transfers_world_id_parent_id_organisms_world_id_id_fk": {
+          "name": "transfers_world_id_parent_id_organisms_world_id_id_fk",
+          "tableFrom": "transfers",
+          "tableTo": "organisms",
+          "columnsFrom": [
+            "world_id",
+            "parent_id"
+          ],
+          "columnsTo": [
+            "world_id",
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "transfers_world_id_child_id_organisms_world_id_id_fk": {
+          "name": "transfers_world_id_child_id_organisms_world_id_id_fk",
+          "tableFrom": "transfers",
+          "tableTo": "organisms",
+          "columnsFrom": [
+            "world_id",
+            "child_id"
+          ],
+          "columnsTo": [
+            "world_id",
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "transfers_world_id_id_pk": {
+          "name": "transfers_world_id_id_pk",
+          "columns": [
+            "world_id",
+            "id"
+          ]
+        }
+      },
+      "uniqueConstraints": {
+        "transfers_receipt_unique": {
+          "name": "transfers_receipt_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "world_id",
+            "receipt_id"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {
+        "transfers_version_nonnegative": {
+          "name": "transfers_version_nonnegative",
+          "value": "\"transfers\".\"source_version\" >= 0"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.runtime_leases": {
+      "name": "runtime_leases",
+      "schema": "",
+      "columns": {
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "owner": {
+          "name": "owner",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "fence": {
+          "name": "fence",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "lease_until": {
+          "name": "lease_until",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.sandbox_clock_steps": {
+      "name": "sandbox_clock_steps",
+      "schema": "",
+      "columns": {
+        "world_id": {
+          "name": "world_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "channel_id": {
+          "name": "channel_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "operation_id": {
+          "name": "operation_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "delta_ms": {
+          "name": "delta_ms",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "from_at": {
+          "name": "from_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "to_at": {
+          "name": "to_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "sandbox_clock_steps_world_id_channel_id_channels_world_id_id_fk": {
+          "name": "sandbox_clock_steps_world_id_channel_id_channels_world_id_id_fk",
+          "tableFrom": "sandbox_clock_steps",
+          "tableTo": "channels",
+          "columnsFrom": [
+            "world_id",
+            "channel_id"
+          ],
+          "columnsTo": [
+            "world_id",
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "sandbox_clock_steps_world_id_operation_id_pk": {
+          "name": "sandbox_clock_steps_world_id_operation_id_pk",
+          "columns": [
+            "world_id",
+            "operation_id"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "sandbox_clock_step_bounds": {
+          "name": "sandbox_clock_step_bounds",
+          "value": "\"sandbox_clock_steps\".\"delta_ms\" between 1 and 300000 and extract(epoch from (\"sandbox_clock_steps\".\"to_at\"-\"sandbox_clock_steps\".\"from_at\"))*1000=\"sandbox_clock_steps\".\"delta_ms\""
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.bot_messages": {
+      "name": "bot_messages",
+      "schema": "",
+      "columns": {
+        "world_id": {
+          "name": "world_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "channel_id": {
+          "name": "channel_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "key": {
+          "name": "key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "message": {
+          "name": "message",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "expires_at": {
+          "name": "expires_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()+interval '5 minutes'"
+        },
+        "status": {
+          "name": "status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'pending'"
+        },
+        "attempt_at": {
+          "name": "attempt_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "error_code": {
+          "name": "error_code",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "bot_messages_world_id_channel_id_channels_world_id_id_fk": {
+          "name": "bot_messages_world_id_channel_id_channels_world_id_id_fk",
+          "tableFrom": "bot_messages",
+          "tableTo": "channels",
+          "columnsFrom": [
+            "world_id",
+            "channel_id"
+          ],
+          "columnsTo": [
+            "world_id",
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "bot_messages_world_id_channel_id_key_pk": {
+          "name": "bot_messages_world_id_channel_id_key_pk",
+          "columns": [
+            "world_id",
+            "channel_id",
+            "key"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "bot_message_bounds": {
+          "name": "bot_message_bounds",
+          "value": "length(\"bot_messages\".\"message\") between 1 and 500"
+        },
+        "bot_message_status": {
+          "name": "bot_message_status",
+          "value": "\"bot_messages\".\"status\" in ('pending','sending','sent','uncertain','failed')"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.bot_send_attempts": {
+      "name": "bot_send_attempts",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "world_id": {
+          "name": "world_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "attempted_at": {
+          "name": "attempted_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "bot_attempts_window_idx": {
+          "name": "bot_attempts_window_idx",
+          "columns": [
+            {
+              "expression": "world_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "attempted_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "bot_send_attempts_world_id_worlds_id_fk": {
+          "name": "bot_send_attempts_world_id_worlds_id_fk",
+          "tableFrom": "bot_send_attempts",
+          "tableTo": "worlds",
+          "columnsFrom": [
+            "world_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.controller_operations": {
+      "name": "controller_operations",
+      "schema": "",
+      "columns": {
+        "world_id": {
+          "name": "world_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "channel_id": {
+          "name": "channel_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "key": {
+          "name": "key",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "request_hash": {
+          "name": "request_hash",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "sequence": {
+          "name": "sequence",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "controller_operations_world_id_channel_id_channels_world_id_id_fk": {
+          "name": "controller_operations_world_id_channel_id_channels_world_id_id_fk",
+          "tableFrom": "controller_operations",
+          "tableTo": "channels",
+          "columnsFrom": [
+            "world_id",
+            "channel_id"
+          ],
+          "columnsTo": [
+            "world_id",
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "controller_operations_world_id_channel_id_key_pk": {
+          "name": "controller_operations_world_id_channel_id_key_pk",
+          "columns": [
+            "world_id",
+            "channel_id",
+            "key"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.oauth_states": {
+      "name": "oauth_states",
+      "schema": "",
+      "columns": {
+        "hash": {
+          "name": "hash",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "browser_hash": {
+          "name": "browser_hash",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "world_id": {
+          "name": "world_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "purpose": {
+          "name": "purpose",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "expires_at": {
+          "name": "expires_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {
+        "oauth_states_expiry_idx": {
+          "name": "oauth_states_expiry_idx",
+          "columns": [
+            {
+              "expression": "expires_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "oauth_states_world_id_worlds_id_fk": {
+          "name": "oauth_states_world_id_worlds_id_fk",
+          "tableFrom": "oauth_states",
+          "tableTo": "worlds",
+          "columnsFrom": [
+            "world_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "oauth_state_purpose": {
+          "name": "oauth_state_purpose",
+          "value": "\"oauth_states\".\"purpose\" in ('broadcaster','bot','artist')"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.twitch_channels": {
+      "name": "twitch_channels",
+      "schema": "",
+      "columns": {
+        "world_id": {
+          "name": "world_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "channel_id": {
+          "name": "channel_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "category_id": {
+          "name": "category_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "lifecycle_at": {
+          "name": "lifecycle_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "category_at": {
+          "name": "category_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "input_error": {
+          "name": "input_error",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "visitor_policy": {
+          "name": "visitor_policy",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'ask'"
+        },
+        "last_seed_at": {
+          "name": "last_seed_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "seed_cooldown_ms": {
+          "name": "seed_cooldown_ms",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 180000
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "twitch_channels_world_id_channel_id_channels_world_id_id_fk": {
+          "name": "twitch_channels_world_id_channel_id_channels_world_id_id_fk",
+          "tableFrom": "twitch_channels",
+          "tableTo": "channels",
+          "columnsFrom": [
+            "world_id",
+            "channel_id"
+          ],
+          "columnsTo": [
+            "world_id",
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "twitch_channels_world_id_channel_id_pk": {
+          "name": "twitch_channels_world_id_channel_id_pk",
+          "columns": [
+            "world_id",
+            "channel_id"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "twitch_visitor_policy": {
+          "name": "twitch_visitor_policy",
+          "value": "\"twitch_channels\".\"visitor_policy\" in ('ask','accept','reject')"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.twitch_installations": {
+      "name": "twitch_installations",
+      "schema": "",
+      "columns": {
+        "client_id": {
+          "name": "client_id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "world_id": {
+          "name": "world_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "actor_key_fingerprint": {
+          "name": "actor_key_fingerprint",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "twitch_installations_world_id_worlds_id_fk": {
+          "name": "twitch_installations_world_id_worlds_id_fk",
+          "tableFrom": "twitch_installations",
+          "tableTo": "worlds",
+          "columnsFrom": [
+            "world_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "twitch_installations_world_id_unique": {
+          "name": "twitch_installations_world_id_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "world_id"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.twitch_receipts": {
+      "name": "twitch_receipts",
+      "schema": "",
+      "columns": {
+        "message_id": {
+          "name": "message_id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "payload_hash": {
+          "name": "payload_hash",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "received_at": {
+          "name": "received_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.twitch_subscriptions": {
+      "name": "twitch_subscriptions",
+      "schema": "",
+      "columns": {
+        "world_id": {
+          "name": "world_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "channel_id": {
+          "name": "channel_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "type": {
+          "name": "type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "version": {
+          "name": "version",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "provider_id": {
+          "name": "provider_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "condition": {
+          "name": "condition",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "transport_hash": {
+          "name": "transport_hash",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "''"
+        },
+        "status": {
+          "name": "status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "cost": {
+          "name": "cost",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "attempt_at": {
+          "name": "attempt_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "verified_at": {
+          "name": "verified_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "twitch_subscriptions_world_id_channel_id_channels_world_id_id_fk": {
+          "name": "twitch_subscriptions_world_id_channel_id_channels_world_id_id_fk",
+          "tableFrom": "twitch_subscriptions",
+          "tableTo": "channels",
+          "columnsFrom": [
+            "world_id",
+            "channel_id"
+          ],
+          "columnsTo": [
+            "world_id",
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "twitch_subscriptions_world_id_channel_id_type_pk": {
+          "name": "twitch_subscriptions_world_id_channel_id_type_pk",
+          "columns": [
+            "world_id",
+            "channel_id",
+            "type"
+          ]
+        }
+      },
+      "uniqueConstraints": {
+        "twitch_subscriptions_provider_id_unique": {
+          "name": "twitch_subscriptions_provider_id_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "provider_id"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {
+        "twitch_subscription_cost": {
+          "name": "twitch_subscription_cost",
+          "value": "\"twitch_subscriptions\".\"cost\">=0"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.channel_play": {
+      "name": "channel_play",
+      "schema": "",
+      "columns": {
+        "mechanics_version": {
+          "name": "mechanics_version",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "mechanics_requested": {
+          "name": "mechanics_requested",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "traces_enabled": {
+          "name": "traces_enabled",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": true
+        },
+        "world_id": {
+          "name": "world_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "channel_id": {
+          "name": "channel_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "preparation": {
+          "name": "preparation",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'neutral'"
+        },
+        "preparation_requested": {
+          "name": "preparation_requested",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "non_mutation_rounds": {
+          "name": "non_mutation_rounds",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "rules_compatible": {
+          "name": "rules_compatible",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": true
+        },
+        "display": {
+          "name": "display",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'{\"layout\":\"compact\",\"reducedMotion\":false,\"familyNews\":true,\"celebrations\":true}'::jsonb"
+        },
+        "celebration": {
+          "name": "celebration",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "channel_play_world_id_channel_id_channels_world_id_id_fk": {
+          "name": "channel_play_world_id_channel_id_channels_world_id_id_fk",
+          "tableFrom": "channel_play",
+          "tableTo": "channels",
+          "columnsFrom": [
+            "world_id",
+            "channel_id"
+          ],
+          "columnsTo": [
+            "world_id",
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "channel_play_world_id_channel_id_pk": {
+          "name": "channel_play_world_id_channel_id_pk",
+          "columns": [
+            "world_id",
+            "channel_id"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "channel_mechanics_version_valid": {
+          "name": "channel_mechanics_version_valid",
+          "value": "\"channel_play\".\"mechanics_version\" in (0,1)"
+        },
+        "channel_preparation_valid": {
+          "name": "channel_preparation_valid",
+          "value": "\"channel_play\".\"preparation\" in ('shield','reserve','neutral')"
+        },
+        "non_mutation_rounds_valid": {
+          "name": "non_mutation_rounds_valid",
+          "value": "\"channel_play\".\"non_mutation_rounds\">=0"
+        },
+        "channel_display_valid": {
+          "name": "channel_display_valid",
+          "value": "\"channel_play\".\"display\" ?& array['layout','reducedMotion','familyNews','celebrations'] and \"channel_play\".\"display\"->>'layout' in ('compact','expanded') and jsonb_typeof(\"channel_play\".\"display\"->'reducedMotion')='boolean' and jsonb_typeof(\"channel_play\".\"display\"->'familyNews')='boolean' and jsonb_typeof(\"channel_play\".\"display\"->'celebrations')='boolean'"
+        },
+        "channel_celebration_valid": {
+          "name": "channel_celebration_valid",
+          "value": "\"channel_play\".\"celebration\" is null or (\"channel_play\".\"celebration\"->>'kind' in ('cheer','subscription','hype_train') and jsonb_typeof(\"channel_play\".\"celebration\"->'atMs')='number')"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.raid_policies": {
+      "name": "raid_policies",
+      "schema": "",
+      "columns": {
+        "hash": {
+          "name": "hash",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "version": {
+          "name": "version",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "canonical": {
+          "name": "canonical",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "raid_policies_version_unique": {
+          "name": "raid_policies_version_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "version"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {
+        "raid_policy_hash_valid": {
+          "name": "raid_policy_hash_valid",
+          "value": "encode(sha256(convert_to(\"raid_policies\".\"canonical\",'UTF8')),'hex')=\"raid_policies\".\"hash\""
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.round_participants": {
+      "name": "round_participants",
+      "schema": "",
+      "columns": {
+        "world_id": {
+          "name": "world_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "round_id": {
+          "name": "round_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "organism_id": {
+          "name": "organism_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "role": {
+          "name": "role",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "genome": {
+          "name": "genome",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "health_before": {
+          "name": "health_before",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "resolution": {
+          "name": "resolution",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "explanation": {
+          "name": "explanation",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "round_participants_world_id_round_id_rounds_world_id_id_fk": {
+          "name": "round_participants_world_id_round_id_rounds_world_id_id_fk",
+          "tableFrom": "round_participants",
+          "tableTo": "rounds",
+          "columnsFrom": [
+            "world_id",
+            "round_id"
+          ],
+          "columnsTo": [
+            "world_id",
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "round_participants_world_id_organism_id_organisms_world_id_id_fk": {
+          "name": "round_participants_world_id_organism_id_organisms_world_id_id_fk",
+          "tableFrom": "round_participants",
+          "tableTo": "organisms",
+          "columnsFrom": [
+            "world_id",
+            "organism_id"
+          ],
+          "columnsTo": [
+            "world_id",
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "round_participants_world_id_round_id_organism_id_pk": {
+          "name": "round_participants_world_id_round_id_organism_id_pk",
+          "columns": [
+            "world_id",
+            "round_id",
+            "organism_id"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "participant_role_valid": {
+          "name": "participant_role_valid",
+          "value": "\"round_participants\".\"role\" in ('resident','visitor')"
+        },
+        "participant_health_valid": {
+          "name": "participant_health_valid",
+          "value": "\"round_participants\".\"health_before\" between 1 and 100"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.source_blocks": {
+      "name": "source_blocks",
+      "schema": "",
+      "columns": {
+        "world_id": {
+          "name": "world_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "channel_id": {
+          "name": "channel_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "source_channel_id": {
+          "name": "source_channel_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "source_blocks_world_id_channel_id_channels_world_id_id_fk": {
+          "name": "source_blocks_world_id_channel_id_channels_world_id_id_fk",
+          "tableFrom": "source_blocks",
+          "tableTo": "channels",
+          "columnsFrom": [
+            "world_id",
+            "channel_id"
+          ],
+          "columnsTo": [
+            "world_id",
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "source_blocks_world_id_source_channel_id_channels_world_id_id_fk": {
+          "name": "source_blocks_world_id_source_channel_id_channels_world_id_id_fk",
+          "tableFrom": "source_blocks",
+          "tableTo": "channels",
+          "columnsFrom": [
+            "world_id",
+            "source_channel_id"
+          ],
+          "columnsTo": [
+            "world_id",
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "source_blocks_world_id_channel_id_source_channel_id_pk": {
+          "name": "source_blocks_world_id_channel_id_source_channel_id_pk",
+          "columns": [
+            "world_id",
+            "channel_id",
+            "source_channel_id"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.transfer_transitions": {
+      "name": "transfer_transitions",
+      "schema": "",
+      "columns": {
+        "world_id": {
+          "name": "world_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "transfer_id": {
+          "name": "transfer_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "version": {
+          "name": "version",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "outcome": {
+          "name": "outcome",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "at": {
+          "name": "at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "channel_id": {
+          "name": "channel_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "sequence": {
+          "name": "sequence",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "detail": {
+          "name": "detail",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {
+        "transfer_transition_channel_idx": {
+          "name": "transfer_transition_channel_idx",
+          "columns": [
+            {
+              "expression": "world_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "channel_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "sequence",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "transfer_transitions_world_id_transfer_id_transfers_world_id_id_fk": {
+          "name": "transfer_transitions_world_id_transfer_id_transfers_world_id_id_fk",
+          "tableFrom": "transfer_transitions",
+          "tableTo": "transfers",
+          "columnsFrom": [
+            "world_id",
+            "transfer_id"
+          ],
+          "columnsTo": [
+            "world_id",
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "transfer_transitions_world_id_channel_id_channels_world_id_id_fk": {
+          "name": "transfer_transitions_world_id_channel_id_channels_world_id_id_fk",
+          "tableFrom": "transfer_transitions",
+          "tableTo": "channels",
+          "columnsFrom": [
+            "world_id",
+            "channel_id"
+          ],
+          "columnsTo": [
+            "world_id",
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "transfer_transitions_world_id_transfer_id_version_pk": {
+          "name": "transfer_transitions_world_id_transfer_id_version_pk",
+          "columns": [
+            "world_id",
+            "transfer_id",
+            "version"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.visitor_state": {
+      "name": "visitor_state",
+      "schema": "",
+      "columns": {
+        "world_id": {
+          "name": "world_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "organism_id": {
+          "name": "organism_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "channel_id": {
+          "name": "channel_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "transfer_id": {
+          "name": "transfer_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "welcomed": {
+          "name": "welcomed",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "arrival_pending": {
+          "name": "arrival_pending",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": true
+        },
+        "shock_reduction": {
+          "name": "shock_reduction",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "shelter_pending": {
+          "name": "shelter_pending",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "visitor_state_world_id_organism_id_organisms_world_id_id_fk": {
+          "name": "visitor_state_world_id_organism_id_organisms_world_id_id_fk",
+          "tableFrom": "visitor_state",
+          "tableTo": "organisms",
+          "columnsFrom": [
+            "world_id",
+            "organism_id"
+          ],
+          "columnsTo": [
+            "world_id",
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "visitor_state_world_id_channel_id_channels_world_id_id_fk": {
+          "name": "visitor_state_world_id_channel_id_channels_world_id_id_fk",
+          "tableFrom": "visitor_state",
+          "tableTo": "channels",
+          "columnsFrom": [
+            "world_id",
+            "channel_id"
+          ],
+          "columnsTo": [
+            "world_id",
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "visitor_state_world_id_transfer_id_transfers_world_id_id_fk": {
+          "name": "visitor_state_world_id_transfer_id_transfers_world_id_id_fk",
+          "tableFrom": "visitor_state",
+          "tableTo": "transfers",
+          "columnsFrom": [
+            "world_id",
+            "transfer_id"
+          ],
+          "columnsTo": [
+            "world_id",
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "visitor_state_world_id_organism_id_pk": {
+          "name": "visitor_state_world_id_organism_id_pk",
+          "columns": [
+            "world_id",
+            "organism_id"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "visitor_reduction_valid": {
+          "name": "visitor_reduction_valid",
+          "value": "\"visitor_state\".\"shock_reduction\" between 0 and 4"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.world_raid_policies": {
+      "name": "world_raid_policies",
+      "schema": "",
+      "columns": {
+        "world_id": {
+          "name": "world_id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "policy_hash": {
+          "name": "policy_hash",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "world_raid_policies_world_id_worlds_id_fk": {
+          "name": "world_raid_policies_world_id_worlds_id_fk",
+          "tableFrom": "world_raid_policies",
+          "tableTo": "worlds",
+          "columnsFrom": [
+            "world_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "world_raid_policies_policy_hash_raid_policies_hash_fk": {
+          "name": "world_raid_policies_policy_hash_raid_policies_hash_fk",
+          "tableFrom": "world_raid_policies",
+          "tableTo": "raid_policies",
+          "columnsFrom": [
+            "policy_hash"
+          ],
+          "columnsTo": [
+            "hash"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.lineage_blocks": {
+      "name": "lineage_blocks",
+      "schema": "",
+      "columns": {
+        "world_id": {
+          "name": "world_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "channel_id": {
+          "name": "channel_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "lineage_id": {
+          "name": "lineage_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "lineage_blocks_world_id_channel_id_channels_world_id_id_fk": {
+          "name": "lineage_blocks_world_id_channel_id_channels_world_id_id_fk",
+          "tableFrom": "lineage_blocks",
+          "tableTo": "channels",
+          "columnsFrom": [
+            "world_id",
+            "channel_id"
+          ],
+          "columnsTo": [
+            "world_id",
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "lineage_blocks_world_id_lineage_id_lineages_world_id_id_fk": {
+          "name": "lineage_blocks_world_id_lineage_id_lineages_world_id_id_fk",
+          "tableFrom": "lineage_blocks",
+          "tableTo": "lineages",
+          "columnsFrom": [
+            "world_id",
+            "lineage_id"
+          ],
+          "columnsTo": [
+            "world_id",
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "lineage_blocks_world_id_channel_id_lineage_id_pk": {
+          "name": "lineage_blocks_world_id_channel_id_lineage_id_pk",
+          "columns": [
+            "world_id",
+            "channel_id",
+            "lineage_id"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.choice_replays": {
+      "name": "choice_replays",
+      "schema": "",
+      "columns": {
+        "world_id": {
+          "name": "world_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "round_id": {
+          "name": "round_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "organism_id": {
+          "name": "organism_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "rules_hash": {
+          "name": "rules_hash",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "engine_version": {
+          "name": "engine_version",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "confidence": {
+          "name": "confidence",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "inputs": {
+          "name": "inputs",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "result": {
+          "name": "result",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "choice_replays_rules_hash_rulesets_hash_fk": {
+          "name": "choice_replays_rules_hash_rulesets_hash_fk",
+          "tableFrom": "choice_replays",
+          "tableTo": "rulesets",
+          "columnsFrom": [
+            "rules_hash"
+          ],
+          "columnsTo": [
+            "hash"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "choice_replays_world_id_round_id_rounds_world_id_id_fk": {
+          "name": "choice_replays_world_id_round_id_rounds_world_id_id_fk",
+          "tableFrom": "choice_replays",
+          "tableTo": "rounds",
+          "columnsFrom": [
+            "world_id",
+            "round_id"
+          ],
+          "columnsTo": [
+            "world_id",
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "choice_replays_world_id_organism_id_organisms_world_id_id_fk": {
+          "name": "choice_replays_world_id_organism_id_organisms_world_id_id_fk",
+          "tableFrom": "choice_replays",
+          "tableTo": "organisms",
+          "columnsFrom": [
+            "world_id",
+            "organism_id"
+          ],
+          "columnsTo": [
+            "world_id",
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "choice_replays_world_id_round_id_organism_id_pk": {
+          "name": "choice_replays_world_id_round_id_organism_id_pk",
+          "columns": [
+            "world_id",
+            "round_id",
+            "organism_id"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "choice_replay_confidence_valid": {
+          "name": "choice_replay_confidence_valid",
+          "value": "\"choice_replays\".\"confidence\" in ('confident','limited')"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.mechanics_policies": {
+      "name": "mechanics_policies",
+      "schema": "",
+      "columns": {
+        "hash": {
+          "name": "hash",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "version": {
+          "name": "version",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "canonical": {
+          "name": "canonical",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "mechanics_policies_version_unique": {
+          "name": "mechanics_policies_version_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "version"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {
+        "mechanics_policy_hash_valid": {
+          "name": "mechanics_policy_hash_valid",
+          "value": "encode(sha256(convert_to(\"mechanics_policies\".\"canonical\",'UTF8')),'hex')=\"mechanics_policies\".\"hash\""
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.trace_qualifications": {
+      "name": "trace_qualifications",
+      "schema": "",
+      "columns": {
+        "world_id": {
+          "name": "world_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "lineage_id": {
+          "name": "lineage_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "channel_id": {
+          "name": "channel_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "residency_id": {
+          "name": "residency_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "emitter_id": {
+          "name": "emitter_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "qualifying_round_id": {
+          "name": "qualifying_round_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "trace_id": {
+          "name": "trace_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {
+        "trace_qualification_emitter_idx": {
+          "name": "trace_qualification_emitter_idx",
+          "columns": [
+            {
+              "expression": "world_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "emitter_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "trace_qualifications_world_id_lineage_id_lineages_world_id_id_fk": {
+          "name": "trace_qualifications_world_id_lineage_id_lineages_world_id_id_fk",
+          "tableFrom": "trace_qualifications",
+          "tableTo": "lineages",
+          "columnsFrom": [
+            "world_id",
+            "lineage_id"
+          ],
+          "columnsTo": [
+            "world_id",
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "trace_qualifications_world_id_channel_id_channels_world_id_id_fk": {
+          "name": "trace_qualifications_world_id_channel_id_channels_world_id_id_fk",
+          "tableFrom": "trace_qualifications",
+          "tableTo": "channels",
+          "columnsFrom": [
+            "world_id",
+            "channel_id"
+          ],
+          "columnsTo": [
+            "world_id",
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "trace_qualifications_world_id_residency_id_residencies_world_id_id_fk": {
+          "name": "trace_qualifications_world_id_residency_id_residencies_world_id_id_fk",
+          "tableFrom": "trace_qualifications",
+          "tableTo": "residencies",
+          "columnsFrom": [
+            "world_id",
+            "residency_id"
+          ],
+          "columnsTo": [
+            "world_id",
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "trace_qualifications_world_id_emitter_id_organisms_world_id_id_fk": {
+          "name": "trace_qualifications_world_id_emitter_id_organisms_world_id_id_fk",
+          "tableFrom": "trace_qualifications",
+          "tableTo": "organisms",
+          "columnsFrom": [
+            "world_id",
+            "emitter_id"
+          ],
+          "columnsTo": [
+            "world_id",
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "trace_qualifications_world_id_qualifying_round_id_rounds_world_id_id_fk": {
+          "name": "trace_qualifications_world_id_qualifying_round_id_rounds_world_id_id_fk",
+          "tableFrom": "trace_qualifications",
+          "tableTo": "rounds",
+          "columnsFrom": [
+            "world_id",
+            "qualifying_round_id"
+          ],
+          "columnsTo": [
+            "world_id",
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "trace_qualifications_world_id_trace_id_habitat_traces_world_id_id_fk": {
+          "name": "trace_qualifications_world_id_trace_id_habitat_traces_world_id_id_fk",
+          "tableFrom": "trace_qualifications",
+          "tableTo": "habitat_traces",
+          "columnsFrom": [
+            "world_id",
+            "trace_id"
+          ],
+          "columnsTo": [
+            "world_id",
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "trace_qualifications_world_id_lineage_id_channel_id_pk": {
+          "name": "trace_qualifications_world_id_lineage_id_channel_id_pk",
+          "columns": [
+            "world_id",
+            "lineage_id",
+            "channel_id"
+          ]
+        }
+      },
+      "uniqueConstraints": {
+        "trace_qualification_offer_unique": {
+          "name": "trace_qualification_offer_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "world_id",
+            "trace_id"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.world_mechanics_policies": {
+      "name": "world_mechanics_policies",
+      "schema": "",
+      "columns": {
+        "world_id": {
+          "name": "world_id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "policy_hash": {
+          "name": "policy_hash",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "world_mechanics_policies_world_id_worlds_id_fk": {
+          "name": "world_mechanics_policies_world_id_worlds_id_fk",
+          "tableFrom": "world_mechanics_policies",
+          "tableTo": "worlds",
+          "columnsFrom": [
+            "world_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "world_mechanics_policies_policy_hash_mechanics_policies_hash_fk": {
+          "name": "world_mechanics_policies_policy_hash_mechanics_policies_hash_fk",
+          "tableFrom": "world_mechanics_policies",
+          "tableTo": "mechanics_policies",
+          "columnsFrom": [
+            "policy_hash"
+          ],
+          "columnsTo": [
+            "hash"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.appearance_blueprints": {
+      "name": "appearance_blueprints",
+      "schema": "",
+      "columns": {
+        "world_id": {
+          "name": "world_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "hash": {
+          "name": "hash",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "canonical": {
+          "name": "canonical",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "blueprint": {
+          "name": "blueprint",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "renderer_version": {
+          "name": "renderer_version",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "template": {
+          "name": "template",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "session_id": {
+          "name": "session_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "parent_hash": {
+          "name": "parent_hash",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {
+        "appearance_blueprints_world_id_hash_pk": {
+          "name": "appearance_blueprints_world_id_hash_pk",
+          "columns": [
+            "world_id",
+            "hash"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "appearance_blueprint_hash_format": {
+          "name": "appearance_blueprint_hash_format",
+          "value": "\"appearance_blueprints\".\"hash\" ~ '^[0-9a-f]{64}$'"
+        },
+        "appearance_blueprint_renderer_known": {
+          "name": "appearance_blueprint_renderer_known",
+          "value": "\"appearance_blueprints\".\"renderer_version\" = 'shell-v1'"
+        },
+        "appearance_blueprint_size": {
+          "name": "appearance_blueprint_size",
+          "value": "octet_length(\"appearance_blueprints\".\"canonical\") <= 8192"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.artist_sessions": {
+      "name": "artist_sessions",
+      "schema": "",
+      "columns": {
+        "hash": {
+          "name": "hash",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "world_id": {
+          "name": "world_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "artist_key": {
+          "name": "artist_key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "login": {
+          "name": "login",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "csrf_hash": {
+          "name": "csrf_hash",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "expires_at": {
+          "name": "expires_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {
+        "artist_sessions_expiry_idx": {
+          "name": "artist_sessions_expiry_idx",
+          "columns": [
+            {
+              "expression": "expires_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.channel_studio": {
+      "name": "channel_studio",
+      "schema": "",
+      "columns": {
+        "world_id": {
+          "name": "world_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "channel_id": {
+          "name": "channel_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "settings": {
+          "name": "settings",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "availability": {
+          "name": "availability",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'ACTIVE'"
+        },
+        "availability_source": {
+          "name": "availability_source",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "bridge_scene": {
+          "name": "bridge_scene",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "bridge_seen_at": {
+          "name": "bridge_seen_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "bridge_stale": {
+          "name": "bridge_stale",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "channel_studio_world_id_channel_id_channels_world_id_id_fk": {
+          "name": "channel_studio_world_id_channel_id_channels_world_id_id_fk",
+          "tableFrom": "channel_studio",
+          "tableTo": "channels",
+          "columnsFrom": [
+            "world_id",
+            "channel_id"
+          ],
+          "columnsTo": [
+            "world_id",
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "channel_studio_world_id_channel_id_pk": {
+          "name": "channel_studio_world_id_channel_id_pk",
+          "columns": [
+            "world_id",
+            "channel_id"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "channel_studio_availability_valid": {
+          "name": "channel_studio_availability_valid",
+          "value": "\"channel_studio\".\"availability\" in ('ACTIVE','REST','UNKNOWN')"
+        },
+        "channel_studio_source_valid": {
+          "name": "channel_studio_source_valid",
+          "value": "\"channel_studio\".\"availability_source\" is null or \"channel_studio\".\"availability_source\" in ('manual','bridge','stream','integration')"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.pending_adaptations": {
+      "name": "pending_adaptations",
+      "schema": "",
+      "columns": {
+        "world_id": {
+          "name": "world_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "session_id": {
+          "name": "session_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "channel_id": {
+          "name": "channel_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "organism_id": {
+          "name": "organism_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "blueprint_hash": {
+          "name": "blueprint_hash",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "template": {
+          "name": "template",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "target_slot": {
+          "name": "target_slot",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "status": {
+          "name": "status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "approval": {
+          "name": "approval",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "reason": {
+          "name": "reason",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "committed_round_id": {
+          "name": "committed_round_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "resolved_at": {
+          "name": "resolved_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "pending_adaptation_per_session": {
+          "name": "pending_adaptation_per_session",
+          "columns": [
+            {
+              "expression": "world_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "session_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "pending_adaptation_one_per_organism": {
+          "name": "pending_adaptation_one_per_organism",
+          "columns": [
+            {
+              "expression": "world_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "organism_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "where": "\"pending_adaptations\".\"status\" = 'pending'",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "pending_adaptation_one_commit_per_slot": {
+          "name": "pending_adaptation_one_commit_per_slot",
+          "columns": [
+            {
+              "expression": "world_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "organism_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "target_slot",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "where": "\"pending_adaptations\".\"status\" = 'committed'",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "pending_adaptations_world_id_session_id_studio_sessions_world_id_id_fk": {
+          "name": "pending_adaptations_world_id_session_id_studio_sessions_world_id_id_fk",
+          "tableFrom": "pending_adaptations",
+          "tableTo": "studio_sessions",
+          "columnsFrom": [
+            "world_id",
+            "session_id"
+          ],
+          "columnsTo": [
+            "world_id",
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "pending_adaptations_world_id_organism_id_organisms_world_id_id_fk": {
+          "name": "pending_adaptations_world_id_organism_id_organisms_world_id_id_fk",
+          "tableFrom": "pending_adaptations",
+          "tableTo": "organisms",
+          "columnsFrom": [
+            "world_id",
+            "organism_id"
+          ],
+          "columnsTo": [
+            "world_id",
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "pending_adaptations_world_id_blueprint_hash_appearance_blueprints_world_id_hash_fk": {
+          "name": "pending_adaptations_world_id_blueprint_hash_appearance_blueprints_world_id_hash_fk",
+          "tableFrom": "pending_adaptations",
+          "tableTo": "appearance_blueprints",
+          "columnsFrom": [
+            "world_id",
+            "blueprint_hash"
+          ],
+          "columnsTo": [
+            "world_id",
+            "hash"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "pending_adaptations_world_id_id_pk": {
+          "name": "pending_adaptations_world_id_id_pk",
+          "columns": [
+            "world_id",
+            "id"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "pending_adaptation_status_valid": {
+          "name": "pending_adaptation_status_valid",
+          "value": "\"pending_adaptations\".\"status\" in ('pending','committed','released','cancelled','expired')"
+        },
+        "pending_adaptation_slot_positive": {
+          "name": "pending_adaptation_slot_positive",
+          "value": "\"pending_adaptations\".\"target_slot\" > 0"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.studio_artist_blocks": {
+      "name": "studio_artist_blocks",
+      "schema": "",
+      "columns": {
+        "world_id": {
+          "name": "world_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "channel_id": {
+          "name": "channel_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "artist_key": {
+          "name": "artist_key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "studio_artist_blocks_world_id_channel_id_channels_world_id_id_fk": {
+          "name": "studio_artist_blocks_world_id_channel_id_channels_world_id_id_fk",
+          "tableFrom": "studio_artist_blocks",
+          "tableTo": "channels",
+          "columnsFrom": [
+            "world_id",
+            "channel_id"
+          ],
+          "columnsTo": [
+            "world_id",
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "studio_artist_blocks_world_id_channel_id_artist_key_pk": {
+          "name": "studio_artist_blocks_world_id_channel_id_artist_key_pk",
+          "columns": [
+            "world_id",
+            "channel_id",
+            "artist_key"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.studio_bridge_capabilities": {
+      "name": "studio_bridge_capabilities",
+      "schema": "",
+      "columns": {
+        "hash": {
+          "name": "hash",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "world_id": {
+          "name": "world_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "channel_id": {
+          "name": "channel_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "revoked_at": {
+          "name": "revoked_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "studio_bridge_one_active": {
+          "name": "studio_bridge_one_active",
+          "columns": [
+            {
+              "expression": "world_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "channel_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "where": "\"studio_bridge_capabilities\".\"revoked_at\" is null",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "studio_bridge_capabilities_world_id_channel_id_channels_world_id_id_fk": {
+          "name": "studio_bridge_capabilities_world_id_channel_id_channels_world_id_id_fk",
+          "tableFrom": "studio_bridge_capabilities",
+          "tableTo": "channels",
+          "columnsFrom": [
+            "world_id",
+            "channel_id"
+          ],
+          "columnsTo": [
+            "world_id",
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.studio_proposals": {
+      "name": "studio_proposals",
+      "schema": "",
+      "columns": {
+        "world_id": {
+          "name": "world_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "session_id": {
+          "name": "session_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "artist_key": {
+          "name": "artist_key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "credit": {
+          "name": "credit",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "credit_opt_in": {
+          "name": "credit_opt_in",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "revision": {
+          "name": "revision",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "blueprint_hash": {
+          "name": "blueprint_hash",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "status": {
+          "name": "status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "submitted_sequence": {
+          "name": "submitted_sequence",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "submitted_at": {
+          "name": "submitted_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "ended_sequence": {
+          "name": "ended_sequence",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "studio_one_active_proposal_per_artist": {
+          "name": "studio_one_active_proposal_per_artist",
+          "columns": [
+            {
+              "expression": "world_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "session_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "artist_key",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "where": "\"studio_proposals\".\"status\" = 'active'",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "studio_proposals_session_idx": {
+          "name": "studio_proposals_session_idx",
+          "columns": [
+            {
+              "expression": "world_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "session_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "status",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "studio_proposals_world_id_session_id_studio_sessions_world_id_id_fk": {
+          "name": "studio_proposals_world_id_session_id_studio_sessions_world_id_id_fk",
+          "tableFrom": "studio_proposals",
+          "tableTo": "studio_sessions",
+          "columnsFrom": [
+            "world_id",
+            "session_id"
+          ],
+          "columnsTo": [
+            "world_id",
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "studio_proposals_world_id_blueprint_hash_appearance_blueprints_world_id_hash_fk": {
+          "name": "studio_proposals_world_id_blueprint_hash_appearance_blueprints_world_id_hash_fk",
+          "tableFrom": "studio_proposals",
+          "tableTo": "appearance_blueprints",
+          "columnsFrom": [
+            "world_id",
+            "blueprint_hash"
+          ],
+          "columnsTo": [
+            "world_id",
+            "hash"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "studio_proposals_world_id_id_pk": {
+          "name": "studio_proposals_world_id_id_pk",
+          "columns": [
+            "world_id",
+            "id"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "studio_proposal_status_valid": {
+          "name": "studio_proposal_status_valid",
+          "value": "\"studio_proposals\".\"status\" in ('active','replaced','withdrawn','removed')"
+        },
+        "studio_proposal_revision_positive": {
+          "name": "studio_proposal_revision_positive",
+          "value": "\"studio_proposals\".\"revision\" > 0"
+        },
+        "studio_proposal_credit_length": {
+          "name": "studio_proposal_credit_length",
+          "value": "length(\"studio_proposals\".\"credit\") between 1 and 40"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.studio_sessions": {
+      "name": "studio_sessions",
+      "schema": "",
+      "columns": {
+        "world_id": {
+          "name": "world_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "channel_id": {
+          "name": "channel_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "organism_id": {
+          "name": "organism_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "phase": {
+          "name": "phase",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "version": {
+          "name": "version",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "trigger": {
+          "name": "trigger",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "challenge": {
+          "name": "challenge",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "seed": {
+          "name": "seed",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "settings": {
+          "name": "settings",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "creation_close_at": {
+          "name": "creation_close_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "voting_close_at": {
+          "name": "voting_close_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "review_expires_at": {
+          "name": "review_expires_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "ballot_round_id": {
+          "name": "ballot_round_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "shortlist": {
+          "name": "shortlist",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "selection": {
+          "name": "selection",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "adaptation_id": {
+          "name": "adaptation_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "outcome": {
+          "name": "outcome",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "opened_sequence": {
+          "name": "opened_sequence",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "ended_at": {
+          "name": "ended_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "studio_one_nonterminal_per_channel": {
+          "name": "studio_one_nonterminal_per_channel",
+          "columns": [
+            {
+              "expression": "world_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "channel_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "where": "phase in ('OPENING','CREATING','VOTING','REVIEW','PENDING_HATCH')",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "studio_sessions_channel_idx": {
+          "name": "studio_sessions_channel_idx",
+          "columns": [
+            {
+              "expression": "world_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "channel_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "created_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "studio_sessions_world_id_channel_id_channels_world_id_id_fk": {
+          "name": "studio_sessions_world_id_channel_id_channels_world_id_id_fk",
+          "tableFrom": "studio_sessions",
+          "tableTo": "channels",
+          "columnsFrom": [
+            "world_id",
+            "channel_id"
+          ],
+          "columnsTo": [
+            "world_id",
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "studio_sessions_world_id_organism_id_organisms_world_id_id_fk": {
+          "name": "studio_sessions_world_id_organism_id_organisms_world_id_id_fk",
+          "tableFrom": "studio_sessions",
+          "tableTo": "organisms",
+          "columnsFrom": [
+            "world_id",
+            "organism_id"
+          ],
+          "columnsTo": [
+            "world_id",
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "studio_sessions_world_id_id_pk": {
+          "name": "studio_sessions_world_id_id_pk",
+          "columns": [
+            "world_id",
+            "id"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "studio_session_phase_valid": {
+          "name": "studio_session_phase_valid",
+          "value": "\"studio_sessions\".\"phase\" in ('OPENING','CREATING','VOTING','REVIEW','PENDING_HATCH','COMPLETED','CANCELLED','EXPIRED')"
+        },
+        "studio_session_trigger_valid": {
+          "name": "studio_session_trigger_valid",
+          "value": "\"studio_sessions\".\"trigger\" in ('manual','bridge')"
+        },
+        "studio_session_version_nonnegative": {
+          "name": "studio_session_version_nonnegative",
+          "value": "\"studio_sessions\".\"version\" >= 0"
+        },
+        "studio_session_terminal_ended": {
+          "name": "studio_session_terminal_ended",
+          "value": "(\"studio_sessions\".\"ended_at\" is null) = (\"studio_sessions\".\"phase\" in ('OPENING','CREATING','VOTING','REVIEW','PENDING_HATCH'))"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.studio_transitions": {
+      "name": "studio_transitions",
+      "schema": "",
+      "columns": {
+        "world_id": {
+          "name": "world_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "session_id": {
+          "name": "session_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "version": {
+          "name": "version",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "from_phase": {
+          "name": "from_phase",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "to_phase": {
+          "name": "to_phase",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "event": {
+          "name": "event",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "sequence": {
+          "name": "sequence",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "detail": {
+          "name": "detail",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "at": {
+          "name": "at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "studio_transitions_world_id_session_id_studio_sessions_world_id_id_fk": {
+          "name": "studio_transitions_world_id_session_id_studio_sessions_world_id_id_fk",
+          "tableFrom": "studio_transitions",
+          "tableTo": "studio_sessions",
+          "columnsFrom": [
+            "world_id",
+            "session_id"
+          ],
+          "columnsTo": [
+            "world_id",
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "studio_transitions_world_id_session_id_version_pk": {
+          "name": "studio_transitions_world_id_session_id_version_pk",
+          "columns": [
+            "world_id",
+            "session_id",
+            "version"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    }
+  },
+  "enums": {
+    "public.world_mode": {
+      "name": "world_mode",
+      "schema": "public",
+      "values": [
+        "live",
+        "sandbox",
+        "replay"
+      ]
+    }
+  },
+  "schemas": {},
+  "sequences": {},
+  "roles": {},
+  "policies": {},
+  "views": {},
+  "_meta": {
+    "columns": {},
+    "schemas": {},
+    "tables": {}
+  }
+}

@@ -22,6 +22,8 @@ export const worlds = pgTable(
     expiresAt: timestamp('expires_at', { withTimezone: true }),
     /** Explicit synthetic clock; live worlds always use receipt wall time. */
     clockAt: timestamp('clock_at', { withTimezone: true }),
+    /** A replay world's source; studio designs keep the source world identity in their hashes. */
+    replayOf: uuid('replay_of'),
   },
   (table) => [
     check('worlds_rules_hash_format', sql`${table.rulesHash} ~ '^[0-9a-f]{64}$'`),
@@ -30,6 +32,7 @@ export const worlds = pgTable(
       'worlds_owner_capability_hash_format',
       sql`${table.ownerCapabilityHash} is null or ${table.ownerCapabilityHash} ~ '^[0-9a-f]{64}$'`,
     ),
+    check('worlds_replay_source', sql`${table.replayOf} is null or ${table.mode} = 'replay'`),
     check(
       'worlds_sandbox_owned_and_expiring',
       sql`${table.mode} <> 'sandbox' or (${table.ownerCapabilityHash} is not null and ${table.expiresAt} is not null)`,
