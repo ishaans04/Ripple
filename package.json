@@ -44,6 +44,8 @@
     "smoke:raids": "npm run smoke:raids -w @ripple/server",
     "smoke:mechanics": "npm run smoke:mechanics -w @ripple/server",
     "smoke:studio": "npm run smoke:studio -w @ripple/server",
-    "simulate": "npm run simulate -w @ripple/server --"
+    "simulate": "npm run simulate -w @ripple/server --",
+    "smoke:judge": "npm run smoke:judge -w @ripple/server",
+    "test:judge": "node --conditions=ripple-source tests/judge-installed.ts"
   }
 }
