@@ -51,24 +51,24 @@ const world = (dependencies: unknown[]): WorldReplay => ({
   channels: [channel(first, dependencies), channel(second, [])],
 });
 it('offline verification refuses missing histories and unsupported dependency types', () => {
-  expect(() =>
-    verifyAcceptedWorld({ schemaVersion: 1, sourceWorldId: first, channels: [] }),
-  ).toThrow('no channel histories');
-  expect(() => verifyAcceptedWorld(world([{ channelId: second, unsupported: true }]))).toThrow(
-    'Unknown cross-channel',
-  );
+  expect(() => {
+    verifyAcceptedWorld({ schemaVersion: 1, sourceWorldId: first, channels: [] });
+  }).toThrow('no channel histories');
+  expect(() => {
+    verifyAcceptedWorld(world([{ channelId: second, unsupported: true }]));
+  }).toThrow('Unknown cross-channel');
 });
 it('offline verification checks dependency bounds even when checksum chains are valid', () => {
-  expect(() => verifyAcceptedWorld(world([{ channelId: second, sequence: 2 }]))).toThrow(
-    'outside the exported',
-  );
-  expect(() =>
-    verifyAcceptedWorld(world([{ channelId: second, processedSequence: 2, intakeSequence: 1 }])),
-  ).toThrow('outside the exported');
-  expect(() =>
-    verifyAcceptedWorld(world([{ channelId: second, processedSequence: 0, intakeSequence: 2 }])),
-  ).toThrow('outside the exported');
-  expect(() =>
-    verifyAcceptedWorld(world([{ channelId: second, processedSequence: 0, intakeSequence: 1 }])),
-  ).not.toThrow();
+  expect(() => {
+    verifyAcceptedWorld(world([{ channelId: second, sequence: 2 }]));
+  }).toThrow('outside the exported');
+  expect(() => {
+    verifyAcceptedWorld(world([{ channelId: second, processedSequence: 2, intakeSequence: 1 }]));
+  }).toThrow('outside the exported');
+  expect(() => {
+    verifyAcceptedWorld(world([{ channelId: second, processedSequence: 0, intakeSequence: 2 }]));
+  }).toThrow('outside the exported');
+  expect(() => {
+    verifyAcceptedWorld(world([{ channelId: second, processedSequence: 0, intakeSequence: 1 }]));
+  }).not.toThrow();
 });
