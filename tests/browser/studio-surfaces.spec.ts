@@ -332,7 +332,7 @@ test('the OBS bridge reconciles, debounces scene changes and reports hiding as s
   const fire = (type: string, detail: unknown) =>
     page.evaluate(
       ([name, value]) => {
-        window.dispatchEvent(new CustomEvent(name as string, { detail: value }));
+        window.dispatchEvent(new CustomEvent(name, { detail: value }));
       },
       [type, detail] as const,
     );

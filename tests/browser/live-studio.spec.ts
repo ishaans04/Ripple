@@ -32,7 +32,7 @@ const finalist = {
   studioSessionId: session,
   baseOrganismId: organism,
   baseOrganismVersion: 2,
-  mutationTemplateId: challenge.mutationTemplateIds[0]!,
+  mutationTemplateId: challenge.mutationTemplateIds[0] ?? 'cosmetic-only',
   rendererVersion: 'shell-v1' as const,
   part: { ...founderShell, parameters: { width: 700, height: 500, curvature: 400 } },
 };
@@ -124,13 +124,14 @@ async function installHandFixture(page: Page) {
   await page.addInitScript(() => {
     Object.defineProperty(navigator.mediaDevices, 'getUserMedia', {
       configurable: true,
-      value: async (constraints: MediaStreamConstraints) => {
-        if (constraints.audio !== false) throw new Error('Microphone must never be requested');
+      value: (constraints: MediaStreamConstraints) => {
+        if (constraints.audio !== false)
+          return Promise.reject(new Error('Microphone must never be requested'));
         const canvas = document.createElement('canvas');
         canvas.width = 640;
         canvas.height = 480;
         canvas.getContext('2d')?.fillRect(0, 0, 640, 480);
-        return canvas.captureStream(10);
+        return Promise.resolve(canvas.captureStream(10));
       },
     });
     class FixtureWorker {
