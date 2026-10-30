@@ -8,7 +8,12 @@ import {
   type AcceptedBlueprint,
 } from './studio-blueprint.ts';
 import { studioMutationMove } from './studio-challenge.ts';
-import { consumeMutationSlot, reserveMutationSlot, type MutationSlots } from './studio-slots.ts';
+import {
+  consumeMutationSlot,
+  reserveMutationSlot,
+  reserveNextMutationSlot,
+  type MutationSlots,
+} from './studio-slots.ts';
 
 export interface StudioOrganism {
   readonly id: string;
@@ -43,7 +48,30 @@ export function prepareStudioAdaptation(
   };
 }
 
-/** The persistence worker will atomically save this result before publishing a hatch. */
+/**
+ * Approval of a selected design: the base must still match the captured challenge and the
+ * challenge's target must be the organism's next slot. The reservation waits for its boundary.
+ */
+export function approveStudioAdaptation(
+  id: string,
+  value: unknown,
+  challenge: StudioChallenge,
+  current: StudioOrganism,
+  slots: MutationSlots,
+  rules: Ruleset,
+): {
+  readonly pending: PendingAdaptation;
+  readonly slots: MutationSlots;
+} {
+  revalidateStudioBase(challenge, current, rules);
+  const design = acceptBlueprint(value, challenge, rules);
+  return {
+    pending: { id, challenge, design },
+    slots: reserveNextMutationSlot(slots, id, challenge.targetMutationSlot),
+  };
+}
+
+/** The persistence worker atomically saves this result before publishing a hatch. */
 export function commitStudioAdaptation(
   pending: PendingAdaptation,
   current: StudioOrganism,

@@ -19,7 +19,8 @@ export class StudioRuleError extends Error {
     | 'SLOT_UNAVAILABLE'
     | 'PENDING_ADAPTATION_EXISTS'
     | 'WRONG_WORLD'
-    | 'ORGANISM_INACTIVE';
+    | 'ORGANISM_INACTIVE'
+    | 'STUDIO_WRONG_PHASE';
   constructor(code: StudioRuleError['code'], message: string) {
     super(message);
     this.code = code;

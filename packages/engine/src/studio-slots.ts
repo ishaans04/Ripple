@@ -64,6 +64,31 @@ export function reserveMutationSlot(
   return { ...state, reservation: { adaptationId, slot } };
 }
 
+/**
+ * Approval may happen while the current slot's observation is still outstanding (a break can
+ * interrupt any phase). It reserves only the next slot; consumeMutationSlot still refuses to
+ * commit it until that observation completes, so no required observation is ever skipped.
+ */
+export function reserveNextMutationSlot(
+  state: MutationSlots,
+  adaptationId: string,
+  slot: number,
+): MutationSlots {
+  checkSlots(state);
+  if (adaptationId.length === 0)
+    throw new StudioRuleError('SLOT_UNAVAILABLE', 'A reservation needs an operation ID.');
+  if (state.reservation?.adaptationId === adaptationId && state.reservation.slot === slot)
+    return state;
+  if (state.reservation !== null)
+    throw new StudioRuleError(
+      'PENDING_ADAPTATION_EXISTS',
+      'This organism already has a pending adaptation.',
+    );
+  if (slot !== state.next || state.commitments.some((item) => item.operationId === adaptationId))
+    throw new StudioRuleError('SLOT_UNAVAILABLE', 'Only the next mutation slot can be reserved.');
+  return { ...state, reservation: { adaptationId, slot } };
+}
+
 export function releaseMutationSlot(state: MutationSlots, adaptationId: string): MutationSlots {
   checkSlots(state);
   return state.reservation?.adaptationId === adaptationId ? { ...state, reservation: null } : state;
