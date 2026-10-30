@@ -45,7 +45,12 @@ export async function computeMetrics(
   channelId: string | null,
   population: 'live' | 'sandbox',
 ): Promise<MetricsReport> {
-  const scope = [worldId, channelId, population === 'sandbox'];
+  const matchingWorld = await pool.query('select 1 from worlds where id=$1 and mode=$2', [
+    worldId,
+    population,
+  ]);
+  const dataWorld = matchingWorld.rowCount === 1 ? worldId : null;
+  const scope = [dataWorld, channelId, population === 'sandbox'];
   const rows = (
     await pool.query<{ type: string; count: number }>(
       `select type,count(*)::int as count from analytics_events where world_id=$1 and ($2::uuid is null or channel_id=$2)
@@ -80,9 +85,16 @@ export async function computeMetrics(
   ).rows[0] ?? { active: 0, total: 0 };
   const participation = (
     await pool.query<{ voters: number; observed: number }>(
-      `select coalesce(sum(r.vote_count),0)::int as voters,coalesce(sum(r.distinct_accounts),0)::int as observed from rounds r join channels c on c.world_id=r.world_id and c.id=r.channel_id
-      where r.world_id=$1 and ($2::uuid is null or r.channel_id=$2) and r.kind='MUTATION' and r.resolution is not null`,
-      [worldId, channelId],
+      `select coalesce(sum(r.vote_count),0)::int as voters,coalesce(sum(chat.observed),0)::int as observed
+      from rounds r cross join lateral (
+        select count(distinct coalesce(i.command->>'actorBase',i.command->>'actorKey'))::int as observed
+        from inbox i join game_events e using(world_id,channel_id,sequence)
+        where i.world_id=r.world_id and i.channel_id=r.channel_id and i.accepted_at>=r.opened_at
+        and i.sequence<r.close_sequence and i.command->>'type' in ('twitch.chat','activity','vote')
+        and (e.command->>'roundId' is null or e.command->>'roundId'=r.id::text)
+      ) chat where r.world_id=$1 and ($2::uuid is null or r.channel_id=$2) and r.kind='MUTATION'
+      and r.close_sequence is not null and chat.observed>=r.vote_count`,
+      [dataWorld, channelId],
     )
   ).rows[0] ?? { voters: 0, observed: 0 };
   const hosts = (
@@ -90,7 +102,7 @@ export async function computeMetrics(
       `select count(distinct c.id)::int as hosts,count(distinct a.channel_id)::int as returning from channels c
       left join analytics_events a on a.world_id=c.world_id and a.channel_id=c.id and a.type='host_returned'
       where c.world_id=$1 and ($2::uuid is null or c.id=$2)`,
-      [worldId, channelId],
+      [dataWorld, channelId],
     )
   ).rows[0] ?? { hosts: 0, returning: 0 };
   const firstCreature =
@@ -100,7 +112,7 @@ export async function computeMetrics(
       from (select channel_id,min(created_at) as at from analytics_events where world_id=$1 and type='onboarding_started' group by 1) started
       join (select channel_id,min(created_at) as at from analytics_events where world_id=$1 and type='strain_seeded' group by 1) seeded using (channel_id)
       where ($2::uuid is null or channel_id=$2) and seeded.at>=started.at`,
-        [worldId, channelId],
+        [dataWorld, channelId],
       )
     ).rows[0]?.seconds ?? null;
   const breadth = (
@@ -108,11 +120,27 @@ export async function computeMetrics(
       `select o.lineage_id,count(distinct r.channel_id)::int as hosts from residencies r join organisms o on o.world_id=r.world_id and o.id=r.organism_id
       where r.world_id=$1 and r.role in ('resident','visitor') and ($2::uuid is null or exists(select 1 from organisms x join residencies y on y.world_id=x.world_id and y.organism_id=x.id where x.world_id=o.world_id and x.lineage_id=o.lineage_id and y.channel_id=$2))
       group by 1 order by 2 desc,1 limit 20`,
-      [worldId, channelId],
+      [dataWorld, channelId],
     )
   ).rows;
   const approved = count('proposal_approved'),
     rejected = count('proposal_rejected');
+  const modalities = await split('proposal_submitted', 'inputMode');
+  const studioUse = (
+    await pool.query<{ hosts: number; returning: number }>(
+      `select count(*)::int as hosts,count(*) filter(where uses>1)::int as returning from
+    (select channel_id,count(*) as uses from analytics_events where world_id=$1 and ($2::uuid is null or channel_id=$2) and type='studio_opened' group by channel_id) s`,
+      [dataWorld, channelId],
+    )
+  ).rows[0] ?? { hosts: 0, returning: 0 };
+  const onboarding = (
+    await pool.query<{ started: number; completed: number }>(
+      `select count(distinct channel_id) filter(where type='onboarding_started')::int as started,
+    count(distinct channel_id) filter(where type='onboarding_completed')::int as completed
+    from analytics_events where world_id=$1 and ($2::uuid is null or channel_id=$2)`,
+      [dataWorld, channelId],
+    )
+  ).rows[0] ?? { started: 0, completed: 0 };
   return {
     worldId,
     channelId,
@@ -121,17 +149,17 @@ export async function computeMetrics(
     metrics: [
       metric(
         'Setup completion',
-        count('onboarding_completed'),
-        count('onboarding_started'),
+        onboarding.completed,
+        onboarding.started,
         'Hosts reaching a verified overlay / hosts starting OAuth',
-        'Measures onboarding, not gameplay quality',
+        'Overlay reach is browser-reported, not proof of OBS capture or gameplay quality',
       ),
       metric(
         'Chat participation',
         participation.voters,
         participation.observed,
-        'Accepted mutation votes / distinct accounts observed in the same resolved rounds',
-        'Not total viewers or watch-time conversion; observation accounts approximate the ballot-period chatters',
+        'Accepted mutation votes / distinct local accounts heard during those ballots, including commands',
+        'Retained input windows only; excludes studio ballot votes. Not total viewers or watch-time conversion',
       ),
       metric(
         'Arrival reliability',
@@ -180,7 +208,7 @@ export async function computeMetrics(
         count('proposal_submitted'),
         count('editor_opened'),
         'Accepted proposals / editor openings',
-        'Editor openings include local practice and repeat visits',
+        'Browser-reported editor openings include repeat visits; accepted proposals include replacements',
       ),
       metric(
         'Camera versus fallback',
@@ -195,6 +223,27 @@ export async function computeMetrics(
         count('shortlist_published'),
         'Accepted studio votes / studio ballots',
         'One vote per account per ballot',
+      ),
+      metric(
+        'Camera submission completion',
+        modalities.camera ?? 0,
+        count('camera_enabled'),
+        'Accepted camera-attributed proposals / editor openings enabling camera',
+        'Self-reported modality; replacements and reloads may make this an event ratio, not a unique-person rate',
+      ),
+      metric(
+        'Pointer submission completion',
+        modalities.pointer ?? 0,
+        count('fallback_selected'),
+        'Accepted pointer-attributed proposals / pointer-only submission confirmations',
+        'Camera failures may fall back. Unknown modality on older or CLI submissions is excluded',
+      ),
+      metric(
+        'Broadcaster studio return use',
+        studioUse.returning,
+        studioUse.hosts,
+        'Hosts opening more than one studio / hosts opening a studio',
+        'Repeated breaks are use counts; they do not demonstrate watch-time retention',
       ),
       metric(
         'Approval rate',

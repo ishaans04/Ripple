@@ -54,7 +54,11 @@ export interface LiveEditor {
   status: ReactNode;
   canSubmit: boolean;
   cameraAvailable: boolean;
-  submit: (blueprint: AppearanceBlueprint, creditOptIn: boolean) => void;
+  submit: (
+    blueprint: AppearanceBlueprint,
+    creditOptIn: boolean,
+    inputMode: 'camera' | 'pointer',
+  ) => void;
   /** Anonymous editor events for studio metrics. */
   onEvent?: (event: 'camera_enabled' | 'camera_failed' | 'fallback_selected') => void;
 }
@@ -374,7 +378,9 @@ export function StudioEditor({
                   setCreditOptIn(event.target.checked);
                 }}
               />
-              Credit me by my Twitch name (otherwise the channel is credited)
+              {live.mode === 'sandbox'
+                ? 'Credit the synthetic artist (otherwise the synthetic channel is credited)'
+                : 'Credit me by my Twitch name (otherwise the channel is credited)'}
             </label>
             <button
               className={styles.primary}
@@ -382,7 +388,7 @@ export function StudioEditor({
               disabled={!live.canSubmit}
               onClick={() => {
                 if (!cameraUsed.current) live.onEvent?.('fallback_selected');
-                live.submit(blueprint, creditOptIn);
+                live.submit(blueprint, creditOptIn, cameraUsed.current ? 'camera' : 'pointer');
                 setConfirming(false);
               }}
             >

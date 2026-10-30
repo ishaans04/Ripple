@@ -485,6 +485,7 @@ export function registerStudioControl(
           artistKey: artist.artist_key,
           credit: artist.login,
           creditOptIn: body.creditOptIn,
+          ...(body.inputMode === undefined ? {} : { inputMode: body.inputMode }),
           blueprint: body.blueprint,
         }),
         true,

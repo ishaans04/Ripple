@@ -79,6 +79,7 @@ export async function submitProposal(input: {
   proposalId: string;
   blueprint: AppearanceBlueprint;
   creditOptIn: boolean;
+  inputMode?: 'camera' | 'pointer';
 }): Promise<void> {
   await json(
     await fetch(`/api/studios/${input.sessionId}/proposals`, {
@@ -93,6 +94,7 @@ export async function submitProposal(input: {
         proposalId: input.proposalId,
         blueprint: input.blueprint,
         creditOptIn: input.creditOptIn,
+        inputMode: input.inputMode,
       }),
     }),
   );

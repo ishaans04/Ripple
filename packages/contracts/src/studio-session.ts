@@ -83,6 +83,7 @@ export type StudioPhaseView = z.infer<typeof studioPhaseSchema>;
 
 /** Artist credit is opt-in; the creating channel is always the default attribution. */
 export const proposalSubmissionSchema = z.strictObject({
+  inputMode: z.enum(['camera', 'pointer']).optional(),
   proposalId: z.uuid(),
   blueprint: blueprintSchema,
   creditOptIn: z.boolean(),

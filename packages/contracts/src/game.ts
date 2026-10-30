@@ -158,6 +158,7 @@ export const studioCommandSchema = z.discriminatedUnion('type', [
   }),
   z.strictObject({
     type: z.literal('studioProposal'),
+    inputMode: z.enum(['camera', 'pointer']).optional(),
     sessionId: z.uuid(),
     proposalId: z.uuid(),
     artistKey: studioArtistKey,

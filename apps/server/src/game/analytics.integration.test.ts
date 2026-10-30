@@ -67,6 +67,7 @@ describe('product analytics', () => {
       artistKey: createHash('sha256').update('artist').digest('hex'),
       credit: 'artist',
       creditOptIn: false,
+      inputMode: 'pointer',
       blueprint: {
         schemaVersion: 1,
         worldId: session.challenge.worldId,
@@ -138,8 +139,19 @@ describe('product analytics', () => {
     expect(byName['Hatch success']).toMatchObject({ numerator: 1, denominator: 1, ratio: 1 });
     expect(byName['Arrival reliability']).toMatchObject({ numerator: 1, denominator: 1 });
     expect(byName['Trace engagement']?.ratio).toBeNull();
+    expect(byName['Pointer submission completion']).toMatchObject({
+      numerator: 1,
+      denominator: 0,
+      ratio: null,
+    });
+    expect(byName['Broadcaster studio return use']).toMatchObject({ numerator: 0, denominator: 1 });
     // Live metrics for the same world see none of the synthetic activity.
     expect((await computeMetrics(pool, source.worldId, null, 'live')).counts).toEqual({});
+    const otherPopulation = await computeMetrics(pool, source.worldId, null, 'live');
+    expect(otherPopulation.lineageBreadth).toEqual([]);
+    expect(
+      otherPopulation.metrics.every((metric) => metric.numerator === 0 && metric.denominator === 0),
+    ).toBe(true);
 
     // Replaying the world reconstructs history without counting it as new activity.
     const before = (await events(source.worldId)).length;

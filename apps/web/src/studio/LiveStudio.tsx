@@ -55,6 +55,7 @@ export function LiveStudio({ sessionId }: { sessionId: string }) {
   const [operation, setOperation] = useState<string | null>(null);
   const [message, setMessage] = useState('');
   const [retry, setRetry] = useState<{
+    inputMode: 'camera' | 'pointer';
     blueprint: AppearanceBlueprint;
     creditOptIn: boolean;
   } | null>(null);
@@ -124,12 +125,12 @@ export function LiveStudio({ sessionId }: { sessionId: string }) {
   const session = state?.studio.session ?? null;
   const creating = session?.phase === 'CREATING' && state?.challenge !== null;
   const send = useCallback(
-    (blueprint: AppearanceBlueprint, creditOptIn: boolean) => {
+    (blueprint: AppearanceBlueprint, creditOptIn: boolean, inputMode: 'camera' | 'pointer') => {
       if (artist?.signedIn !== true || artist.csrfToken === null) {
         setMessage(proposalMessages.ARTIST_SIGN_IN_REQUIRED ?? '');
         return;
       }
-      const body = JSON.stringify({ blueprint, creditOptIn });
+      const body = JSON.stringify({ blueprint, creditOptIn, inputMode });
       // A retried identical submission keeps its key, so a lost response cannot duplicate it.
       if (attempt.current?.body !== body)
         attempt.current = { key: crypto.randomUUID(), proposalId: crypto.randomUUID(), body };
@@ -142,6 +143,7 @@ export function LiveStudio({ sessionId }: { sessionId: string }) {
         proposalId: current.proposalId,
         blueprint,
         creditOptIn,
+        inputMode,
       })
         .then(() => {
           setRetry(null);
@@ -149,7 +151,7 @@ export function LiveStudio({ sessionId }: { sessionId: string }) {
         })
         .catch((error: unknown) => {
           const code = error instanceof StudioRequestError ? error.code : 'NETWORK_ERROR';
-          if (code === 'NETWORK_ERROR') setRetry({ blueprint, creditOptIn });
+          if (code === 'NETWORK_ERROR') setRetry({ blueprint, creditOptIn, inputMode });
           setMessage(proposalMessages[code] ?? `Not accepted (${code}).`);
         });
     },
@@ -327,7 +329,7 @@ export function LiveStudio({ sessionId }: { sessionId: string }) {
       {retry !== null && creating && (
         <button
           onClick={() => {
-            send(retry.blueprint, retry.creditOptIn);
+            send(retry.blueprint, retry.creditOptIn, retry.inputMode);
           }}
         >
           Retry submission

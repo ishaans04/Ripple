@@ -4,7 +4,6 @@ export type ClientEvent =
   | 'overlay_seen'
   | 'trial_opened'
   | 'passport_opened'
-  | 'sandbox_completed'
   | 'editor_opened'
   | 'camera_enabled'
   | 'camera_failed'
