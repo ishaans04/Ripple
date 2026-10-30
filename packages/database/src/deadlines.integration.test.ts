@@ -68,7 +68,7 @@ describe('leased durable deadlines', () => {
       for (let step = 0; step < 4; step++)
         await pool.query(
           `insert into deadlines(world_id,channel_id,id,job_key,command,due_at,remaining_ms)
-          select $1,$2,$3,$4,$5,clock_at-interval '1 second'+$6*interval '1 millisecond',0 from worlds where id=$1`,
+          select $1,$2,$3,$4,$5,coalesce(clock_at,clock_timestamp())-interval '1 second'+$6*interval '1 millisecond',0 from worlds where id=$1`,
           [
             scope.worldId,
             scope.channelId,
