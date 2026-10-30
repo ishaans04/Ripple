@@ -1,4 +1,10 @@
-# Vision dependency inventory
+# Third-party assets and dependency notices
+
+The [production JavaScript inventory](docs/licenses/npm-runtime.json) contains the exact locked versions, declared licenses, package sources and supplied license/notice texts. Generate it with `node tests/dependency-notices.ts`; `--check` verifies it offline against installed locked packages. The build also serves these notices at `/licenses/README.md` and `/licenses/npm-runtime.json`. The inventory covers JavaScript dependencies, while the pinned Node/Debian base image retains its own packaged copyright notices.
+
+Packages that omit separate license files use their embedded README license or a checked-in upstream copy: Drizzle's [0.45.4 Apache license](https://github.com/drizzle-team/drizzle-orm/blob/0.45.4/LICENSE), and the [MIT notice linked by abstract-logging 2.0.1](https://jsumners.mit-license.org/). MediaPipe's Apache text is already preserved with its assets. No runtime package with a missing notice is silently omitted.
+
+## Vision dependency inventory
 
 Cocoon Studio runs hand tracking locally. No inference service or camera relay is used.
 

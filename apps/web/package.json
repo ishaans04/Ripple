@@ -7,7 +7,7 @@
   "scripts": {
     "predev": "node scripts/prepare-vision-assets.mjs",
     "dev": "vite",
-    "prebuild": "node scripts/prepare-vision-assets.mjs",
+    "prebuild": "node scripts/prepare-vision-assets.mjs && node scripts/prepare-notices.mjs",
     "build": "vite build",
     "typecheck": "tsc -p tsconfig.json"
   },

@@ -30,3 +30,4 @@ Thumbs.db
 
 # Copied from the pinned npm package before web dev/build.
 apps/web/public/vision/mediapipe-1.1.1/
+apps/web/public/licenses/

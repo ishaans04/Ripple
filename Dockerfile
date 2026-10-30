@@ -19,6 +19,8 @@ FROM deps AS build
 COPY tsconfig.base.json tsconfig.build.base.json tsconfig.build.json ./
 COPY packages packages
 COPY apps apps
+COPY THIRD_PARTY_NOTICES.md ./
+COPY docs/licenses docs/licenses
 RUN npm run build
 
 # ---- Production dependencies for the server and its workspace packages only ----
