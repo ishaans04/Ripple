@@ -18,7 +18,7 @@ describe('loadConfig', () => {
   it('applies defaults when only the database is configured', () => {
     expect(loadConfig({ DATABASE_URL: databaseUrl })).toEqual({
       databaseUrl,
-      databasePoolMax: 32,
+      databasePoolMax: 48,
       host: '0.0.0.0',
       port: 3000,
       logLevel: 'info',

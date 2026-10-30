@@ -268,7 +268,7 @@ Artist participants can erase their sign-in and credit mapping with **Forget my 
 
 Retention runs automatically every 30 seconds. The privacy CLI supports targeted erasure, expired-world purge and a separately retained erasure ledger for safe backup recovery; see [privacy operations](docs/privacy-operations.md).
 
-Ordered workers process up to 24 independent channels concurrently, with at most four inputs per channel per cycle; sorted transaction locks still serialize every channel and both sides of a raid. Consecutive ordinary activity is committed in bounded batches with identical accepted replay records. The shared PostgreSQL pool defaults to 32 connections, configurable with DATABASE_POOL_MAX (8-64). Immutable configuration validation is bounded and cached by both bytes and hash. Ordinary activity and votes avoid rewriting unchanged deadlines.
+Ordered workers process up to 32 independent channels concurrently, with at most four inputs per channel per cycle; sorted transaction locks still serialize every channel and both sides of a raid. Consecutive ordinary activity is committed in bounded batches with identical accepted replay records. The shared PostgreSQL pool defaults to 48 connections, configurable with DATABASE_POOL_MAX (8-64), leaving headroom for intake alongside workers and bounded snapshot publication. Immutable configuration validation is bounded and cached by both bytes and hash. Ordinary activity and votes avoid rewriting unchanged deadlines.
 
 ## Release operations
 

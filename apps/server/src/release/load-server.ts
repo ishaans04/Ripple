@@ -5,7 +5,7 @@ import type { TwitchConfig } from '../twitch/security.ts';
 const database = createDatabase({
   connectionString: process.env.DATABASE_URL ?? '',
   applicationName: 'ripple-release-load',
-  maxConnections: 32,
+  maxConnections: 48,
   onIdleClientError: () => undefined,
 });
 process.once('message', (message: { config: TwitchConfig }) => {
@@ -20,6 +20,16 @@ process.once('message', (message: { config: TwitchConfig }) => {
     const address = await app.listen({ host: '127.0.0.1', port: 0 });
     const cpuStart = process.cpuUsage();
     const started = performance.now();
+    let peakWaiting = 0,
+      peakBusyOrConnecting = 0;
+    const poolSampler = setInterval(() => {
+      peakWaiting = Math.max(peakWaiting, database.pool.waitingCount);
+      peakBusyOrConnecting = Math.max(
+        peakBusyOrConnecting,
+        database.pool.totalCount - database.pool.idleCount,
+      );
+    }, 50);
+    poolSampler.unref();
     process.send?.({ ready: true, address });
     process.on('message', (value: { action: string }) => {
       if (value.action === 'stop-worker')
@@ -38,6 +48,7 @@ process.once('message', (message: { config: TwitchConfig }) => {
           cpu: process.cpuUsage(cpuStart),
           elapsedMs: performance.now() - started,
           memory: process.memoryUsage(),
+          pool: { maxConnections: 48, sampleIntervalMs: 50, peakWaiting, peakBusyOrConnecting },
         });
       if (value.action === 'stop')
         void runtime

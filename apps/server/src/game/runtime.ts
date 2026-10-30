@@ -111,7 +111,7 @@ export async function runGameCycle(
   // Independent channels may make progress together. processNextInput still takes the sorted
   // transaction lock set (including both sides of a raid), so per-channel replay stays ordered.
   try {
-    await Promise.all(Array.from({ length: Math.min(24, channels.rows.length) }, processChannels));
+    await Promise.all(Array.from({ length: Math.min(32, channels.rows.length) }, processChannels));
   } finally {
     clearInterval(heartbeat);
     await renewal;
