@@ -6,6 +6,8 @@ export const judgeSchema = z.object({
   channelId: z.uuid(),
   neighborId: z.uuid(),
   capability: z.string().regex(/^[A-Za-z0-9_-]{43}$/),
+  readCapability: z.string().regex(/^[A-Za-z0-9_-]{43}$/),
+  neighborReadCapability: z.string().regex(/^[A-Za-z0-9_-]{43}$/),
 });
 export type Judge = z.infer<typeof judgeSchema>;
 export async function sandboxRequest(
@@ -54,5 +56,5 @@ export function saveJudge(judge: Judge) {
   history.replaceState(null, '', `/sandbox#${new URLSearchParams(judge).toString()}`);
 }
 export function readFragment(judge: Judge, channelId: string) {
-  return `#${new URLSearchParams({ worldId: judge.worldId, channelId, capability: judge.capability }).toString()}`;
+  return `#${new URLSearchParams({ worldId: judge.worldId, channelId, capability: channelId === judge.channelId ? judge.readCapability : judge.neighborReadCapability }).toString()}`;
 }

@@ -185,11 +185,13 @@ describe('judge sandbox API', () => {
     ).toBe(400);
   });
 
-  it('serializes concurrent capacity checks and preserves one account vote across repeated actions', async () => {
+  it('preserves one account vote across repeated actions', async () => {
     const judge = await create();
     await ok(judge, { action: 'vote', channelId: judge.channelId, choice: 1, crowd: true });
     await ok(judge, { action: 'vote', channelId: judge.channelId, choice: 2, crowd: true });
     expect((await view(judge)).round?.counts.reduce((sum, n) => sum + n, 0)).toBe(4);
+  });
+  it('serializes concurrent capacity checks', async () => {
     const count = (
       await pool.query<{ n: number }>(
         "select count(*)::int n from worlds where mode='sandbox' and expires_at>clock_timestamp()",
