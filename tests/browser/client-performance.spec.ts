@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { writeFile, mkdir } from 'node:fs/promises';
+import { cpus, totalmem, release } from 'node:os';
 import { installVideoFixture } from './vision-fixture.ts';
 import type { HandWorkerReply } from '../../apps/web/src/studio/handProtocol.ts';
 
@@ -104,6 +105,14 @@ test('real inference keeps bounded frames and responsive editing under a declare
     physicalCamera: false,
     cpuSlowdown: 4,
     browser: info.project.name,
+    environment: {
+      browserVersion: context.browser()?.version(),
+      node: process.version,
+      os: release(),
+      cpu: cpus()[0]?.model,
+      logicalCpus: cpus().length,
+      totalMemoryBytes: totalmem(),
+    },
     inputRoundTripP95Ms: p95(input),
     inputToNextFrameP95Ms: p95(vision.inputPaint),
     animationFrameP95Ms: p95(gaps),
@@ -112,7 +121,7 @@ test('real inference keeps bounded frames and responsive editing under a declare
     frames: vision.frames,
     editingWrites: writes.length,
     limits:
-      'CPU emulation on the declared Windows laptop; no claim about all physical low-end cameras/GPUs. Input timing includes Playwright transport.',
+      '4x CPU emulation on the declared Windows host; no claim about all physical low-end cameras/GPUs. InputRoundTrip includes Playwright transport; inputToNextFrame is measured inside the page.',
   };
   await mkdir('tmp', { recursive: true });
   await writeFile(
