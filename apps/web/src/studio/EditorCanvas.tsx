@@ -1,11 +1,11 @@
-import { useRef, type Dispatch, type PointerEvent, type KeyboardEvent } from 'react';
+import { memo, useRef, type Dispatch, type PointerEvent, type KeyboardEvent } from 'react';
 import { shellBounds, type ShellPart } from '@ripple/contracts';
 import { ShellRenderer } from './ShellRenderer.tsx';
 import { pointToParameter, shellGeometry, type ShellParameter } from './shellGeometry.ts';
 import type { EditorAction } from './editor.ts';
 import styles from './Studio.module.css';
 
-export function EditorCanvas({
+export const EditorCanvas = memo(function EditorCanvas({
   part,
   dispatch,
 }: {
@@ -87,4 +87,4 @@ export function EditorCanvas({
       </ShellRenderer>
     </div>
   );
-}
+});

@@ -135,8 +135,9 @@ export class CameraSession {
     const generation = this.generation;
     void createImageBitmap(this.video).then(
       (bitmap) => {
-        if (generation !== this.generation || this.worker === null) {
+        if (generation !== this.generation || this.worker === null || document.hidden) {
           bitmap.close();
+          if (generation === this.generation) this.busy = false;
           return;
         }
         this.watchdog = setTimeout(() => {

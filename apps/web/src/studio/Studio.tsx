@@ -119,30 +119,43 @@ export function StudioEditor({
     }),
     [challenge, state.part, template],
   );
+  const latestDraft = useRef({ blueprint, challenge });
   useEffect(() => {
-    // The bounded record is small. Persist on every committed edit rather than
-    // leaving a debounce window in which navigation can discard the latest art.
-    const persist = () => {
-      let saved = false;
+    latestDraft.current = { blueprint, challenge };
+    // Paint the edit before synchronous browser storage/validation. Only the newest pending
+    // write survives a rapid edit; pagehide and unmount flush that exact draft synchronously.
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const frame = requestAnimationFrame(() => {
+      timer = setTimeout(() => {
+        let saved = false;
+        try {
+          saved = saveDraft(localStorage, blueprint, challenge, Date.now());
+        } catch {
+          /* Download remains available. */
+        }
+        setSavedDraft({ blueprint, saved });
+      }, 0);
+    });
+    return () => {
+      cancelAnimationFrame(frame);
+      clearTimeout(timer);
+    };
+  }, [blueprint, challenge]);
+  useEffect(() => {
+    const flush = () => {
+      const draft = latestDraft.current;
       try {
-        saved = saveDraft(localStorage, blueprint, challenge, Date.now());
+        saveDraft(localStorage, draft.blueprint, draft.challenge, Date.now());
       } catch {
         /* Download remains available. */
       }
-      return saved;
-    };
-    const saved = persist();
-    queueMicrotask(() => {
-      setSavedDraft({ blueprint, saved });
-    });
-    const flush = () => {
-      persist();
     };
     window.addEventListener('pagehide', flush);
     return () => {
+      flush();
       window.removeEventListener('pagehide', flush);
     };
-  }, [blueprint, challenge]);
+  }, []);
   const saveStatus =
     downloaded === blueprint
       ? 'Design downloaded. Your local draft is also kept.'

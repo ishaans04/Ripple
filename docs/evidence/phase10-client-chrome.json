@@ -1,0 +1,14 @@
+{
+  "syntheticVideo": true,
+  "physicalCamera": false,
+  "cpuSlowdown": 4,
+  "browser": "chrome",
+  "inputRoundTripP95Ms": 196.29060000000027,
+  "inputToNextFrameP95Ms": 26.5,
+  "animationFrameP95Ms": 16.899999999999636,
+  "inferenceP95Ms": 899,
+  "maxInFlight": 1,
+  "frames": 11,
+  "editingWrites": 0,
+  "limits": "CPU emulation on the declared Windows laptop; no claim about all physical low-end cameras/GPUs. Input timing includes Playwright transport."
+}
