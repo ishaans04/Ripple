@@ -19,6 +19,7 @@ import {
   resolveVisitorContest,
   scoreRound,
   traceTemplateFor,
+  qualifiesForTrace,
   type Genome,
   type HabitatProfile,
   type DormantCapture,
@@ -93,6 +94,7 @@ export function simulateTrial(config: TrialConfig, rules: Ruleset = candidateRul
   };
   const history: unknown[] = [];
   const lastPairs = new Map<number, number>();
+  const traceQualifiedHosts = new Set<number>();
   for (let round = 0; round < config.rounds && health > 0; round++) {
     const id = `round-${round}`;
     const offer =
@@ -237,12 +239,23 @@ export function simulateTrial(config: TrialConfig, rules: Ruleset = candidateRul
           childHealth > 0 &&
           !child.extinct &&
           contest.outcome !== 'resident' &&
-          config.trace === 'keep'
-        )
-          activeTrace = {
-            template: traceTemplateFor(genome, rules),
-            lifetime: newValidRoundLifetime(id, 3),
-          };
+          qualifiesForTrace(
+            {
+              raidOrigin: true,
+              validSurvivingRounds: rules.traces.qualifyingRounds,
+              qualifiedThisResidency: false,
+              lineageQualifiedAtHostThisSeason: traceQualifiedHosts.has(destination),
+            },
+            rules,
+          )
+        ) {
+          traceQualifiedHosts.add(destination);
+          if (config.trace === 'keep')
+            activeTrace = {
+              template: traceTemplateFor(genome, rules),
+              lifetime: newValidRoundLifetime(id, 3),
+            };
+        }
         history.push({ arrivalHealth: childArrivalHealth(health, genome, rules), child, contest });
       }
     }
