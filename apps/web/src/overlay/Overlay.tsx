@@ -3,6 +3,7 @@ import type { ChannelView } from '@ripple/contracts';
 import { useReadChannel } from '../realtime/useReadChannel.ts';
 import { traceEffectText, traceTitle } from '../realtime/trace-labels.ts';
 import { Creature } from '../creature/Creature.tsx';
+import { familyRemainingText, familyUpdateText } from '../realtime/family-text.ts';
 import styles from './Overlay.module.css';
 
 const ballotTitle: Readonly<Record<string, string>> = {
@@ -167,6 +168,21 @@ export default function Overlay() {
               {(channel.mechanics?.state?.dormant.length ?? 0) > 0 && (
                 <p>Dormant possibility preserved · no hidden protection</p>
               )}
+              {channel.familyDigest !== undefined &&
+                channel.familyDigest !== null &&
+                channel.round?.phase !== 'VOTING' && (
+                  <section className={styles.family} aria-label="Family news since last stream">
+                    <h2>Family news since last stream</h2>
+                    <ul>
+                      {channel.familyDigest.items.map((item) => (
+                        <li key={`${item.lineageId}-${item.sequence}`}>{familyUpdateText(item)}</li>
+                      ))}
+                    </ul>
+                    {familyRemainingText(channel.familyDigest) !== null && (
+                      <p>{familyRemainingText(channel.familyDigest)}</p>
+                    )}
+                  </section>
+                )}
             </>
           ) : (
             <p role="status">

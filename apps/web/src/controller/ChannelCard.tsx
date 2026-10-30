@@ -1,5 +1,6 @@
 import type { ChannelView } from '@ripple/contracts';
 import { Creature, markSummary } from '../creature/Creature.tsx';
+import { familyRemainingText, familyUpdateText } from '../realtime/family-text.ts';
 import styles from './Controller.module.css';
 import { PropagationCard } from './PropagationCard.tsx';
 import { RoundAnalysisCard } from './RoundAnalysisCard.tsx';
@@ -33,6 +34,19 @@ export function ChannelCard({ channel }: { channel: ChannelView }) {
             {creature.genome.grit} · Drift {creature.genome.drift}
           </p>
         </>
+      )}
+      {channel.familyDigest !== undefined && channel.familyDigest !== null && (
+        <section aria-label="Family news since last stream">
+          <h3>Family news since last stream</h3>
+          <ul>
+            {channel.familyDigest.items.map((item) => (
+              <li key={`${item.lineageId}-${item.sequence}`}>{familyUpdateText(item)}</li>
+            ))}
+          </ul>
+          {familyRemainingText(channel.familyDigest) !== null && (
+            <p>{familyRemainingText(channel.familyDigest)}</p>
+          )}
+        </section>
       )}
       {round !== null && (
         <>

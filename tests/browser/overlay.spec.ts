@@ -266,3 +266,69 @@ test('overlay draws persisted gene-linked parts and bounded ancestry marks with 
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await expect(moving).toHaveCSS('animation-name', 'none');
 });
+test('overlay shows up to three family updates outside voting and yields to an open ballot', async ({
+  page,
+}) => {
+  const voting = fixture();
+  if (voting.round === null) throw new Error('Missing fixture round');
+  voting.familyDigest = {
+    items: [
+      {
+        kind: 'fossilized',
+        lineageId: world,
+        sequence: 5,
+        organismId: world,
+        organismName: '<Lost & Found>',
+        generation: 2,
+        host: { channelId: world, label: 'Far host' },
+        traceTemplate: null,
+      },
+      {
+        kind: 'trace_earned',
+        lineageId: world,
+        sequence: 4,
+        organismId: world,
+        organismName: 'Settler',
+        generation: 1,
+        host: { channelId: world, label: 'Near host' },
+        traceTemplate: 'shelter',
+      },
+    ],
+    remaining: 2,
+  };
+  const observing = { ...voting, round: { ...voting.round, phase: 'OBSERVING' } };
+  let push: ((payload: typeof voting) => void) | undefined;
+  await page.route('**/api/overlay/exchange', (route) =>
+    route.fulfill({ json: { ticket: 't'.repeat(43), expiresAt: '2099-01-01T00:00:00.000Z' } }),
+  );
+  await page.routeWebSocket('**/api/live?*', (socket) => {
+    let version = 0;
+    push = (payload) => {
+      socket.send(
+        JSON.stringify({
+          protocolVersion: 1,
+          eventId: channelId,
+          worldId: world,
+          topic: `channel:${channelId}`,
+          stateVersion: ++version,
+          type: 'snapshot',
+          serverTime: new Date().toISOString(),
+          payload,
+        }),
+      );
+    };
+    push(observing);
+  });
+  await page.goto(`/overlay#${fragment}`);
+  const news = page.getByRole('region', { name: 'Family news since last stream' });
+  await expect(news).toContainText('<Lost & Found> (generation 2) became a fossil at Far host');
+  await expect(news).toContainText('Settler (generation 1) earned a Shelter trace at Near host');
+  await expect(news).toContainText('2 more family updates in the lineage map');
+  await expect(news.getByRole('listitem')).toHaveCount(2);
+  push?.(voting);
+  await expect(page.getByText('Vote in chat:', { exact: false })).toBeVisible();
+  await expect(news).toHaveCount(0);
+  push?.({ ...observing, familyDigest: null });
+  await expect(page.getByRole('heading', { name: 'Observing habitat' })).toBeVisible();
+  await expect(news).toHaveCount(0);
+});

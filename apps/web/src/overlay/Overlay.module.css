@@ -91,3 +91,15 @@
     gap: 6px;
   }
 }
+
+.family {
+  display: grid;
+  gap: 4px;
+  border-top: 1px solid #48616b;
+  padding-top: 8px;
+}
+.family ul {
+  margin: 0;
+  padding-left: 1.1em;
+  font-size: 0.8em;
+}
