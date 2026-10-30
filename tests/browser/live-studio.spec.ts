@@ -274,6 +274,11 @@ test('without live sign-in the studio stays an honest local editor with no submi
   page,
 }) => {
   const posts: string[] = [];
+  const telemetry: unknown[] = [];
+  await page.route('**/api/analytics', (route) => {
+    telemetry.push(route.request().postDataJSON() as unknown);
+    return route.fulfill({ status: 204 });
+  });
   page.on('request', (request) => {
     if (request.method() !== 'GET') posts.push(request.url());
   });
@@ -288,5 +293,8 @@ test('without live sign-in the studio stays an honest local editor with no submi
   await page.getByRole('button', { name: 'Review and submit' }).click();
   await expect(page.getByRole('button', { name: 'Submit proposal' })).toBeDisabled();
   await expect(page.getByRole('button', { name: 'Download design' })).toBeEnabled();
-  expect(posts).toEqual([]);
+  expect(posts.filter((url) => !url.endsWith('/api/analytics'))).toEqual([]);
+  expect(telemetry).toEqual([
+    { event: 'editor_opened', scope: { kind: 'studio', sessionId: session } },
+  ]);
 });
