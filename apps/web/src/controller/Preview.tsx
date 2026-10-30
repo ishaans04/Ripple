@@ -13,7 +13,12 @@ export default function Preview() {
             ? 'This link was revoked or expired. Ask the broadcaster for a new link.'
             : `Connection: ${status}`}
       </p>
-      {channel !== null && <ChannelCard channel={channel} />}
+      {channel !== null && (
+        <>
+          <ChannelCard channel={channel} />
+          <a href={`/lineage${location.hash}`}>Open lineage map and passports</a>
+        </>
+      )}
     </main>
   );
 }

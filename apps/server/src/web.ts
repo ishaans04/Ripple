@@ -65,4 +65,5 @@ export async function registerWebApp(app: FastifyInstance, webRoot: string): Pro
   app.get('/controller', (_request, reply) => reply.sendFile('index.html'));
   app.get('/preview', (_request, reply) => reply.sendFile('index.html'));
   app.get('/overlay', (_request, reply) => reply.sendFile('index.html'));
+  app.get('/lineage', (_request, reply) => reply.sendFile('index.html'));
 }

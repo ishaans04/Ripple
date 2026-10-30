@@ -184,11 +184,15 @@ Mutation-preview rules use only a recorded recent valid profile and a known trac
 
 `GET /api/lineages/:id?worldId=…&channelId=…` uses the channel's read capability to return approved origin/branch names, parent/founder/generation, saved genome/appearance/energy/status, current or last ended host, birth/admission provenance, branch counts and earned trace attribution after expiry. Access is limited to that world's lineages the channel originated or encountered; it does not expose unrelated lineages, voter identities, raw transfer snapshots or unenrolled destination identities.
 
-Pages default to 25 branches, with `limit` from 1–50. Pass the returned `next` as `after` to continue in generation/ID order. Each page uses one committed database snapshot; refresh from the first page to include newly born branches. Historical fossils preserve their actual saved appearance and energy, including contest losses above zero. The full passport and lineage UI remain Phase 7 work.
+Pages default to 25 branches, with `limit` from 1–50. Pass the returned `next` as `after` to continue in generation/ID order. Each page uses one committed database snapshot; refresh from the first page to include newly born branches. Historical fossils preserve their actual saved appearance and energy, including contest losses above zero.
 
 ## Passports
 
 `GET /api/organisms/:id/passport?worldId=…&channelId=…` returns one organism's passport under the channel's read capability, with the same lineage-encounter visibility as lineage reads. It covers identity, parent and founder, origin and admitted hosts with the residency timeline, birth transfer, appearance mapping and marks, and saved history: committed mutation decisions (newest 50 per page; pass `next` as `before` for older ones), dormant captures and their outcomes, emitted traces and matched ancestor trials (latest 20 of each with totals). Selections come only from records: the captured version-one selection, or the participant genome saved at ballot close matched to its recorded card. Older rounds without either say `unrecorded` rather than guessing. Reads never change game state and expose no voter identities.
+
+## Lineage map and passports
+
+`/lineage#worldId=…&channelId=…&capability=…` uses the same read-only link as the preview (the controller and preview both link to it). The left side is the lineage map: every lineage the channel started or encountered, its family tree with collapsible subtrees, a filter by current or last host, fossils kept in place and labelled, and earned-trace attribution including expired traces. The right side is the selected branch's passport: its creature and marks, family and travel timeline, committed mutation decisions with older pages on request, dormant captures, emitted traces, and ancestor trials below. Synthetic worlds keep their badge. Revoked, expired or incomplete links show an explanation and no history.
 
 ## Inherited appearance
 

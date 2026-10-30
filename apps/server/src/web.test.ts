@@ -48,6 +48,15 @@ describe('web application serving', () => {
     expect(response.headers['referrer-policy']).toBe('no-referrer');
   });
 
+  it('serves the lineage document without camera permission or WASM', async () => {
+    const response = await app.inject({ url: '/lineage' });
+    expect(response.statusCode).toBe(200);
+    expect(response.body).toContain('<title>Ripple</title>');
+    expect(response.headers['permissions-policy']).toBe('camera=(), microphone=()');
+    expect(response.headers['content-security-policy']).not.toContain('wasm-unsafe-eval');
+    expect(response.headers['referrer-policy']).toBe('no-referrer');
+  });
+
   it('allows camera and WASM only on the studio document and tracking worker', async () => {
     const studio = await app.inject({ url: '/studio' });
     expect(studio.statusCode).toBe(200);

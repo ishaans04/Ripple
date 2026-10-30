@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
-import { z } from 'zod';
 import { channelViewSchema, type ChannelView } from '@ripple/contracts';
 import { openReadTopic, type TopicStatus } from './read-topic.ts';
+import { readLinkFromHash } from './read-link.ts';
 
 /** Shared read-only client; capabilities stay in the fragment and authorized request headers. */
 export function useReadChannel() {
@@ -15,22 +15,16 @@ export function useReadChannel() {
       if (stopped) return;
       topic?.close();
       setChannel(null);
-      const parsed = z
-        .strictObject({
-          worldId: z.uuid(),
-          channelId: z.uuid(),
-          capability: z.string().regex(/^[A-Za-z0-9_-]{43}$/),
-        })
-        .safeParse(Object.fromEntries(new URLSearchParams(location.hash.slice(1))));
-      if (!parsed.success) {
+      const link = readLinkFromHash(location.hash);
+      if (link === null) {
         setStatus('invalid');
         return;
       }
       topic = openReadTopic({
         baseUrl: location.origin,
-        worldId: parsed.data.worldId,
-        channelId: parsed.data.channelId,
-        readCapability: parsed.data.capability,
+        worldId: link.worldId,
+        channelId: link.channelId,
+        readCapability: link.capability,
         onStatus: (next) => {
           if (!stopped) setStatus(next);
         },

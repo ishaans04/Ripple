@@ -389,6 +389,13 @@ export default function Controller() {
                 <a href={readUrl} target="_blank" rel="noreferrer">
                   Open read-only preview
                 </a>
+                <a
+                  href={readUrl.replace('/preview#', '/lineage#')}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  Open lineage map and passports
+                </a>
                 <label>
                   OBS browser source URL
                   <input
