@@ -227,6 +227,22 @@ Two CI incidents were resolved rather than retried away. The two intermediate ce
 
 Pending under the live deferral (not claimed): real OBS capture readability, real paid-event delivery, and real Twitch chat and raid acceptance. Next is Phase 8 (connected Cocoon Studio) only.
 
+## Phase 8 — connected Cocoon Studio (in progress)
+
+Started only after the Phase 7 exit `805f49f` was pushed. Scope is S01–S17 and S19 (remaining parts) plus the S18 records. No Phase 9 work has started.
+
+Decisions settled in this phase:
+
+- **Design version.** A challenge's `baseOrganismVersion` is the organism's `design_version`, which increments only when its genes or committed design change (ordinary mutations other than Hold, hatches, adopted dormant designs). Health changes during the break therefore do not invalidate a design; any genetic or design change does, and the design is held or rejected rather than rebased.
+- **Game hold.** A separate `studio_hold` pauses the round at its checkpoint from opening through creation, voting and review, independent of the manual pause. Return handling includes the review: play resumes once the result is approved, kept, expired or cancelled. This prevents a paused ordinary ballot from consuming the studio's slot before the broadcaster decides.
+- **Hatch boundary.** Approval reserves the organism's next mutation slot (a new pure `reserveNextMutationSlot`; committing still requires the intervening observation). The design replaces the next ordinary mutation ballot: an open ballot for that same slot becomes the hatch, and otherwise the next mutation opening shows an incubating cocoon with no cards. The hatch commits at that slot's close in one transaction. Special ballots keep their documented priority. A design that fails revalidation at the boundary releases the reservation and leaves the slot unconsumed.
+- **Studio ballot.** A `STUDIO_SELECTION` round reuses vote uniqueness and close markers. The one-open-round index excludes it, so it runs beside the paused ordinary round; chat votes route to it while it is open.
+- **Availability.** Manual start/end and configured OBS scenes set REST/ACTIVE; lost input health sets UNKNOWN, which suspends bridge transitions. Offline closes creation and voting (cancelled, never a fabricated result) and keeps review and pending results. A hidden bridge marks the signal stale and never implies a return. Heartbeat age beyond 90 seconds is also shown as stale.
+- **Expiry.** Durable deadlines close creation, voting and review. Creation closing without healthy chat input expires the studio. A pending hatch has no timer; the broadcaster can explicitly release it before its hatch round begins.
+- **Identity.** Artist sign-in requests no scopes, never stores the token, and keys the Twitch account with an HMAC so proposals never contain the account ID. Channel credit is the default; artist credit is opt-in.
+- **Replay identity.** Blueprints bind their world, so replay worlds record their source world (migration 0034) and studio challenges use it, reproducing hashes while state stays isolated.
+- **Dormant designs.** A qualifying losing finalist in a different direction becomes a dormant capture with its design. When offered later it is revalidated and adopted only if chat selects that card. Cosmetic finalists and losers in the winner's direction create no dormant genes.
+
 ## Live acceptance deferral requested by the user
 
 The two broadcaster accounts, operator bot, and public HTTPS URL are not set up. Continue sequential implementation with sandbox/synthetic verification where possible. Keep all authentic Twitch, raid, OBS, and hosted acceptance evidence explicitly pending, with no synthetic test represented as live evidence. Provide the account/application/OAuth/HTTPS setup steps when Phase 4 needs them. This user-directed deferral permits continued implementation; it does not satisfy the PRD's final release gate.

@@ -86,6 +86,8 @@ jobs:
         run: docker compose exec -T app node apps/server/dist/cli/smoke-raids.js
       - name: Verify earned mechanics, bounded expiry and scoped saved comparisons
         run: docker compose exec -T app node apps/server/dist/cli/smoke-mechanics.js
+      - name: Verify a synthetic Cocoon Studio break, selection, review, hatch and raid
+        run: docker compose exec -T app node apps/server/dist/cli/smoke-studio.js
       - name: Show service logs
         if: always()
         run: docker compose logs --no-color

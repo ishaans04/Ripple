@@ -11,7 +11,8 @@
     "sandbox": "node --env-file-if-exists=../../.env --conditions=ripple-source src/cli/sandbox.ts",
     "smoke:game": "node --env-file-if-exists=../../.env --conditions=ripple-source src/cli/smoke-game.ts",
     "smoke:raids": "node --env-file-if-exists=../../.env --conditions=ripple-source src/cli/smoke-raids.ts",
-    "smoke:mechanics": "node --env-file-if-exists=../../.env --conditions=ripple-source src/cli/smoke-mechanics.ts"
+    "smoke:mechanics": "node --env-file-if-exists=../../.env --conditions=ripple-source src/cli/smoke-mechanics.ts",
+    "smoke:studio": "node --env-file-if-exists=../../.env --conditions=ripple-source src/cli/smoke-studio.ts"
   },
   "dependencies": {
     "@fastify/helmet": "13.2.0",

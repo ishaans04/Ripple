@@ -40,6 +40,7 @@
     "sandbox": "npm run sandbox -w @ripple/server --",
     "smoke:game": "npm run smoke:game -w @ripple/server",
     "smoke:raids": "npm run smoke:raids -w @ripple/server",
-    "smoke:mechanics": "npm run smoke:mechanics -w @ripple/server"
+    "smoke:mechanics": "npm run smoke:mechanics -w @ripple/server",
+    "smoke:studio": "npm run smoke:studio -w @ripple/server"
   }
 }

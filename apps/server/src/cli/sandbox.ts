@@ -13,9 +13,10 @@ import { advanceSyntheticClock, settleSyntheticWorld } from '../game/synthetic-c
 import { snapshotEnvelope } from '../game/snapshot.ts';
 import { createSyntheticPeer } from '../game/synthetic-peer.ts';
 import { operationId } from '../game/operation-id.ts';
+import { defaultStudioSettings, founderShell, studioSettingsSchema } from '@ripple/contracts';
 
 const usage =
-  'Usage: sandbox create | peer WORLD CHANNEL LABEL [PEER_UUID] | status/seed/prepare/enable-mechanics/clear-traces/pause/resume/offline/online/input-outage/recover WORLD CHANNEL | traces WORLD CHANNEL true/false | raid/raid-unknown WORLD SOURCE DESTINATION_UUID [RECEIPT_UUID] | policy WORLD CHANNEL ask/accept/reject | admit/decline/claim WORLD CHANNEL TRANSFER VERSION | block-source/block-lineage WORLD CHANNEL ID true/false | vote WORLD CHANNEL ACTOR CHOICE | activity WORLD CHANNEL ACTOR | advance WORLD CHANNEL MS [OPERATION_UUID]. Set RIPPLE_SANDBOX_CAPABILITY for existing worlds.';
+  'Usage: sandbox create | peer WORLD CHANNEL LABEL [PEER_UUID] | status/seed/prepare/enable-mechanics/clear-traces/pause/resume/offline/online/input-outage/recover WORLD CHANNEL | traces WORLD CHANNEL true/false | raid/raid-unknown WORLD SOURCE DESTINATION_UUID [RECEIPT_UUID] | policy WORLD CHANNEL ask/accept/reject | admit/decline/claim WORLD CHANNEL TRANSFER VERSION | block-source/block-lineage WORLD CHANNEL ID true/false | studio-settings WORLD CHANNEL [JSON] | studio-start/studio-stop/bridge-stale/studio-release WORLD CHANNEL | bridge-scene WORLD CHANNEL SCENE | studio-propose WORLD CHANNEL ARTIST TEMPLATE_INDEX [WIDTH] | studio-withdraw WORLD CHANNEL ARTIST PROPOSAL | studio-review WORLD CHANNEL approve/keep | vote WORLD CHANNEL ACTOR CHOICE | activity WORLD CHANNEL ACTOR | advance WORLD CHANNEL MS [OPERATION_UUID]. Set RIPPLE_SANDBOX_CAPABILITY for existing worlds.';
 const config = loadConfig(process.env);
 const database = createDatabase({
   connectionString: config.databaseUrl,
@@ -153,6 +154,106 @@ try {
                   choice: z.coerce.number().int().min(1).max(3).parse(extra),
                 }
               : { type: 'activity', actorKey };
+          break;
+        }
+        case 'studio-settings':
+          // Synthetic worlds accept the same bounded settings as the owner route.
+          command = {
+            type: 'studioSettings',
+            settings: studioSettingsSchema.parse({
+              ...defaultStudioSettings,
+              enabled: true,
+              ...(value === undefined ? {} : (JSON.parse(value) as object)),
+            }),
+          };
+          break;
+        case 'studio-start':
+          command = { type: 'studioStart', trigger: 'manual', sessionId: randomUUID() };
+          break;
+        case 'studio-stop':
+          command = { type: 'studioReturn', trigger: 'manual' };
+          break;
+        case 'bridge-scene':
+          command = {
+            type: 'bridgeScene',
+            scene: z.string().min(1).parse(value),
+            sessionId: randomUUID(),
+          };
+          break;
+        case 'bridge-stale':
+          command = { type: 'bridgeStale' };
+          break;
+        case 'studio-propose':
+        case 'studio-withdraw':
+        case 'studio-review':
+        case 'studio-release': {
+          const session = (
+            await database.pool.query<{
+              id: string;
+              version: number;
+              challenge: {
+                worldId: string;
+                baseOrganismId: string;
+                baseOrganismVersion: number;
+                mutationTemplateIds: string[];
+              };
+            }>(
+              `select id,version,challenge from studio_sessions where world_id=$1 and channel_id=$2
+              and phase in ('OPENING','CREATING','VOTING','REVIEW','PENDING_HATCH')`,
+              [scope.worldId, scope.channelId],
+            )
+          ).rows[0];
+          if (session === undefined) throw new Error('No open synthetic studio.');
+          // Synthetic artists are keyed inside the world and always labelled as synthetic.
+          const artistKey = sha256Hex(
+            canonicalJson({ worldId: scope.worldId, syntheticArtist: value ?? '' }),
+          );
+          if (action === 'studio-propose') {
+            const index = z.coerce.number().int().min(0).max(2).parse(extra);
+            const width = z.coerce
+              .number()
+              .int()
+              .default(founderShell.parameters.width)
+              .parse(process.argv[7]);
+            command = {
+              type: 'studioProposal',
+              sessionId: session.id,
+              proposalId: randomUUID(),
+              artistKey,
+              credit: `synthetic-${z.string().min(1).max(20).parse(value)}`,
+              creditOptIn: true,
+              blueprint: {
+                schemaVersion: 1,
+                worldId: session.challenge.worldId,
+                studioSessionId: session.id,
+                baseOrganismId: session.challenge.baseOrganismId,
+                baseOrganismVersion: session.challenge.baseOrganismVersion,
+                mutationTemplateId: session.challenge.mutationTemplateIds[index],
+                rendererVersion: 'shell-v1',
+                part: { ...founderShell, parameters: { ...founderShell.parameters, width } },
+              },
+            };
+          } else if (action === 'studio-withdraw')
+            command = {
+              type: 'studioWithdraw',
+              sessionId: session.id,
+              proposalId: z.uuid().parse(extra),
+              artistKey,
+            };
+          else if (action === 'studio-review')
+            command = {
+              type: 'studioReview',
+              sessionId: session.id,
+              sessionVersion: session.version,
+              decision: z.enum(['approve', 'keep']).parse(value),
+              adaptationId: randomUUID(),
+            };
+          else
+            command = {
+              type: 'studioRelease',
+              sessionId: session.id,
+              sessionVersion: session.version,
+            };
           break;
         }
         case 'pause':
