@@ -50,6 +50,8 @@ export async function exportAcceptedWorld(pool: pg.Pool, worldId: string): Promi
 export function verifyAcceptedWorld(world: WorldReplay): void {
   z.literal(1).parse(world.schemaVersion);
   z.uuid().parse(world.sourceWorldId);
+  if (world.channels.length === 0)
+    throw new ReplayIntegrityError('World has no channel histories.');
   const lengths = new Map<string, number>();
   for (const channel of world.channels) {
     verifyAcceptedRecords(channel);
@@ -66,6 +68,22 @@ export function verifyAcceptedWorld(world: WorldReplay): void {
           throw new ReplayIntegrityError(
             `Sequence ${record.sequence} depends on a channel missing from the export.`,
           );
+        const length = lengths.get(target) ?? 0;
+        const raid = raidDependency.safeParse(dependency);
+        if (raid.success) {
+          if (
+            raid.data.processedSequence > raid.data.intakeSequence ||
+            raid.data.intakeSequence > length
+          )
+            throw new ReplayIntegrityError(
+              'Raid dependency is outside the exported history; drain accepted inputs before exporting.',
+            );
+        } else {
+          const source = sourceDependency.safeParse(dependency);
+          if (!source.success) throw new ReplayIntegrityError('Unknown cross-channel dependency.');
+          if (source.data.sequence > length)
+            throw new ReplayIntegrityError('Source dependency is outside the exported history.');
+        }
       }
 }
 

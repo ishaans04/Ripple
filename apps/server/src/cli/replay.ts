@@ -1,4 +1,5 @@
 import { readFile, writeFile } from 'node:fs/promises';
+import { resolve } from 'node:path';
 import { z } from 'zod';
 import { createDatabase } from '@ripple/database';
 import { loadConfig } from '../config.ts';
@@ -17,7 +18,9 @@ const database = createDatabase({
 });
 async function load(file: string | undefined): Promise<WorldReplay> {
   if (file === undefined) throw new Error(usage);
-  return JSON.parse(await readFile(file, 'utf8')) as WorldReplay;
+  return JSON.parse(
+    await readFile(resolve(process.env.INIT_CWD ?? process.cwd(), file), 'utf8'),
+  ) as WorldReplay;
 }
 try {
   const [action, target, output] = process.argv.slice(2);
@@ -26,7 +29,7 @@ try {
     const text = `${JSON.stringify(world, null, 2)}\n`;
     if (output === undefined) process.stdout.write(text);
     else {
-      await writeFile(output, text, 'utf8');
+      await writeFile(resolve(process.env.INIT_CWD ?? process.cwd(), output), text, 'utf8');
       process.stdout.write(`${JSON.stringify(summarizeBundle(world), null, 2)}\n`);
     }
   } else if (action === 'verify')
