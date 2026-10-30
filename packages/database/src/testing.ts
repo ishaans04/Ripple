@@ -41,6 +41,17 @@ export async function createTemporaryDatabase(): Promise<TemporaryDatabase> {
       const client = new pg.Client({ connectionString: adminUrl });
       await client.connect();
       try {
+        // pg's Pool.end() resolves once clients are asked to close, before the server sees them
+        // disconnect. Forcing the drop then could terminate a closing connection and surface a
+        // late 57P01 error, so wait (bounded) for this database's own backends to leave first.
+        for (let attempt = 0; attempt < 50; attempt++) {
+          const open = await client.query<{ count: number }>(
+            'select count(*)::int as count from pg_stat_activity where datname=$1 and pid<>pg_backend_pid()',
+            [name],
+          );
+          if (open.rows[0]?.count === 0) break;
+          await new Promise((resolve) => setTimeout(resolve, 100));
+        }
         await client.query(`drop database if exists "${name}" with (force)`);
       } finally {
         await client.end();
