@@ -2,6 +2,7 @@ import { z } from 'zod';
 import {
   lineageCatalogCursorSchema,
   lineageCursorSchema,
+  passportCursorSchema,
   readScopeSchema,
 } from '@ripple/contracts';
 import type { FastifyInstance } from 'fastify';
@@ -11,6 +12,7 @@ import { authorizeRead, bearer, exchangeReadCapability } from '../game/read-acce
 import { snapshotEnvelope } from '../game/snapshot.ts';
 import { readRoundAnalysis } from '../game/round-analysis.ts';
 import { readLineage, readLineageCatalog } from '../game/lineage-read.ts';
+import { readPassport } from '../game/passport-read.ts';
 
 export function registerGameReadRoutes(app: FastifyInstance, pool: pg.Pool): void {
   app.get(
@@ -61,6 +63,30 @@ export function registerGameReadRoutes(app: FastifyInstance, pool: pg.Pool): voi
       );
       if (result === null)
         throw new ApiError('NOT_FOUND', 404, 'Lineage is unavailable to this channel.');
+      reply.header('cache-control', 'no-store');
+      return result;
+    },
+  );
+  app.get(
+    '/api/organisms/:id/passport',
+    { config: { rateLimit: { max: 120, timeWindow: '1 minute' } } },
+    async (request, reply) => {
+      const params = z
+          .strictObject({ id: z.uuid().transform((id) => id.toLowerCase()) })
+          .safeParse(request.params),
+        query = readScopeSchema
+          .extend({ before: passportCursorSchema.optional() })
+          .safeParse(request.query);
+      if (!params.success || !query.success)
+        throw new ApiError(
+          'BAD_REQUEST',
+          400,
+          'Specify a scoped organism and valid history cursor.',
+        );
+      await authorizeRead(pool, query.data, bearer(request.headers.authorization));
+      const result = await readPassport(pool, query.data, params.data.id, query.data.before);
+      if (result === null)
+        throw new ApiError('NOT_FOUND', 404, 'Passport is unavailable to this channel.');
       reply.header('cache-control', 'no-store');
       return result;
     },

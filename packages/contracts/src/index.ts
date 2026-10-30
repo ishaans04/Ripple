@@ -9,3 +9,4 @@ export * from './analysis.ts';
 export * from './mechanics-view.ts';
 export * from './lineage.ts';
 export * from './appearance.ts';
+export * from './passport.ts';

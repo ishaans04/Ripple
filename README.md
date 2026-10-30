@@ -186,6 +186,10 @@ Mutation-preview rules use only a recorded recent valid profile and a known trac
 
 Pages default to 25 branches, with `limit` from 1–50. Pass the returned `next` as `after` to continue in generation/ID order. Each page uses one committed database snapshot; refresh from the first page to include newly born branches. Historical fossils preserve their actual saved appearance and energy, including contest losses above zero. The full passport and lineage UI remain Phase 7 work.
 
+## Passports
+
+`GET /api/organisms/:id/passport?worldId=…&channelId=…` returns one organism's passport under the channel's read capability, with the same lineage-encounter visibility as lineage reads. It covers identity, parent and founder, origin and admitted hosts with the residency timeline, birth transfer, appearance mapping and marks, and saved history: committed mutation decisions (newest 50 per page; pass `next` as `before` for older ones), dormant captures and their outcomes, emitted traces and matched ancestor trials (latest 20 of each with totals). Selections come only from records: the captured version-one selection, or the participant genome saved at ballot close matched to its recorded card. Older rounds without either say `unrecorded` rather than guessing. Reads never change game state and expose no voter identities.
+
 ## Inherited appearance
 
 Every organism stores the appearance mapping version it was created under (`1` today); children inherit their parent's version and the database rejects any later rewrite, so fossils keep rendering as they lived. Version 1 maps genes to authored parts: Pulse against Calm sets movement (settled, sway or quick), Grit sets shell plating (smooth, ridged or armored) and Drift sets appendages (stubs, fins or streamers). Shell geometry and markings still come from the committed founder or studio design.
