@@ -84,8 +84,8 @@ export class PublicGateway {
       client.socket.close(1013, 'State buffer exceeded; reconnect for a snapshot');
       return false;
     }
-    client.socket.send(frame, (error) => {
-      if (error !== undefined) client.socket.terminate();
+    client.socket.send(frame, (error: Error | null | undefined) => {
+      if (error !== undefined && error !== null) client.socket.terminate();
     });
     client.version = update.stateVersion;
     return true;
@@ -164,22 +164,58 @@ export class PublicGateway {
       group.push(client);
       topics.set(key, group);
     }
-    for (const clients of topics.values()) {
+    const scopes = [...topics.values()].flatMap((clients) => {
+      const first = clients[0];
+      return first === undefined
+        ? []
+        : [
+            {
+              world_id: first.worldId,
+              channel_id: first.channelId,
+              after: Math.min(...clients.map((c) => c.version)),
+            },
+          ];
+    });
+    if (scopes.length === 0) return;
+    const allUpdates = await this.#pool.query<{
+      world_id: string;
+      channel_id: string;
+      state_version: number;
+      version: number | null;
+      event_id: string;
+      type: string;
+      payload: unknown;
+      created_at: Date;
+    }>(
+      `select s.world_id,s.channel_id,c.state_version,u.*
+      from jsonb_to_recordset($1::jsonb) s(world_id uuid,channel_id uuid,after int)
+      join channels c on c.world_id=s.world_id and c.id=s.channel_id
+      left join lateral(select version,event_id,type,payload,created_at from public_updates
+        where world_id=s.world_id and channel_id=s.channel_id and version>s.after order by version limit 101) u on true`,
+      [JSON.stringify(scopes)],
+    );
+    const grouped = new Map<string, typeof allUpdates.rows>();
+    for (const row of allUpdates.rows) {
+      const key = `${row.world_id}:${row.channel_id}`,
+        rows = grouped.get(key) ?? [];
+      rows.push(row);
+      grouped.set(key, rows);
+    }
+    for (const [key, clients] of topics) {
       const first = clients[0];
       if (first === undefined) continue;
       const after = Math.min(...clients.map((c) => c.version));
-      const updates = await this.#pool.query<{
-        version: number;
-        event_id: string;
-        type: string;
-        payload: unknown;
-        created_at: Date;
-      }>(
-        'select version,event_id,type,payload,created_at from public_updates where world_id=$1 and channel_id=$2 and version>$3 order by version limit 101',
-        [first.worldId, first.channelId, after],
-      );
+      const group = grouped.get(key) ?? [];
+      const updates = {
+        rows: group
+          .filter((row): row is typeof row & { version: number } => row.version !== null)
+          .sort((a, b) => a.version - b.version),
+      };
       // A large gap needs current state, not a queue of old animations.
-      if (updates.rows.length > 100) {
+      if (
+        updates.rows.length > 100 ||
+        (group[0] && group[0].state_version > after && updates.rows.length === 0)
+      ) {
         const snapshot = await snapshotEnvelope(this.#pool, first.worldId, first.channelId);
         for (const client of clients) {
           client.pendingAggregate = null;

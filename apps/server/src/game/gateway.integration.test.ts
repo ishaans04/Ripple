@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import pg from 'pg';
 import type { FastifyInstance } from 'fastify';
-import type { WebSocket } from 'ws';
+import { WebSocket } from 'ws';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import { publicUpdateSchema, type PublicUpdate } from '@ripple/contracts';
 import { runMigrations } from '@ripple/database';
@@ -192,6 +192,32 @@ describe('scoped snapshot-first gateway', () => {
       expect(await closed).toBe(1008);
     } finally {
       clock.mockRestore();
+    }
+  });
+  it('keeps a real TCP socket open after successful writes and receives committed vote state', async () => {
+    const scope = await world(),
+      live = await buildApp({ pool, config: { logLevel: 'silent', webRoot: undefined } });
+    const address = await live.listen({ host: '127.0.0.1', port: 0 });
+    const ticket = await exchangeReadCapability(pool, scope, scope.readCapability);
+    const socket = new WebSocket(
+        `${address.replace('http', 'ws')}/api/live?ticket=${ticket.ticket}`,
+      ),
+      messages: PublicUpdate[] = [];
+    sockets.push(socket);
+    socket.on('message', (data: Buffer) =>
+      messages.push(publicUpdateSchema.parse(JSON.parse(data.toString()))),
+    );
+    try {
+      await expect.poll(() => messages.length).toBe(1);
+      await command(scope, { type: 'vote', actorKey: 'real-network-client', choice: 2 });
+      await expect.poll(() => messages.at(-1)?.stateVersion).toBe(2);
+      expect(socket.readyState).toBe(WebSocket.OPEN);
+      expect((messages.at(-1)?.payload as { round: { counts: number[] } }).round.counts).toEqual([
+        0, 1, 0,
+      ]);
+    } finally {
+      socket.terminate();
+      await live.close();
     }
   });
 });
