@@ -19,12 +19,14 @@ process.once('message', (message: { config: TwitchConfig }) => {
     });
     const address = await app.listen({ host: '127.0.0.1', port: 0 });
     const cpuStart = process.cpuUsage();
+    const started = performance.now();
     process.send?.({ ready: true, address });
     process.on('message', (value: { action: string }) => {
       if (value.action === 'stats')
         process.send?.({
           stats: true,
           cpu: process.cpuUsage(cpuStart),
+          elapsedMs: performance.now() - started,
           memory: process.memoryUsage(),
         });
       if (value.action === 'stop')

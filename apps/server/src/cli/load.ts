@@ -160,6 +160,9 @@ try {
   await drain();
   let frames = 0,
     reconnectSnapshots = 0;
+  const received = new Map<WebSocket, number>();
+  const socketChannels = new Map<WebSocket, string>();
+  const frameTimes = new Map<string, { version: number; at: number }[]>();
   async function connect(index: number, reconnect = false) {
     const channel = channels[index % channels.length];
     if (!channel) throw new Error('Missing channel');
@@ -171,13 +174,20 @@ try {
     await new Promise<void>((done, reject) => {
       const socket = new WebSocket(`${address.replace('http', 'ws')}/api/live?ticket=${ticket}`);
       sockets.push(socket);
+      socketChannels.set(socket, channel.id);
       const timer = setTimeout(() => {
         reject(new Error('Snapshot did not arrive'));
       }, 30000);
       socket.on('error', reject);
       socket.on('message', (raw: Buffer) => {
-        const message = JSON.parse(raw.toString()) as { type: string };
+        const message = JSON.parse(raw.toString()) as { type: string; stateVersion: number };
         frames++;
+        if (message.type !== 'heartbeat') {
+          received.set(socket, message.stateVersion);
+          const timeline = frameTimes.get(channel.id) ?? [];
+          timeline.push({ version: message.stateVersion, at: Date.now() });
+          frameTimes.set(channel.id, timeline);
+        }
         if (message.type === 'snapshot') {
           if (reconnect) reconnectSnapshots++;
           clearTimeout(timer);
@@ -239,6 +249,15 @@ try {
     published: number[] = [],
     errors: Record<string, number> = {};
   const outstanding = new Map<string, number>();
+  const publicStarts: { channelId: string; version: number; at: number }[] = [];
+  const versions = new Map(
+    (
+      await pool.query<{ id: string; state_version: number }>(
+        'select id,state_version from channels where world_id=$1',
+        [worldId],
+      )
+    ).rows.map((row) => [row.id, row.state_version]),
+  );
   const cursors = new Map(
     (
       await pool.query<{ id: string; processed_sequence: number }>(
@@ -254,16 +273,25 @@ try {
       operation_id: string;
       update: string | null;
     }>(
-      "select e.channel_id,e.sequence,e.operation_id,e.result->>'updateType' as update from game_events e join jsonb_to_recordset($2::jsonb) c(id uuid,seq int) on e.channel_id=c.id and e.sequence>c.seq where e.world_id=$1",
+      "select e.channel_id,e.sequence,e.operation_id,e.result->>'updateType' as update from game_events e join jsonb_to_recordset($2::jsonb) c(id uuid,seq int) on e.channel_id=c.id and e.sequence>c.seq where e.world_id=$1 order by e.channel_id,e.sequence",
       [worldId, JSON.stringify([...cursors].map(([id, seq]) => ({ id, seq })))],
     );
     for (const row of rows.rows) {
       cursors.set(row.channel_id, Math.max(row.sequence, cursors.get(row.channel_id) ?? 0));
+      if (row.update !== null)
+        versions.set(row.channel_id, (versions.get(row.channel_id) ?? 0) + 1);
       const at = outstanding.get(row.operation_id);
       if (at !== undefined) {
         const latency = Date.now() - at;
         committed.push(latency);
-        if (row.update !== null) published.push(latency);
+        if (row.update !== null) {
+          published.push(latency);
+          publicStarts.push({
+            channelId: row.channel_id,
+            version: versions.get(row.channel_id) ?? 0,
+            at,
+          });
+        }
         outstanding.delete(row.operation_id);
       }
     }
@@ -366,6 +394,29 @@ try {
   clearInterval(timer);
   await samplePending;
   await sampleCommits();
+  const finalVersions = new Map(
+    (
+      await pool.query<{ id: string; state_version: number }>(
+        'select id,state_version from channels where world_id=$1',
+        [worldId],
+      )
+    ).rows.map((row) => [row.id, row.state_version]),
+  );
+  const converged = () =>
+    sockets.filter(
+      (socket) =>
+        socket.readyState === WebSocket.OPEN &&
+        (received.get(socket) ?? -1) >=
+          (finalVersions.get(socketChannels.get(socket) ?? '') ?? Infinity),
+    ).length;
+  const convergenceEnd = Date.now() + 10000;
+  while (converged() < channelCount * 3 && Date.now() < convergenceEnd) await wait(50);
+  const publicFrames = publicStarts.flatMap((start) => {
+    const frame = (frameTimes.get(start.channelId) ?? []).find(
+      (frame) => frame.version >= start.version && frame.at >= start.at,
+    );
+    return frame ? [frame.at - start.at] : [];
+  });
   const elapsedMs = performance.now() - workloadStart;
   const duplicates =
     (
@@ -379,6 +430,14 @@ try {
       'select pg_database_size(current_database())::float as bytes,blks_read,blks_hit,tup_inserted,tup_updated from pg_stat_database where datname=current_database()',
     )
   ).rows[0] as Record<string, unknown>;
+  const rowSizes = (
+    await pool.query(
+      `select 'normalized_input' as record,avg(pg_column_size(command))::float avg_bytes,percentile_cont(.95) within group(order by pg_column_size(command)) p95_bytes from inbox where world_id=$1
+    union all select 'accepted_event',avg(pg_column_size(e))::float,percentile_cont(.95) within group(order by pg_column_size(e)) from game_events e where world_id=$1
+    union all select 'public_projection',avg(pg_column_size(payload))::float,percentile_cont(.95) within group(order by pg_column_size(payload)) from public_updates where world_id=$1`,
+      [worldId],
+    )
+  ).rows as unknown[];
   const stats = await new Promise<unknown>((done) => {
     child.once('message', done);
     child.send({ action: 'stats' });
@@ -412,6 +471,8 @@ try {
     callbackMs: distribution(callback),
     acceptedToObservedCommitMs: distribution(committed),
     publicMutationCommitMs: distribution(published),
+    publicFrameMs: distribution(publicFrames),
+    convergedSockets: converged(),
     remainingAcknowledged: outstanding.size,
     reconnectSnapshots,
     frames,
@@ -420,6 +481,7 @@ try {
     serverErrors: childError,
     openSockets: sockets.filter((socket) => socket.readyState === WebSocket.OPEN).length,
     database,
+    rowSizes,
     server: stats,
     configurationHash: sha256Hex(canonicalJson({ seconds, channelCount, studioCount, proposals })),
     limits: [
@@ -442,6 +504,8 @@ try {
       outstanding.size ||
       duplicates ||
       Object.keys(errors).length ||
+      childError.length ||
+      converged() < channelCount * 3 ||
       (percentile(callback, 0.95) ?? Infinity) >= 500 ||
       (percentile(committed, 0.95) ?? Infinity) >= 1000 ||
       reconnectSnapshots < 30)

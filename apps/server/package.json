@@ -18,7 +18,8 @@
     "simulate": "node --conditions=ripple-source src/cli/simulate.ts",
     "smoke:judge": "node --env-file-if-exists=../../.env --conditions=ripple-source src/cli/smoke-judge.ts",
     "privacy": "node --env-file-if-exists=../../.env --conditions=ripple-source src/cli/privacy.ts",
-    "test:load": "node --env-file-if-exists=../../.env --conditions=ripple-source src/cli/load.ts"
+    "test:load": "node --env-file-if-exists=../../.env --conditions=ripple-source src/cli/load.ts",
+    "status": "node --env-file-if-exists=../../.env --conditions=ripple-source src/cli/status.ts"
   },
   "dependencies": {
     "@fastify/helmet": "13.2.0",
