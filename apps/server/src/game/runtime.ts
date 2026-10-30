@@ -93,7 +93,11 @@ export async function runGameCycle(
           const result = await processNextInput(pool, channel.world_id, channel.id);
           if (result === null) break;
           processed++;
-          if (result.effect.updateType !== null) committed();
+          if (result.effect.updateType !== null) {
+            committed();
+            // Give every channel a turn before another potentially expensive public transition.
+            break;
+          }
         }
       } catch (error) {
         // Failure metadata does not advance the ordered cursor or discard its input.

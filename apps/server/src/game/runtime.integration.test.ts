@@ -108,4 +108,33 @@ describe('process-gap recovery', () => {
     expect(logger.error).not.toHaveBeenCalled();
     await releaseRuntimeLease(pool, owner);
   });
+  it('limits each channel to one public transition per turn while its neighbor progresses', async () => {
+    const world = await createJudgeWorld(pool),
+      owner = randomUUID(),
+      logger = { error: vi.fn() };
+    for (let i = 0; i < 8; i++)
+      await acceptSyntheticCommand(pool, world, world.ownerCapability, randomUUID(), {
+        type: 'vote',
+        actorKey: `turn-${i}`,
+        choice: 1,
+      });
+    await acceptSyntheticCommand(
+      pool,
+      { ...world, channelId: world.neighborId },
+      world.ownerCapability,
+      randomUUID(),
+      { type: 'activity', actorKey: 'neighbor' },
+    );
+    await runGameCycle(pool, owner, logger);
+    const rows = (
+      await pool.query<{ id: string; lag: number }>(
+        'select id,intake_sequence-processed_sequence as lag from channels where world_id=$1',
+        [world.worldId],
+      )
+    ).rows;
+    expect(rows.find((row) => row.id === world.channelId)?.lag).toBe(7);
+    expect(rows.find((row) => row.id === world.neighborId)?.lag).toBe(0);
+    expect(logger.error).not.toHaveBeenCalled();
+    await releaseRuntimeLease(pool, owner);
+  });
 });
