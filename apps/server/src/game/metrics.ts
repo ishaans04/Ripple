@@ -101,6 +101,7 @@ export async function computeMetrics(
     await pool.query<{ hosts: number; returning: number }>(
       `select count(distinct c.id)::int as hosts,count(distinct a.channel_id)::int as returning from channels c
       left join analytics_events a on a.world_id=c.world_id and a.channel_id=c.id and a.type='host_returned'
+      and exists(select 1 from analytics_events seeded where seeded.world_id=c.world_id and seeded.channel_id=c.id and seeded.type='strain_seeded' and seeded.created_at<a.created_at)
       where c.world_id=$1 and ($2::uuid is null or c.id=$2)`,
       [dataWorld, channelId],
     )

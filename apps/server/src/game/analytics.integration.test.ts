@@ -201,4 +201,18 @@ describe('product analytics', () => {
     // A sandbox overlay connection is not live onboarding.
     expect(stored).toEqual([{ type: 'overlay_seen', aggregates: { client: true, sandbox: true } }]);
   });
+  it('counts repeat host use only when returning after a creature has already been seeded', async () => {
+    const scope = await createSyntheticWorld(pool, { mechanicsVersion: 1 });
+    await send(scope, { type: 'stream', online: false });
+    await send(scope, { type: 'stream', online: true });
+    await send(scope, syntheticSeedCommand());
+    const repeat = async () =>
+      (await computeMetrics(pool, scope.worldId, null, 'sandbox')).metrics.find(
+        (metric) => metric.name === 'Repeat use',
+      );
+    expect(await repeat()).toMatchObject({ numerator: 0, denominator: 1 });
+    await send(scope, { type: 'stream', online: false });
+    await send(scope, { type: 'stream', online: true });
+    expect(await repeat()).toMatchObject({ numerator: 1, denominator: 1 });
+  });
 });
