@@ -246,6 +246,20 @@
       "when": 1793366520949,
       "tag": "0034_replay_world_identity",
       "breakpoints": true
+    },
+    {
+      "idx": 35,
+      "version": "7",
+      "when": 1793400000000,
+      "tag": "0035_artist_identity_vault",
+      "breakpoints": true
+    },
+    {
+      "idx": 36,
+      "version": "7",
+      "when": 1793400000001,
+      "tag": "0036_retained_receipts",
+      "breakpoints": true
     }
   ]
 }

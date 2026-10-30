@@ -11,6 +11,7 @@ import { acceptInputInTransaction, IntakeError, transaction } from '@ripple/data
 import { sha256Hex } from '@ripple/engine';
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import type pg from 'pg';
+import { registerArtistIdentity, forgetArtist } from '../privacy/credits.ts';
 import { queueOwnerCommand } from './controller.ts';
 import { equalSecret, opaqueToken, privateHash, type TwitchConfig } from './security.ts';
 import {
@@ -41,6 +42,7 @@ export interface ArtistSession {
   artist_key: string;
   login: string;
   csrf_hash: string;
+  credit_token: string;
 }
 const ARTIST_COOKIE = '__Host-ripple-artist';
 const ARTIST_CSRF = '__Host-ripple-artist-csrf';
@@ -56,7 +58,9 @@ export async function artistSession(
   if (raw === undefined) throw new ControlError(401, 'ARTIST_SIGN_IN_REQUIRED');
   const row = (
     await pool.query<ArtistSession>(
-      'select world_id,artist_key,login,csrf_hash from artist_sessions where hash=$1 and expires_at>clock_timestamp()',
+      `select s.world_id,s.artist_key,s.login,s.csrf_hash,coalesce(i.credit_token,s.login) as credit_token from artist_sessions s
+       left join artist_identities i on i.world_id=s.world_id and i.artist_key=s.artist_key
+       where s.hash=$1 and s.expires_at>clock_timestamp()`,
       [privateHash(config.sessionSecret, 'artist-session', raw)],
     )
   ).rows[0];
@@ -82,13 +86,19 @@ export async function createArtistSession(
 ): Promise<void> {
   const session = opaqueToken(),
     csrf = opaqueToken();
+  const identity = await registerArtistIdentity(
+    pool,
+    worldId,
+    privateHash(secret, 'artist-identity', worldId, subject),
+    login,
+  );
   await pool.query(
     "insert into artist_sessions(hash,world_id,artist_key,login,csrf_hash,expires_at) values($1,$2,$3,$4,$5,clock_timestamp()+interval '12 hours')",
     [
       privateHash(secret, 'artist-session', session),
       worldId,
       // The Twitch account ID never leaves the server; proposals carry only this keyed hash.
-      privateHash(secret, 'artist', worldId, subject),
+      identity.artist_key,
       login.slice(0, 40),
       privateHash(secret, 'artist-csrf', csrf),
     ],
@@ -121,6 +131,14 @@ export function registerStudioControl(
   config: TwitchConfig,
 ): void {
   const limited = { config: { rateLimit: { max: 30, timeWindow: '1 minute' } } };
+  app.post('/api/artist/forget', limited, async (request, reply) => {
+    const artist = await artistSession(pool, request, config, true);
+    parse(z.strictObject({}), request.body);
+    const result = await forgetArtist(pool, artist.world_id, artist.artist_key);
+    setCookie(reply, ARTIST_COOKIE, '', 0);
+    setCookie(reply, ARTIST_CSRF, '', 0, false);
+    return { forgotten: true, ...result };
+  });
   // The installation flag closes every way into a new studio; existing records stay readable.
   const requireStudio = () => {
     if (config.studio === false) throw new ControlError(409, 'STUDIO_DISABLED');
@@ -483,7 +501,7 @@ export function registerStudioControl(
           sessionId: params.id,
           proposalId: body.proposalId,
           artistKey: artist.artist_key,
-          credit: artist.login,
+          credit: artist.credit_token,
           creditOptIn: body.creditOptIn,
           ...(body.inputMode === undefined ? {} : { inputMode: body.inputMode }),
           blueprint: body.blueprint,

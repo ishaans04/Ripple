@@ -1,5 +1,6 @@
 import { transaction } from '@ripple/database';
 import { randomUUID } from 'node:crypto';
+import { resolvePublicCredits } from '../privacy/credits.ts';
 import { z } from 'zod';
 import type pg from 'pg';
 import type { GameContext } from '../game/store.ts';
@@ -197,7 +198,10 @@ export async function dispatchBotMessage(
           body: {
             broadcaster_id: claimed.twitch_id,
             sender_id: claimed.bot_id,
-            message: claimed.message.replaceAll('{origin}', api.config.origin),
+            message: await resolvePublicCredits(
+              pool,
+              claimed.message.replaceAll('{origin}', api.config.origin),
+            ),
             for_source_only: true,
           },
         }),

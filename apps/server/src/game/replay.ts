@@ -163,7 +163,8 @@ export async function exportAcceptedChannel(
       provider: string;
       message_id: string;
     }>(
-      `select e.*,i.provider,i.message_id from game_events e join inbox i on i.world_id=e.world_id and i.channel_id=e.channel_id and i.sequence=e.sequence where e.world_id=$1 and e.channel_id=$2 and e.sequence<=$3 order by e.sequence`,
+      `select e.*,split_part(e.operation_id,':',1) as provider,substring(e.operation_id from position(':' in e.operation_id)+1) as message_id
+       from game_events e where e.world_id=$1 and e.channel_id=$2 and e.sequence<=$3 order by e.sequence`,
       [scope.worldId, scope.channelId, row.processed_sequence],
     );
     const sourceWorldId = (

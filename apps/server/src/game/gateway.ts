@@ -6,6 +6,7 @@ import type { WebSocket } from 'ws';
 import type pg from 'pg';
 import { z } from 'zod';
 import { ApiError } from '../errors.ts';
+import { resolvePublicCredits } from '../privacy/credits.ts';
 import { authorizeReadHash, consumeReadTicket } from './read-access.ts';
 import { snapshotEnvelope } from './snapshot.ts';
 import type { WorldScope } from './sandbox.ts';
@@ -187,6 +188,13 @@ export class PublicGateway {
         }
         continue;
       }
+      const resolvedPayloads = await resolvePublicCredits(
+        this.#pool,
+        updates.rows.map((row) => row.payload),
+      );
+      updates.rows.forEach((row, index) => {
+        row.payload = resolvedPayloads[index];
+      });
       for (const client of clients) {
         for (const row of updates.rows) {
           if (row.version <= client.version) continue;

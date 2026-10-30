@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto';
+import { resolvePublicCredits } from '../privacy/credits.ts';
 import {
   celebrationSchema,
   displayPreferencesSchema,
@@ -239,6 +240,6 @@ export async function snapshotEnvelope(
         stateVersion: snapshot.version,
         type: 'snapshot',
         serverTime: snapshot.serverTime,
-        payload: snapshot.payload,
+        payload: await resolvePublicCredits(pool, snapshot.payload),
       };
 }

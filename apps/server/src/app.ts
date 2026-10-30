@@ -9,6 +9,7 @@ import { registerGameReadRoutes } from './routes/game-read.ts';
 import { registerStudioPublicRoutes } from './routes/studio-public.ts';
 import { registerAnalyticsRoutes } from './routes/analytics.ts';
 import { registerSandboxRoutes } from './routes/sandbox.ts';
+import { resolvePublicCredits } from './privacy/credits.ts';
 import { registerGateway } from './game/gateway.ts';
 import { registerSecurityHeaders, registerWebApp } from './web.ts';
 import { TwitchClient } from './twitch/client.ts';
@@ -38,6 +39,15 @@ export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
   });
 
   registerErrorHandling(app);
+  app.addHook('onSend', async (_request, reply, payload) => {
+    if (
+      typeof payload !== 'string' ||
+      !String(reply.getHeader('content-type')).includes('application/json') ||
+      !payload.includes('artist:')
+    )
+      return payload;
+    return JSON.stringify(await resolvePublicCredits(options.pool, JSON.parse(payload) as unknown));
+  });
   await registerSecurityHeaders(app);
   await app.register(rateLimit, { global: false, max: 60, timeWindow: '1 minute', cache: 10_000 });
   await registerGateway(app, options.pool);

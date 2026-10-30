@@ -42,6 +42,26 @@ export const inbox = pgTable(
   ],
 );
 
+export const inputReceipts = pgTable(
+  'input_receipts',
+  {
+    worldId: uuid('world_id').notNull(),
+    channelId: uuid('channel_id').notNull(),
+    provider: text('provider').notNull(),
+    messageId: text('message_id').notNull(),
+    sequence: integer('sequence').notNull(),
+    acceptedAt: timestamp('accepted_at', { withTimezone: true }).notNull(),
+    commandHash: text('command_hash').notNull(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.worldId, t.provider, t.messageId] }),
+    unique().on(t.worldId, t.channelId, t.sequence),
+    foreignKey({
+      columns: [t.worldId, t.channelId],
+      foreignColumns: [channels.worldId, channels.id],
+    }),
+  ],
+);
 export const gameEvents = pgTable(
   'game_events',
   {
@@ -65,7 +85,7 @@ export const gameEvents = pgTable(
     unique('game_events_operation_unique').on(t.worldId, t.channelId, t.operationId),
     foreignKey({
       columns: [t.worldId, t.channelId, t.sequence],
-      foreignColumns: [inbox.worldId, inbox.channelId, inbox.sequence],
+      foreignColumns: [inputReceipts.worldId, inputReceipts.channelId, inputReceipts.sequence],
     }),
     check(
       'game_events_checksums_format',
