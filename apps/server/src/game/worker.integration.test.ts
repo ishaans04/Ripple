@@ -75,7 +75,7 @@ describe('ordered game worker in real PostgreSQL', () => {
     expect((await readSnapshot(pool, world.worldId, world.channelId))?.payload.round).toMatchObject(
       { number: 2, phase: 'VOTING' },
     );
-  }, 20_000);
+  });
   it('deduplicates each account in a bucket and scores real accepted membership', async () => {
     const world = await start();
     await cutoff(world);

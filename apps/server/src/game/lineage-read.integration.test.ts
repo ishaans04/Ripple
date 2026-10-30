@@ -335,7 +335,7 @@ describe('capability-scoped lineage ancestry reads', () => {
       emittedTraces: 0,
       latestTrace: null,
     });
-  }, 20000);
+  });
   it('derives bounded ancestry marks from actually admitted hosts across real raid generations', async () => {
     const { world, seed } = await start(),
       hosts = [await peer(world, 'Second host'), await peer(world, 'Third host')];
@@ -395,7 +395,7 @@ describe('capability-scoped lineage ancestry reads', () => {
       marks: { origin, ancestry: [second, fourth] },
     });
     expect(snapshot.payload.organism).not.toHaveProperty('hosts');
-  }, 30000);
+  });
   it('shows an unclaimed branch to its source without revealing an unenrolled destination identity', async () => {
     const { world, seed } = await start(),
       unrelated = await peer(world);

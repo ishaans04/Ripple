@@ -155,7 +155,7 @@ describe('capability-scoped organism passports', () => {
     expect(older.adaptations.items.map((item) => item.number)).toEqual([1]);
     expect(older.adaptations.next).toBeNull();
     expect(await canonicalGameProjection(pool, world)).toBe(before);
-  }, 30000);
+  });
 
   it('shows a raid child its parent, birth, admitted hosts and residency timeline', async () => {
     const { world, seed } = await start(),
@@ -197,7 +197,7 @@ describe('capability-scoped organism passports', () => {
     );
     // The host had no resident, so the admitted arrival became its resident.
     expect(fromHost.residencies.at(-1)).toMatchObject({ role: 'resident', endedAt: null });
-  }, 20000);
+  });
 
   it('requires read authority and a lineage encounter, and rejects malformed requests', async () => {
     const { world, seed } = await start(),

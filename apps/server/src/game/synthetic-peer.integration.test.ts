@@ -155,5 +155,5 @@ describe('bounded synthetic peers and world-wide clock', () => {
     expect(
       (await readSnapshot(pool, world.worldId, world.channelId))?.payload.organism?.status,
     ).toBe('ALIVE');
-  }, 20000);
+  });
 });

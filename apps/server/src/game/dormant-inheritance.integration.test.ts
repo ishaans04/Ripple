@@ -133,7 +133,7 @@ describe('atomic dormant inheritance across raids and historical invitations', (
       state: { dormant: [] },
     });
     expect((await dormant(world, command.childId)).remaining_rounds).toBe(0);
-  }, 20000);
+  });
   it('preserves the remaining allowance and counted IDs in an inert child despite later parent activity and receipt retry', async () => {
     const { world, seed, parent } = await start();
     const peer = await createSyntheticPeer(
@@ -190,7 +190,7 @@ describe('atomic dormant inheritance across raids and historical invitations', (
         [world.worldId, child.id, randomUUID()],
       ),
     ).rejects.toMatchObject({ code: '23514' });
-  }, 20000);
+  });
   it('reconstructs retained inheritance and does not renew it when the destination later enrolls and claims', async () => {
     const { world, parent } = await start(),
       target = randomUUID(),
@@ -231,7 +231,7 @@ describe('atomic dormant inheritance across raids and historical invitations', (
     expect((await transfer(world, command.transferId)).destination_channel_id).toBe(target);
     expect((await transfer(world, command.transferId)).expires_at).toEqual(original.expires_at);
     expect(await dormant(world, command.childId)).toEqual(child);
-  }, 20000);
+  });
   it('rolls back child, inherited state and transfer together on copy failure, then retries the accepted raid once', async () => {
     const { world } = await start(),
       command = raid(null);
@@ -270,5 +270,5 @@ describe('atomic dormant inheritance across raids and historical invitations', (
         ])
       ).rowCount,
     ).toBe(1);
-  }, 20000);
+  });
 });

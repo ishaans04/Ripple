@@ -107,7 +107,7 @@ describe('dormant minority capture and valid-round expiry', () => {
     expect(await canonicalGameProjection(pool, replay)).toBe(
       await canonicalGameProjection(pool, world),
     );
-  }, 20000);
+  });
   it('does not age during limited, paused or interrupted observations and replaces provenance explicitly', async () => {
     const world = await start();
     await vote(world, [3, 2, 0]);
@@ -139,7 +139,7 @@ describe('dormant minority capture and valid-round expiry', () => {
     expect((await rows(world)).find((row) => row.id === first.id)!.consumption).toMatchObject({
       reason: 'replaced',
     });
-  }, 20000);
+  });
   it('rejects insufficient support without creating a dormant record', async () => {
     for (const counts of [
       [2, 2, 0],

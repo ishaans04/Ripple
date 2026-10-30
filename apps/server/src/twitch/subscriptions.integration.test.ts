@@ -130,5 +130,5 @@ describe('subscription reconciliation', () => {
     await reconcileSubscriptions(pool, api, world);
     expect(creates).toBe(5);
     expect(deletes).toBe(0);
-  }, 20000);
+  });
 });

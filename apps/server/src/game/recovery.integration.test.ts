@@ -140,7 +140,7 @@ describe('transaction rollback and recovery boundaries', () => {
     } finally {
       await restarted.end();
     }
-  }, 20_000);
+  });
   it('does not apply queued gameplay after the world has expired', async () => {
     const world = await start();
     await acceptSyntheticCommand(pool, world, world.ownerCapability, randomUUID(), {

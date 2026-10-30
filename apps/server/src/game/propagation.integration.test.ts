@@ -174,7 +174,7 @@ describe('persisted preparation, welcome and shared visitor observations', () =>
     const incoming = await snapshot(world, target);
     expect(incoming.payload.round?.kind).toBe('WELCOME');
     expect(incoming.payload.round?.candidates).toHaveLength(2);
-  }, 20000);
+  });
   it('keeps an open ballot unchanged, holds Shelter through limited data, then compares matched fitness once', async () => {
     const world = await start(),
       target = await peer(world);
@@ -257,7 +257,7 @@ describe('persisted preparation, welcome and shared visitor observations', () =>
         )
       ).rowCount,
     ).toBe(3);
-  }, 30000);
+  });
   it('keeps three FIFO harbor entries, rejects overflow and promotes the oldest after an explicit decline', async () => {
     const world = await start(),
       target = await peer(world);
@@ -321,7 +321,7 @@ describe('persisted preparation, welcome and shared visitor observations', () =>
         )
       ).rowCount,
     ).toBe(2);
-  }, 30000);
+  });
   it('serializes a twelve-branch lineage cap across distinct reproducing parents and counts held descendants', async () => {
     const world = await start(),
       parentHost = await peer(world, false);
@@ -383,7 +383,7 @@ describe('persisted preparation, welcome and shared visitor observations', () =>
         ])
       ).rowCount,
     ).toBeGreaterThan(0);
-  }, 30000);
+  });
   it('archives blocked pending lineages and sources while offline, without evicting active visitors', async () => {
     const world = await start(),
       target = await peer(world),
@@ -457,7 +457,7 @@ describe('persisted preparation, welcome and shared visitor observations', () =>
         foreign,
       ]),
     ).rejects.toMatchObject({ code: '23503' });
-  }, 20000);
+  });
   it('serializes reciprocal raids with sorted locks and retains both original residents', async () => {
     const world = await start(),
       peerId = await peer(world);
@@ -501,7 +501,7 @@ describe('persisted preparation, welcome and shared visitor observations', () =>
         ])
       ).rowCount,
     ).toBe(4);
-  }, 20000);
+  });
   it('dispatches pending-admission expiry while both channel clocks are paused and never revives the archived child', async () => {
     const world = await start(),
       target = await peer(world, false),
@@ -541,5 +541,5 @@ describe('persisted preparation, welcome and shared visitor observations', () =>
       ).rows[0]?.outcome,
     ).toBe('EXPIRED');
     expect(await scanDeadlines(pool, randomUUID(), { worldId: world.worldId })).toBe(0);
-  }, 20000);
+  });
 });

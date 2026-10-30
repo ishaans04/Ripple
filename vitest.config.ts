@@ -24,6 +24,10 @@ export default defineConfig({
           name: 'integration',
           // Database creation and the complete migration set are fixture setup, not request latency.
           hookTimeout: 30_000,
+          // Full-flow journeys issue dozens of ordered transactions; wall-clock time is not what
+          // they verify, so they share one bound instead of per-test limits tuned to one machine.
+          // Request-latency assertions inside tests are unchanged.
+          testTimeout: 60_000,
           include: ['{packages,apps}/*/src/**/*.integration.test.ts'],
           fileParallelism: false,
         },

@@ -155,7 +155,7 @@ describe('retained raid invitations and historical adoption', () => {
       ),
     ).rejects.toMatchObject({ code: '23514' });
     expect(await historicalOffers(pool, f.world.worldId, f.target)).toEqual([]);
-  }, 20000);
+  });
   it('rejects forged destination identity and an expired request even when the caller supplies an earlier check time', async () => {
     const f = await setup();
     await createSyntheticPeer(pool, f.world, f.world.ownerCapability, f.target, 'Receiver');
@@ -219,7 +219,7 @@ describe('retained raid invitations and historical adoption', () => {
         ])
       ).rows,
     ).toEqual([{ status: 'ARCHIVED' }]);
-  }, 20000);
+  });
   it('expires an unclaimed child while its source is paused and never creates destination state', async () => {
     const f = await setup();
     await send(f.world, f.world.channelId, { type: 'pause', reason: 'manual' });
@@ -247,7 +247,7 @@ describe('retained raid invitations and historical adoption', () => {
       ).rowCount,
     ).toBe(0);
     expect(await scanDeadlines(pool, randomUUID(), { worldId: f.world.worldId })).toBe(0);
-  }, 20000);
+  });
   it('rolls back binding and expiry relocation together, then recovers the accepted request into an offline hold', async () => {
     const f = await setup();
     await createSyntheticPeer(pool, f.world, f.world.ownerCapability, f.target, 'Receiver');
@@ -297,7 +297,7 @@ describe('retained raid invitations and historical adoption', () => {
         )
       ).rows,
     ).toEqual([{ channel_id: f.target, due_at: f.original.expires_at }]);
-  }, 20000);
+  });
   it('keeps the three-entry harbor cap during historical claims without evicting an earlier hold', async () => {
     const world = await createSyntheticWorld(pool),
       target = randomUUID(),
@@ -341,7 +341,7 @@ describe('retained raid invitations and historical adoption', () => {
         )
       ).rows[0]!.result.code,
     ).toBe('CLAIM_CAPACITY');
-  }, 20000);
+  });
   it('replays older non-retaining raids and new retained raids without changing their accepted checksums', async () => {
     for (const retain of [false, true]) {
       const f = await setup(retain),
@@ -360,5 +360,5 @@ describe('retained raid invitations and historical adoption', () => {
           'retainUnenrolled',
         );
     }
-  }, 20000);
+  });
 });

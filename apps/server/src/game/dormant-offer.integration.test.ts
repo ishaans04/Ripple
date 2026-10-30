@@ -188,6 +188,5 @@ describe('one explicit minority offer in an ordinary three-card ballot', () => {
         await canonicalGameProjection(pool, world),
       );
     },
-    20000,
   );
 });

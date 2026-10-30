@@ -160,7 +160,7 @@ describe('recorded broadcaster trace controls', () => {
       ).rowCount,
     ).toBe(1);
     expect((await snapshot(host)).payload.round!.kind).toBe('MUTATION');
-  }, 20000);
+  });
   it('cancels a pending trace ballot explicitly and fences its obsolete cutoff without inventing a result', async () => {
     const host = await qualify();
     await advance(host, 800);
@@ -217,7 +217,7 @@ describe('recorded broadcaster trace controls', () => {
     });
     await settleSyntheticWorld(pool, host);
     expect((await snapshot(host)).payload.round).toEqual(after.payload.round);
-  }, 20000);
+  });
   it('removes an observing modifier before scoring while retaining the actual Keep decision', async () => {
     const host = await active(),
       before = await snapshot(host),
@@ -245,7 +245,7 @@ describe('recorded broadcaster trace controls', () => {
         )
       ).rows[0]!.result.code,
     ).toBe('NO_CHANGE');
-  }, 20000);
+  });
   it.each([false, true])(
     'clears future effects without rewriting resolved scores, including interrupted reveal=%s',
     async (interrupted) => {
@@ -280,7 +280,6 @@ describe('recorded broadcaster trace controls', () => {
         (await savedRound(host, (await snapshot(host)).payload.round!.id)).checkpoint.activeTrace,
       ).toBeNull();
     },
-    20000,
   );
   it('records disabled qualification once and never revives it by toggling the preference', async () => {
     const host = await qualify(true),

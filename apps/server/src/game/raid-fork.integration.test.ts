@@ -146,7 +146,7 @@ describe('atomic parent snapshots and bounded child forks', () => {
         )
       ).rows,
     ).toEqual([{ pulse: 6, calm: 6, health: 32 }]);
-  }, 20000);
+  });
   it('rolls back child, transfer, destination receipt and expiry together on a durable job failure', async () => {
     const world = await seeded(),
       target = await destination(world),

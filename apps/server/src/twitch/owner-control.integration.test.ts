@@ -442,5 +442,5 @@ describe('owner preparation and admission controls', () => {
     expect(
       (await post({ ...body, expectedVersion: await version(), transferId: unrelated })).statusCode,
     ).toBe(404);
-  }, 20000);
+  });
 });

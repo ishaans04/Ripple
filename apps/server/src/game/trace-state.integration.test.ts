@@ -292,7 +292,6 @@ describe('earned habitat traces and recorded Keep/Clear decisions', () => {
       expect((await checkpoint(host)).checkpoint.activeTrace).toBeNull();
       verifyAcceptedRecords(await exportAcceptedChannel(pool, host));
     },
-    20000,
   );
   it('defaults to Clear without fabricating votes or an active effect', async () => {
     const { host } = await qualify();
@@ -413,7 +412,7 @@ describe('earned habitat traces and recorded Keep/Clear decisions', () => {
     expect(offers.filter((row) => row.status === 'active')).toHaveLength(1);
     await observe(host);
     expect((await traces(host)).find((row) => row.id === newOffer.id)!.remaining_rounds).toBe(2);
-  }, 20000);
+  });
   it('does not age through limited data, pause or interrupted observations and recovers into the same allowance', async () => {
     const { host } = await qualify();
     await advance(host, 800);
@@ -435,7 +434,7 @@ describe('earned habitat traces and recorded Keep/Clear decisions', () => {
     await send(host, { type: 'recover' });
     await observe(host);
     expect((await traces(host))[0]!.remaining_rounds).toBe(2);
-  }, 20000);
+  });
   it('expires a pending offer after three valid urgent welcomes without activating it', async () => {
     const { host, source } = await qualify();
     for (const remaining of [2, 1, 0]) {
@@ -460,7 +459,7 @@ describe('earned habitat traces and recorded Keep/Clear decisions', () => {
       decision: { reason: 'awaiting-vote', terminal: { reason: 'valid-round-expiry' } },
     });
     expect((await checkpoint(host)).checkpoint.activeTrace).toBeNull();
-  }, 20000);
+  });
   it('ages one host allowance while applying the same active rule to resident and visitor', async () => {
     const { host, source } = await qualify('shelter');
     await advance(host, 800);
@@ -494,7 +493,7 @@ describe('earned habitat traces and recorded Keep/Clear decisions', () => {
         score: { trace: { template: 'shelter', amount: -1 } },
       });
     expect((await traces(host))[0]!.remaining_rounds).toBe(1);
-  }, 20000);
+  });
   it('does not emit from founder idle time or a visitor fossilized in its second valid contest', async () => {
     const { host, incoming } = await setup('charged', true);
     const welcome = (await snapshot(host)).round!,
@@ -526,5 +525,5 @@ describe('earned habitat traces and recorded Keep/Clear decisions', () => {
       (await pool.query('select * from trace_qualifications where world_id=$1', [host.worldId]))
         .rowCount,
     ).toBe(0);
-  }, 20000);
+  });
 });

@@ -168,7 +168,7 @@ describe('ordered destination admission', () => {
         ).rowCount,
       ).toBe(0);
     }
-  }, 20000);
+  });
   it('approves with an entity version, rejects stale retries and archives declines without extinction', async () => {
     const f = await setup();
     await pool.query(

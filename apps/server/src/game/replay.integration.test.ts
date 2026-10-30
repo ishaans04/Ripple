@@ -66,7 +66,7 @@ describe('accepted-record reconstruction', () => {
       (await pool.query('select * from overlay_capabilities where world_id=$1', [replay.worldId]))
         .rowCount,
     ).toBe(0);
-  }, 20_000);
+  });
   it('detects edited commands, broken order, and missing records before reconstruction', async () => {
     const source = await journey(),
       bundle = await exportAcceptedChannel(pool, source);
@@ -82,7 +82,7 @@ describe('accepted-record reconstruction', () => {
     expect(() => {
       verifyAcceptedRecords({ ...bundle, records: bundle.records.slice(0, -1) });
     }).toThrow('Final channel checksum');
-  }, 20_000);
+  });
   it('restores frozen mechanics genesis and accepts pre-mechanics export headers', async () => {
     const source = await createSyntheticWorld(pool, { mechanicsVersion: 1 });
     await acceptSyntheticCommand(
@@ -131,5 +131,5 @@ describe('accepted-record reconstruction', () => {
         )
       ).rows[0],
     ).toEqual({ mechanics_version: 0 });
-  }, 20_000);
+  });
 });
