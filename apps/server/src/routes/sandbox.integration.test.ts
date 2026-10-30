@@ -13,6 +13,7 @@ interface Judge {
   channelId: string;
   neighborId: string;
   capability: string;
+  readCapability: string;
 }
 
 describe('judge sandbox API', () => {
@@ -211,5 +212,24 @@ describe('judge sandbox API', () => {
     ]);
     expect(results.filter((result) => result.status === 'fulfilled')).toHaveLength(1);
     expect(results.filter((result) => result.status === 'rejected')).toHaveLength(1);
+  });
+  it('lets an expired world owner reset while rejecting read-only reset and all expired actions', async () => {
+    const judge = await create();
+    await pool.query(
+      "update worlds set expires_at=clock_timestamp()-interval '1 second' where id=$1",
+      [judge.worldId],
+    );
+    expect((await act(judge, { action: 'next', channelId: judge.channelId })).statusCode).toBe(410);
+    const reset = (token: string) =>
+      app.inject({
+        method: 'POST',
+        url: `/api/sandbox/${judge.worldId}/reset`,
+        headers: { authorization: `Bearer ${token}` },
+      });
+    expect((await reset(judge.readCapability)).statusCode).toBe(401);
+    const response = await reset(judge.capability);
+    expect(response.statusCode, response.body).toBe(201);
+    expect(response.json<Judge>().worldId).not.toBe(judge.worldId);
+    expect((await view(response.json<Judge>())).mode).toBe('sandbox');
   });
 });

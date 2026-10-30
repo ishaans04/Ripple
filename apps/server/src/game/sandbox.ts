@@ -94,6 +94,7 @@ export async function authorizeSynthetic(
   client: pg.PoolClient,
   scope: WorldScope,
   owner: string,
+  expiry: 'require_active' | 'allow_expired_reset' = 'require_active',
 ): Promise<Date> {
   await lockChannels(client, scope.worldId, [scope.channelId]);
   const row = (
@@ -114,7 +115,7 @@ export async function authorizeSynthetic(
   )
     throw new SandboxError('UNAUTHORIZED');
   if (row.mode !== 'sandbox') throw new SandboxError('WRONG_WORLD_MODE');
-  if (row.expired) throw new SandboxError('WORLD_EXPIRED');
+  if (row.expired && expiry === 'require_active') throw new SandboxError('WORLD_EXPIRED');
   return row.clock_at;
 }
 export async function acceptSyntheticCommand(

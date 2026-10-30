@@ -329,7 +329,12 @@ export function registerSandboxRoutes(app: FastifyInstance, pool: pg.Pool): void
       const [first] = await channelsOf(pool, worldId);
       if (first === undefined) throw new ApiError('NOT_FOUND', 404, 'Sandbox not found.');
       await transaction(pool, async (client) => {
-        await authorizeSynthetic(client, { worldId, channelId: first }, owner);
+        await authorizeSynthetic(
+          client,
+          { worldId, channelId: first },
+          owner,
+          'allow_expired_reset',
+        );
         // The old world ends immediately; nothing in it can be read or changed afterwards.
         await client.query('update worlds set expires_at=clock_timestamp() where id=$1', [worldId]);
       }).catch(sandboxFailure);
