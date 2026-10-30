@@ -186,7 +186,7 @@ Full local lint, formatting, all workspace/browser-test types, all 413 unit test
 
 New enrollment/CLI genesis explicitly selects version one; legacy reauthorization remains unchanged and recorded opt-in applies only at a safe opening, including rollback/replay checks. The world remains the season namespace and policy is frozen. Cross-channel dependency-ordered replay remains Phase 9, connected Studio remains Phase 8, and full product surfaces/OBS presentation remain Phase 7. Authentic Twitch/raid/OBS/hosted acceptance, balance/load/device evidence, backup restore rehearsal and final release readiness remain visibly pending in their planned phases. The ignored pre-migration backup is not a restore claim.
 
-## Phase 7 — product surfaces (in progress)
+## Phase 7 — product surfaces (complete; OBS capture pending)
 
 Started only after Phase 6 exit f718f6c was pushed with every applicable gate complete; its CI 40935385743 is also green. Scope is P13-P15, P17, P26, P27, P35 and P38. No Phase 8 implementation is running. Real OBS/Twitch capture remains under the user's explicit live-evidence deferral; browser fixtures never satisfy that gate.
 
@@ -204,7 +204,28 @@ P14 inherited appearance is implemented. `appearance-map-1` (contracts) maps Pul
 
 Evidence: 8 contract property tests, 6 renderer unit tests, a four-generation real-raid PostgreSQL journey (three repeated passes), harbor/no-mark and mapping-immutability checks, all 428 unit tests, all 160 PostgreSQL tests and all 42 Chrome/Edge journeys. Measured snapshot cost is unchanged (about 17–20 ms either way). Three dormant/trace journey files timed out at the 5-second default on this host even without these changes (CI passed them); they now carry the same explicit 20-second journey bound used by the other full-flow tests. No assertion or request limit was changed.
 
-Remaining for Phase 7: passport (P13) and lineage map (P17) surfaces, structural descendant updates (P15), display/controller preferences (P27) and accessibility (P38), optional celebrations (P35), the remaining focused commits and phase-wide checks. Real OBS capture remains under the live deferral.
+Later, the per-test 20-second bounds still flaked on this host (the same tests also failed without any changes), so integration journeys now share one documented 60-second test bound in `vitest.config.ts`. Hook timeouts and request-latency assertions are unchanged.
+
+### Phase 7 exit — 30 October 2026
+
+All applicable Phase 7 exit checks pass. Twenty-one focused commits make up the phase (two by Codex before resumption, eighteen implementation/validation commits since, and this exit record), with no empty commits. Every author and committer is `ishaans04 <sharmaishaaan04@gmail.com>`, with no co-author trailers.
+
+| Requirement | Completed behavior and evidence |
+| --- | --- |
+| P13 passport | `GET /api/organisms/:id/passport` reads one MVCC snapshot under the channel read capability and lineage-encounter visibility: identity, parent/founder, origin, admitted hosts and residency timeline, birth transfer, appearance mapping/marks, committed mutation decisions (paged), dormant captures and outcomes, emitted traces and matched ancestor trials. Selections come only from records (captured version-one selection, or the participant genome saved at close matched to exactly one recorded card); otherwise `unrecorded`, and inconsistent records fail loudly. Three PostgreSQL journeys and four unit tests; reads change no game state. |
+| P14 inherited appearance | Versioned `appearance-map-1` (Pulse/Calm movement, Grit plating, Drift appendages), immutable per-organism mapping version (migration 0029), origin mark plus at most two admitted-host ancestry marks (first divergence and latest), fossils kept still with their saved art. Property tests, a four-generation real-raid journey and Chrome/Edge rendering checks. |
+| P15 descendant updates | Database triggers append births, admissions, fossils, ended branches and earned traces to an append-only per-lineage log under the lineage lock (migration 0030). Returning from offline captures up to three updates from elsewhere since the channel's cursor (later-met lineages start at the encounter), advances `descendant_cursors`, and clears when offline. Overlay shows it only outside ballots; controller/preview for the session. |
+| P17 lineage map | `/lineage` lists every encountered lineage with a collapsible family tree, host filter, labelled fossils and trace attribution (including expired), beside the selected passport; responsive layout visually inspected. |
+| P26 OBS overlay | Transparent scoped overlay with honest ballot/recovery states, gene-linked creature and marks, compact/expanded layouts, family news and celebrations. A real OBS capture remains pending under the live deferral. |
+| P27 streamer controls | Existing pause/resume, visitor policy/decisions, preparation, trace clear/disable, blocks and naming, plus versioned display preferences (layout, reduced motion, family news, celebrations) through owner CSRF/idempotency/version controls (migrations 0031–0032). Presentation only; covered over the real owner route. |
+| P35 optional celebrations | Opt-in `bits:read`, `channel:read:subscriptions`, `channel:read:hype_train` grant behind `ENABLE_CELEBRATIONS`; `channel.cheer` v1, `channel.subscribe` v1 and `channel.hype_train.begin` v2 (versions checked against Twitch's EventSub reference) only for granted kinds; refused optional subscriptions never affect input health; anonymous commands with no payer or amount; at most one per minute; no change to genes, energy, votes, activity or survival; replay equality holds. Real paid events remain pending live acceptance. |
+| P38 accessible design | axe-core WCAG 2.1 A/AA checks run inside the overlay, controller, preview, landing, lineage and studio journeys; the audit found the studio editor's handles hidden inside an image role, now a labelled group. Text accompanies every color/glyph signal, signed scores use explicit signs, reduced motion is honored from the browser and the broadcaster setting, controls are keyboard-operable, and countdowns are text. Ripple plays no sound. |
+
+Evidence on code `728d2b3`: lint, formatting, all workspace/browser types, 439 unit tests across 58 files, 171 PostgreSQL integration tests across 47 files, and all 72 Windows Chrome/Edge journeys (zero retries). All three jobs of [CI run 41035366963](https://github.com/ishaans04/Ripple/actions/runs/41035366963) pass. The production image rebuilt cleanly with all 33 migrations applied and healthy services, `/lineage` is served, and all three installed smoke tools (game, raids/adoption, mechanics) pass. A pre-migration backup is retained at ignored `tmp/ripple-before-phase7-exit.dump`; this is not a restore rehearsal.
+
+Two CI incidents were resolved rather than retried away. The two intermediate celebration commits failed type checks because their browser fixtures predated the new display key; the following UI commit fixed that. CI then reported an unhandled `57P01` after every test passed: `pg`'s `Pool.end()` resolves before the server sees clients leave, so the shared helper's forced drop could terminate a closing connection. The helper now waits (bounded) for the database's own backends to disconnect before dropping.
+
+Pending under the live deferral (not claimed): real OBS capture readability, real paid-event delivery, and real Twitch chat and raid acceptance. Next is Phase 8 (connected Cocoon Studio) only.
 
 ## Live acceptance deferral requested by the user
 

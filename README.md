@@ -8,7 +8,7 @@ The full specification is in [docs/prd.md](docs/prd.md), extended by the [Cocoon
 
 ## Current status
 
-Ripple is being built phase by phase. **Phases 0–6 implementation is complete: foundation, pure engine, studio rules and local editor, event backbone, Twitch live loop, raids/lineage, and novel mechanics. Real Twitch/hosted acceptance remains pending.** What works today:
+Ripple is being built phase by phase. **Phases 0–7 implementation is complete: foundation, pure engine, studio rules and local editor, event backbone, Twitch live loop, raids/lineage, novel mechanics, and product surfaces (overlay, passports, lineage map, inherited appearance, family updates, display preferences, accessibility and optional celebrations). Real Twitch, OBS and hosted acceptance remain pending.** What works today:
 
 The [Cocoon Studio practice](http://localhost:3000/studio) provides a complete local shell editor with hand, pointer, touch, and keyboard controls. Ordered durable intake, round processing, transactional history and public updates, leased deadlines, process-gap recovery, scoped WebSockets, and synthetic command tooling are implemented. Habitat traces, dormant possibilities, saved ancestor/alternative comparisons and recent-profile previews are connected to gameplay and scoped presentation. **Phase 7, product surfaces, is in progress.** Its dedicated OBS overlay and controller link are implemented. Verification and pending live acceptance are recorded in [delivery progress](docs/progress.md).
 
