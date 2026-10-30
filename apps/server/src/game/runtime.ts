@@ -8,6 +8,7 @@ import {
 import type pg from 'pg';
 import type { FastifyBaseLogger } from 'fastify';
 import { processNextInput } from './worker.ts';
+import { processActivityBatch } from './activity-worker.ts';
 
 interface ScopeRow {
   world_id: string;
@@ -77,6 +78,18 @@ export async function runGameCycle(
       try {
         // A bounded batch per channel prevents a large chat from starving its neighbors.
         for (let count = 0; count < 4 && ownsLease(); count++) {
+          const activities = await processActivityBatch(
+            pool,
+            channel.world_id,
+            channel.id,
+            4 - count,
+          );
+          if (activities !== null) {
+            if (activities.length === 0) break;
+            processed += activities.length;
+            count += activities.length - 1;
+            continue;
+          }
           const result = await processNextInput(pool, channel.world_id, channel.id);
           if (result === null) break;
           processed++;
