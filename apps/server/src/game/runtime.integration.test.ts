@@ -6,7 +6,8 @@ import { acceptInput, releaseRuntimeLease, runMigrations } from '@ripple/databas
 import { createTemporaryDatabase, type TemporaryDatabase } from '@ripple/database/testing';
 import { candidateRuleset, rulesetCanonicalJson, rulesetHash } from '@ripple/engine';
 import { runGameCycle } from './runtime.ts';
-import { syntheticSeedCommand } from './sandbox.ts';
+import { acceptSyntheticCommand, syntheticSeedCommand } from './sandbox.ts';
+import { createJudgeWorld } from '../routes/sandbox.ts';
 import { readSnapshot } from './snapshot.ts';
 import { processNextInput } from './worker.ts';
 
@@ -82,6 +83,29 @@ describe('process-gap recovery', () => {
     const after = await readSnapshot(pool, scope.worldId, scope.channelId);
     expect(after?.payload.round?.clock).toEqual(before?.payload.round?.clock);
     expect(after?.payload.healthy).toBe(true);
+    await releaseRuntimeLease(pool, owner);
+  });
+  it('leaves a bounded busy-channel batch while a neighboring channel makes progress in the same cycle', async () => {
+    const world = await createJudgeWorld(pool),
+      owner = randomUUID(),
+      logger = { error: vi.fn() };
+    const enqueue = (channelId: string) =>
+      acceptSyntheticCommand(pool, { ...world, channelId }, world.ownerCapability, randomUUID(), {
+        type: 'activity',
+        actorKey: randomUUID(),
+      });
+    for (let i = 0; i < 12; i++) await enqueue(world.channelId);
+    await enqueue(world.neighborId);
+    await runGameCycle(pool, owner, logger);
+    const rows = (
+      await pool.query<{ id: string; lag: number }>(
+        'select id,intake_sequence-processed_sequence as lag from channels where world_id=$1',
+        [world.worldId],
+      )
+    ).rows;
+    expect(rows.find((row) => row.id === world.channelId)?.lag).toBe(8);
+    expect(rows.find((row) => row.id === world.neighborId)?.lag).toBe(0);
+    expect(logger.error).not.toHaveBeenCalled();
     await releaseRuntimeLease(pool, owner);
   });
 });

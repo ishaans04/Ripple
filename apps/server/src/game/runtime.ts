@@ -50,13 +50,33 @@ export async function runGameCycle(
     where c.processed_sequence<c.intake_sequence and w.mode<>'replay' and (w.expires_at is null or w.expires_at>clock_timestamp()) order by c.world_id,c.id limit 128`);
   let processed = 0;
   let next = 0;
+  const leaseState = { alive: true };
+  const ownsLease = (): boolean => leaseState.alive;
+  let renewing = false;
+  let renewal: Promise<void> = Promise.resolve();
+  const heartbeat = setInterval(() => {
+    if (renewing) return;
+    renewing = true;
+    renewal = acquireRuntimeLease(pool, owner)
+      .then((result) => {
+        leaseState.alive = result.acquired;
+      })
+      .catch((error: unknown) => {
+        leaseState.alive = false;
+        logger.error({ err: error }, 'runtime lease renewal failed');
+      })
+      .finally(() => {
+        renewing = false;
+      });
+  }, 1000);
+  heartbeat.unref();
   const processChannels = async () => {
     while (next < channels.rows.length) {
       const channel = channels.rows[next++];
-      if (channel === undefined || !(await acquireRuntimeLease(pool, owner)).acquired) return;
+      if (channel === undefined || !ownsLease()) return;
       try {
         // A bounded batch per channel prevents a large chat from starving its neighbors.
-        for (let count = 0; count < 32; count++) {
+        for (let count = 0; count < 4 && ownsLease(); count++) {
           const result = await processNextInput(pool, channel.world_id, channel.id);
           if (result === null) break;
           processed++;
@@ -77,7 +97,12 @@ export async function runGameCycle(
   };
   // Independent channels may make progress together. processNextInput still takes the sorted
   // transaction lock set (including both sides of a raid), so per-channel replay stays ordered.
-  await Promise.all(Array.from({ length: Math.min(8, channels.rows.length) }, processChannels));
+  try {
+    await Promise.all(Array.from({ length: Math.min(16, channels.rows.length) }, processChannels));
+  } finally {
+    clearInterval(heartbeat);
+    await renewal;
+  }
   return processed;
 }
 export function startGameRuntime(
