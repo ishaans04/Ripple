@@ -2,6 +2,7 @@ import { createHash, randomUUID } from 'node:crypto';
 import pg from 'pg';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { runMigrations } from '@ripple/database';
+import { processNextInput } from './worker.ts';
 import { createTemporaryDatabase, type TemporaryDatabase } from '@ripple/database/testing';
 import {
   defaultStudioSettings,
@@ -150,6 +151,53 @@ describe('studio failure and edge-case handling', () => {
     sessionVersion: version,
     decision,
     adaptationId,
+  });
+
+  it('serializes simultaneous duplicate voters and competing approvals into one hatch and mutation slot', async () => {
+    const scope = await world();
+    await send(scope, { type: 'studioStart', trigger: 'manual', sessionId: randomUUID() });
+    const opened = await session(scope);
+    await send(scope, proposal(opened.challenge));
+    await advance(scope, 10000);
+    const enqueue = (command: unknown) =>
+      acceptSyntheticCommand(pool, scope, scope.ownerCapability, randomUUID(), command);
+    await Promise.all(
+      Array.from({ length: 12 }, () =>
+        enqueue({ type: 'vote', actorKey: 'same-synthetic-voter', choice: 1 }),
+      ),
+    );
+    await Promise.all(
+      Array.from({ length: 4 }, () => processNextInput(pool, scope.worldId, scope.channelId)),
+    );
+    await settleSyntheticWorld(pool, scope);
+    const ballot = (
+      await pool.query<{ checkpoint: { counts: number[] } }>(
+        "select checkpoint from rounds where world_id=$1 and kind='STUDIO_SELECTION'",
+        [scope.worldId],
+      )
+    ).rows[0]!;
+    expect(ballot.checkpoint.counts).toEqual([1, 0]);
+    await advance(scope, 10000);
+    const pending = await session(scope);
+    await Promise.all(
+      Array.from({ length: 12 }, () => enqueue(review(pending.id, pending.version, 'approve'))),
+    );
+    await Promise.all(
+      Array.from({ length: 4 }, () => processNextInput(pool, scope.worldId, scope.channelId)),
+    );
+    await settleSyntheticWorld(pool, scope);
+    await advance(scope, 3200);
+    await settleSyntheticWorld(pool, scope);
+    expect((await session(scope)).phase).toBe('COMPLETED');
+    expect((await resident(scope)).design_version).toBe(1);
+    expect(
+      (
+        await pool.query(
+          "select 1 from pending_adaptations where world_id=$1 and status='committed'",
+          [scope.worldId],
+        )
+      ).rowCount,
+    ).toBe(1);
   });
 
   it('records a broadcaster rejection and leaves the game state unchanged', async () => {
