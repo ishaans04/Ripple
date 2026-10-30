@@ -260,6 +260,13 @@
       "when": 1793400000001,
       "tag": "0036_retained_receipts",
       "breakpoints": true
+    },
+    {
+      "idx": 37,
+      "version": "7",
+      "when": 1793400000002,
+      "tag": "0037_shared_immutable_purge_guard",
+      "breakpoints": true
     }
   ]
 }
