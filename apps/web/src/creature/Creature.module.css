@@ -40,3 +40,7 @@
     animation: none;
   }
 }
+/* The broadcaster's reduced-motion display preference. */
+:global([data-reduced-motion='true']) .creature[data-movement] {
+  animation: none;
+}

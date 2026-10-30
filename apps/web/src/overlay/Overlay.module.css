@@ -103,3 +103,12 @@
   padding-left: 1.1em;
   font-size: 0.8em;
 }
+
+/* Expanded layout: a larger creature and text for busy or reduced-size captures. */
+.stage[data-layout='expanded'] {
+  font-size: clamp(22px, 2vw, 36px);
+}
+.stage[data-layout='expanded'] .corner {
+  grid-template-columns: minmax(140px, 340px) minmax(0, 1fr);
+  width: min(1240px, 100%);
+}

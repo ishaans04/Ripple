@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import type { ChannelView } from '@ripple/contracts';
+import { defaultDisplayPreferences, type ChannelView } from '@ripple/contracts';
 import { useReadChannel } from '../realtime/useReadChannel.ts';
 import { traceEffectText, traceTitle } from '../realtime/trace-labels.ts';
 import { Creature } from '../creature/Creature.tsx';
@@ -115,10 +115,16 @@ export default function Overlay() {
     };
   }, []);
   const creature = channel?.organism,
+    display = channel?.display ?? defaultDisplayPreferences,
     ancestry = channel?.propagation?.resident,
     trace = channel?.mechanics?.state?.activeTrace;
   return (
-    <main className={styles.stage} aria-label="Ripple broadcast overlay">
+    <main
+      className={styles.stage}
+      aria-label="Ripple broadcast overlay"
+      data-layout={display.layout}
+      data-reduced-motion={display.reducedMotion ? 'true' : 'false'}
+    >
       <section className={styles.corner}>
         {creature !== undefined && creature !== null && (
           <div
@@ -168,7 +174,8 @@ export default function Overlay() {
               {(channel.mechanics?.state?.dormant.length ?? 0) > 0 && (
                 <p>Dormant possibility preserved · no hidden protection</p>
               )}
-              {channel.familyDigest !== undefined &&
+              {display.familyNews &&
+                channel.familyDigest !== undefined &&
                 channel.familyDigest !== null &&
                 channel.round?.phase !== 'VOTING' && (
                   <section className={styles.family} aria-label="Family news since last stream">

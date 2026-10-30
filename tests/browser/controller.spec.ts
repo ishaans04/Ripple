@@ -858,3 +858,49 @@ test('an unavailable historical invitation explains the account and expiry bound
   );
   await expect(invitations.getByRole('button')).toHaveCount(0);
 });
+
+test('display preferences send a versioned presentation request and keep keyboard-accessible choices', async ({
+  page,
+}) => {
+  let committed = false;
+  const requests: Record<string, unknown>[] = [],
+    saved = { layout: 'expanded', reducedMotion: true, familyNews: false };
+  await page.route('**/api/connection', (route) => route.fulfill({ json: { liveEnabled: true } }));
+  await page.route('**/api/controller/status', (route) =>
+    route.fulfill({
+      json: {
+        ...status,
+        snapshot: {
+          version: committed ? 4 : 3,
+          payload: { ...status.snapshot.payload, ...(committed ? { display: saved } : {}) },
+        },
+      },
+    }),
+  );
+  await page.route(`**/api/channels/${channel}/control`, async (route) => {
+    requests.push(JSON.parse(route.request().postData() ?? '{}') as Record<string, unknown>);
+    expect(route.request().headers()['x-csrf-token']).toBe('csrf-test');
+    await route.fulfill({ status: 202, json: { sequence: requests.length } });
+  });
+  await page.route('**/api/controller/commands/*', (route) =>
+    route.fulfill({ json: { result: committed ? { code: 'APPLIED' } : null } }),
+  );
+  await page.goto('/controller');
+  const panel = page.getByRole('region', { name: 'Overlay display' }),
+    save = panel.getByRole('button', { name: 'Save display preferences' });
+  await expect(panel).toContainText('Compact layout · subtle motion · family news shown');
+  await expect(save).toBeDisabled();
+  const expanded = panel.getByRole('radio', { name: /Expanded/ });
+  await panel.getByRole('radio', { name: /Compact/ }).focus();
+  await page.keyboard.press('ArrowDown');
+  await expect(expanded).toBeChecked();
+  await panel.getByRole('checkbox', { name: /Reduce motion/ }).check();
+  await panel.getByRole('checkbox', { name: /Show family news/ }).uncheck();
+  await save.click();
+  await expect.poll(() => requests.length).toBe(1);
+  expect(requests[0]).toEqual({ action: 'display', preferences: saved, expectedVersion: 3 });
+  committed = true;
+  await expect(panel).toContainText('Expanded layout · motion reduced · family news hidden');
+  await expect(save).toBeDisabled();
+  await expect(expanded).toBeChecked();
+});

@@ -332,3 +332,66 @@ test('overlay shows up to three family updates outside voting and yields to an o
   await expect(page.getByRole('heading', { name: 'Observing habitat' })).toBeVisible();
   await expect(news).toHaveCount(0);
 });
+test('overlay applies the broadcaster layout, reduced motion and family-news preferences', async ({
+  page,
+}) => {
+  const base = fixture();
+  if (base.round === null || base.organism === null) throw new Error('Missing fixture');
+  const current = {
+    ...base,
+    organism: { ...base.organism, appearanceMapping: 1 as const },
+    round: { ...base.round, phase: 'OBSERVING' },
+    familyDigest: {
+      items: [
+        {
+          kind: 'admitted' as const,
+          lineageId: world,
+          sequence: 2,
+          organismId: world,
+          organismName: 'Traveller',
+          generation: 1,
+          host: { channelId: world, label: 'Far host' },
+          traceTemplate: null,
+        },
+      ],
+      remaining: 0,
+    },
+  };
+  let push: ((payload: ChannelView) => void) | undefined;
+  await page.route('**/api/overlay/exchange', (route) =>
+    route.fulfill({ json: { ticket: 't'.repeat(43), expiresAt: '2099-01-01T00:00:00.000Z' } }),
+  );
+  await page.routeWebSocket('**/api/live?*', (socket) => {
+    let version = 0;
+    push = (payload) => {
+      socket.send(
+        JSON.stringify({
+          protocolVersion: 1,
+          eventId: channelId,
+          worldId: world,
+          topic: `channel:${channelId}`,
+          stateVersion: ++version,
+          type: 'snapshot',
+          serverTime: new Date().toISOString(),
+          payload,
+        }),
+      );
+    };
+    push(current);
+  });
+  await page.setViewportSize({ width: 1920, height: 1080 });
+  await page.goto(`/overlay#${fragment}`);
+  const overlay = page.getByRole('main', { name: 'Ripple broadcast overlay', exact: true }),
+    creature = page.locator('[data-movement="sway"]');
+  await expect(overlay).toHaveAttribute('data-layout', 'compact');
+  await expect(page.getByRole('region', { name: 'Family news since last stream' })).toBeVisible();
+  await expect(creature).not.toHaveCSS('animation-name', 'none');
+  const compactWidth = (await creature.boundingBox())?.width ?? 0;
+  push?.({ ...current, display: { layout: 'expanded', reducedMotion: true, familyNews: false } });
+  await expect(overlay).toHaveAttribute('data-layout', 'expanded');
+  await expect(creature).toHaveCSS('animation-name', 'none');
+  await expect(page.getByRole('region', { name: 'Family news since last stream' })).toHaveCount(0);
+  await expect
+    .poll(async () => (await creature.boundingBox())?.width ?? 0)
+    .toBeGreaterThan(compactWidth);
+});

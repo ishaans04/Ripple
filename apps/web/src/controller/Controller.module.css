@@ -107,3 +107,20 @@
 .analysis dd {
   margin: 0 0 0.75rem;
 }
+
+.choices {
+  border: 1px solid #48616b;
+  border-radius: 0.5rem;
+  padding: 0.75rem 1rem;
+  display: grid;
+  gap: 0.5rem;
+}
+.page .inline {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+.page .inline input {
+  width: auto;
+  accent-color: #56d6c5;
+}

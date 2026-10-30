@@ -6,6 +6,7 @@ import { ChannelCard } from './ChannelCard.tsx';
 import { AdmissionControls } from './AdmissionControls.tsx';
 import { HistoricalRaids } from './HistoricalRaids.tsx';
 import { TraceControls } from './TraceControls.tsx';
+import { DisplayControls } from './DisplayControls.tsx';
 import { admissionLabel } from './PropagationCard.tsx';
 import styles from './Controller.module.css';
 interface Pending {
@@ -335,6 +336,16 @@ export default function Controller() {
           {status.snapshot?.payload.propagation !== undefined && (
             <AdmissionControls
               view={status.snapshot.payload.propagation}
+              version={status.snapshot.version}
+              disabled={disabled}
+              control={(body) => {
+                control('control', body);
+              }}
+            />
+          )}
+          {status.snapshot !== null && (
+            <DisplayControls
+              channel={status.snapshot.payload}
               version={status.snapshot.version}
               disabled={disabled}
               control={(body) => {
