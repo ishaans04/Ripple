@@ -8,7 +8,7 @@ The full specification is in [docs/prd.md](docs/prd.md), extended by the [Cocoon
 
 ## Current status
 
-Ripple is being built phase by phase. **Phases 0–9 implementation is complete: foundation, pure engine, studio rules and local editor, event backbone, Twitch live loop, raids/lineage, novel mechanics, product surfaces, connected Cocoon Studio, judge sandbox and tooling. Phase 10 hardening and release remain. Real Twitch, OBS and hosted acceptance remain pending.** What works today:
+**Phases 0–9 implementation is complete. Phase 10 hardening is in final validation. Real Twitch, OBS and hosted acceptance remain pending.** The completed systems include the foundation, pure engine, studio rules and local editor, event backbone, Twitch live loop, raids/lineage, novel mechanics, product surfaces, connected Cocoon Studio, judge sandbox and tooling. What works today:
 
 The [Cocoon Studio](#cocoon-studio) runs end to end on the ordered worker: a break (manual or a configured OBS scene) opens a studio, viewers submit bounded shell designs by hand or pointer, chat chooses among at most two finalists, the broadcaster reviews, and the design hatches at the next mutation slot and travels with raids. Ordered durable intake, round processing, transactional history and public updates, leased deadlines, process-gap recovery, scoped WebSockets, and synthetic command tooling are implemented. Habitat traces, dormant possibilities, saved ancestor/alternative comparisons and recent-profile previews are connected to gameplay and scoped presentation. Verification and pending live acceptance are recorded in [delivery progress](docs/progress.md).
 
@@ -268,4 +268,10 @@ Artist participants can erase their sign-in and credit mapping with **Forget my 
 
 Retention runs automatically every 30 seconds. The privacy CLI supports targeted erasure, expired-world purge and a separately retained erasure ledger for safe backup recovery; see [privacy operations](docs/privacy-operations.md).
 
-Ordered workers process up to eight independent channels concurrently; sorted transaction locks still serialize every channel and both sides of a raid. The shared PostgreSQL pool defaults to 32 connections, configurable with DATABASE_POOL_MAX (8-64). Immutable configuration validation is bounded and cached by both bytes and hash, and ordinary activity avoids unrelated clock and studio-ballot queries.
+Ordered workers process up to 24 independent channels concurrently, with at most four inputs per channel per cycle; sorted transaction locks still serialize every channel and both sides of a raid. Consecutive ordinary activity is committed in bounded batches with identical accepted replay records. The shared PostgreSQL pool defaults to 32 connections, configurable with DATABASE_POOL_MAX (8-64). Immutable configuration validation is bounded and cached by both bytes and hash. Ordinary activity and votes avoid rewriting unchanged deadlines.
+
+## Release operations
+
+Use [deployment instructions](docs/deployment.md) for the recommended Railway Docker service and private PostgreSQL topology, [operations](docs/operations.md) for alerts and incident recovery, and [submission instructions](docs/submission.md) for evidence and packaging. `npm run status` prints private backlog, deadline, delivery and database diagnostics. `npm run test:restore` performs a real dump and separate-database restore, reapplies post-backup erasures, and verifies two-channel accepted-record replay.
+
+`npm run test:load -- --seconds 60 --channels 100 --strict --output tmp/release-load.json` measures signed HTTP intake, 300 real sockets, simultaneous studios and artist submissions, reconnects and an actual worker killed after commit. Its latency and durability gates fail the command on a miss. [Phase 10 evidence](docs/evidence/phase10.md) distinguishes measured server latency from browser performance and deferred live acceptance. `npm run release:package` requires clean, committed source and green CI on that exact revision before producing a source ZIP and SHA-256 manifest under `tmp/release/`.

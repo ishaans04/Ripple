@@ -50,6 +50,7 @@
     "privacy": "npm run privacy -w @ripple/server --",
     "test:load": "npm run test:load -w @ripple/server --",
     "test:restore": "node --env-file-if-exists=.env --conditions=ripple-source tests/restore-rehearsal.ts",
-    "status": "npm run status -w @ripple/server"
+    "status": "npm run status -w @ripple/server",
+    "release:package": "node tests/package-release.ts"
   }
 }
