@@ -17,7 +17,7 @@ export function ChannelCard({
   return (
     <section className={styles.panel} aria-label="Channel state">
       <h2>{channel.label}</h2>
-      <p>
+      <p className={styles.channelMeta}>
         {channel.mode === 'sandbox' ? 'Synthetic world · ' : ''}
         {channel.online ? 'Stream live' : 'Stream offline'} ·{' '}
         {channel.healthy ? 'Inputs healthy' : 'Inputs held'} ·{' '}
@@ -26,20 +26,27 @@ export function ChannelCard({
       {creature === null ? (
         <p>No resident strain. The broadcaster can seed when the stream and inputs are ready.</p>
       ) : (
-        <>
-          <h3>{creature.name}</h3>
-          <div className={styles.creature}>
-            <Creature organism={creature} />
+        <div className={styles.organism}>
+          <div className={styles.dish}>
+            <div className={styles.creature}>
+              <Creature organism={creature} />
+            </div>
           </div>
-          {creature.marks !== undefined && <p>{markSummary(creature.marks)}</p>}
-          <p>
-            Energy {creature.health}/100 · {creature.status}
-          </p>
-          <p>
-            Pulse {creature.genome.pulse} · Calm {creature.genome.calm} · Grit{' '}
-            {creature.genome.grit} · Drift {creature.genome.drift}
-          </p>
-        </>
+          <div className={styles.vitals}>
+            <h3>{creature.name}</h3>
+            {creature.marks !== undefined && <p>{markSummary(creature.marks)}</p>}
+            <p>
+              Energy {creature.health}/100 · {creature.status}
+            </p>
+            <span className={styles.energy} aria-hidden="true">
+              <span style={{ transform: `scaleX(${creature.health / 100})` }} />
+            </span>
+            <p>
+              Pulse {creature.genome.pulse} · Calm {creature.genome.calm} · Grit{' '}
+              {creature.genome.grit} · Drift {creature.genome.drift}
+            </p>
+          </div>
+        </div>
       )}
       {channel.familyDigest !== undefined && channel.familyDigest !== null && (
         <section aria-label="Family news since last stream">
