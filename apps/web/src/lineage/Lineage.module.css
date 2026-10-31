@@ -5,17 +5,38 @@
   display: grid;
   gap: var(--space-6);
 }
+.page h1 {
+  font-family: var(--font-display);
+  font-weight: 380;
+  font-size: clamp(2.2rem, 4.4vw, 3.6rem);
+  line-height: 1;
+  letter-spacing: -0.035em;
+  font-variation-settings: 'SOFT' 100;
+}
+.page h2 {
+  font-family: var(--font-display);
+  font-weight: 420;
+  font-size: 1.5rem;
+  letter-spacing: -0.015em;
+  font-variation-settings: 'SOFT' 80;
+}
 .page button {
   font: inherit;
   color: var(--color-text-primary);
-  background: #16443f;
-  border: 1px solid var(--color-action);
-  border-radius: var(--radius-sm);
+  background: var(--color-raised);
+  border: 1px solid #5a5244;
+  border-radius: 12px;
   padding: var(--space-2) var(--space-4);
   cursor: pointer;
+  transition: border-color var(--motion-fast) linear;
+}
+.page button:hover:not(:disabled) {
+  border-color: var(--color-text-primary);
 }
 .page button:disabled {
-  opacity: 0.5;
+  color: var(--color-fossil);
+  background: transparent;
+  border-color: var(--color-line);
   cursor: default;
 }
 .page button:focus-visible,
@@ -62,8 +83,8 @@
 .treePanel,
 .passportPanel {
   background: var(--color-panel);
-  border: 1px solid #48616b;
-  border-radius: var(--radius-md);
+  border: 1px solid var(--color-line);
+  border-radius: 20px;
   padding: var(--space-6);
   display: grid;
   gap: var(--space-4);
@@ -81,7 +102,7 @@
 .tree ul {
   margin-left: var(--space-4);
   padding-left: var(--space-3);
-  border-left: 2px solid #48616b;
+  border-left: 2px solid var(--color-line);
 }
 .branchRow {
   display: flex;
@@ -104,7 +125,7 @@
   gap: var(--space-1);
   text-align: left;
   background: var(--color-background);
-  border-color: #48616b;
+  border-color: var(--color-line);
 }
 .page .branchButton[aria-current='true'] {
   border-color: var(--color-action);

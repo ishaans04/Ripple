@@ -1,5 +1,40 @@
 .content {
-  max-width: 48rem;
+  max-width: 46rem;
   margin: auto;
-  padding: 2rem;
+  padding: var(--space-12) clamp(1.25rem, 4vw, 2rem) var(--space-24);
+  display: grid;
+  gap: var(--space-4);
+  line-height: 1.65;
+}
+.content > a:first-child {
+  justify-self: start;
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: 1.4rem;
+  font-variation-settings: 'SOFT' 100;
+  color: var(--color-text-primary);
+  text-decoration: none;
+}
+.content h1 {
+  margin-top: var(--space-6);
+  font-family: var(--font-display);
+  font-weight: 380;
+  font-size: clamp(2.4rem, 5vw, 3.8rem);
+  line-height: 1;
+  letter-spacing: -0.035em;
+  font-variation-settings: 'SOFT' 100;
+}
+.content h2 {
+  margin-top: var(--space-8);
+  padding-top: var(--space-6);
+  border-top: 1px solid var(--color-line);
+  font-family: var(--font-display);
+  font-weight: 420;
+  font-size: 1.6rem;
+  letter-spacing: -0.015em;
+  font-variation-settings: 'SOFT' 80;
+}
+.content p,
+.content li {
+  color: var(--color-text-secondary);
 }

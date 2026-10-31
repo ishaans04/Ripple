@@ -18,16 +18,18 @@
 }
 .creature {
   width: 100%;
-  filter: drop-shadow(0 4px 8px #101820);
+  filter: drop-shadow(0 6px 10px rgb(14 13 11 / 0.8));
 }
 .fossil {
   filter: grayscale(1);
   opacity: 0.65;
 }
 .panel {
-  background: #101820ed;
-  border-left: 4px solid #56d6c5;
-  border-radius: 16px;
+  background: rgb(14 13 11 / 0.93);
+  border: 1px solid var(--color-line);
+  border-left: 4px solid var(--color-action);
+  border-radius: 18px;
+  box-shadow: 0 18px 40px rgb(0 0 0 / 0.35);
   padding: 16px 24px;
   display: grid;
   gap: 8px;
@@ -39,7 +41,12 @@
   line-height: 1.25;
 }
 .panel h1 {
-  color: #56d6c5;
+  color: var(--color-action);
+  font-family: var(--font-display);
+  font-weight: 450;
+  font-size: 1.15em;
+  letter-spacing: -0.01em;
+  font-variation-settings: 'SOFT' 100;
 }
 .panel p {
   font-size: 0.8em;
@@ -50,7 +57,7 @@
   font-weight: 650;
 }
 .badge {
-  color: #f0bd68;
+  color: var(--color-warning);
   font-weight: 650;
 }
 .choices {
@@ -66,7 +73,7 @@
 }
 .choices span {
   font-size: 0.72em;
-  color: #a7bcc4;
+  color: var(--color-text-secondary);
 }
 .identity,
 .choiceHeading {
@@ -95,7 +102,7 @@
 .family {
   display: grid;
   gap: 4px;
-  border-top: 1px solid #48616b;
+  border-top: 1px solid var(--color-line);
   padding-top: 8px;
 }
 .family ul {
@@ -115,18 +122,18 @@
 
 /* Optional celebrations: a brief, gentle ring and a text line; nothing flashes. */
 .panel .celebration {
-  color: #f0bd68;
+  color: var(--color-warning);
   font-weight: 650;
   font-size: 0.9em;
 }
 .creature[data-celebrating='true'] {
   border-radius: 50%;
-  box-shadow: 0 0 0 6px #f0bd6866;
+  box-shadow: 0 0 0 6px rgb(255 122 87 / 0.4);
   animation: glow 2.4s ease-in-out infinite;
 }
 @keyframes glow {
   50% {
-    box-shadow: 0 0 0 14px #f0bd6833;
+    box-shadow: 0 0 0 14px rgb(255 122 87 / 0.2);
   }
 }
 @media (prefers-reduced-motion: reduce) {
