@@ -1,4 +1,12 @@
-import { useEffect, useMemo, useReducer, useRef, useState, type ReactNode } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useReducer,
+  useRef,
+  useState,
+  type ReactNode,
+} from 'react';
 import {
   founderShell,
   markingPatterns,
@@ -20,6 +28,12 @@ import { EditorCanvas } from './EditorCanvas.tsx';
 import { HandControls } from './HandControls.tsx';
 import styles from './Studio.module.css';
 import { LiveStudio } from './LiveStudio.tsx';
+import { shellGeometry, type EditorPoint } from './shellGeometry.ts';
+import type { GestureStatus } from './gestures.ts';
+import { studioSteps, studioTour } from './studioGuide.ts';
+import { nextStep } from '../console/guide.ts';
+import { revealSection } from '../console/ConsoleShell.tsx';
+import { Tour } from '../console/Tour.tsx';
 
 // An explicitly local practice context, never an impersonated live studio or world.
 export const practiceChallenge = createStudioChallenge(
@@ -94,6 +108,10 @@ export function StudioEditor({
       : (challenge.mutationTemplateIds[0] ?? 'cosmetic-only'),
   );
   const [creditOptIn, setCreditOptIn] = useState(false);
+  const [cameraOn, setCameraOn] = useState(false);
+  const [tradeChosen, setTradeChosen] = useState(recovered?.mutationTemplateId !== undefined);
+  const [submitted, setSubmitted] = useState(false);
+  const [touring, setTouring] = useState(false);
   const cameraUsed = useRef(false);
   const [confirming, setConfirming] = useState(false);
   const dialog = useRef<HTMLDialogElement>(null);
@@ -182,10 +200,46 @@ export function StudioEditor({
     setDownloaded(blueprint);
   }
   const move = studioMutationMove(template);
+  const steps = studioSteps({
+    cameraOn,
+    part: state.part,
+    tradeChosen,
+    saved: downloaded === blueprint || submitted,
+    live: live !== null,
+  });
+  const next = nextStep(steps);
+  const latestPart = useRef(state.part);
+  useEffect(() => {
+    latestPart.current = state.part;
+  }, [state.part]);
+  const canvasRef = useRef<HTMLDivElement>(null);
+  const cursorRef = useRef<SVGGElement>(null);
+  const followHand = useCallback((point: EditorPoint | null, status: GestureStatus) => {
+    const cursor = cursorRef.current,
+      canvas = canvasRef.current;
+    if (cursor === null || canvas === null) return;
+    cursor.dataset.status = point === null ? 'lost' : status;
+    if (point !== null) cursor.setAttribute('transform', `translate(${point.x} ${point.y})`);
+    // Outline the point a pinch would grab, using the gesture interpreter's reach.
+    const handles = shellGeometry(latestPart.current.parameters).handles;
+    let near: string | null = null,
+      best = 125;
+    if (point !== null)
+      for (const [key, handle] of Object.entries(handles)) {
+        const distance = Math.hypot(handle.x - point.x, handle.y - point.y);
+        if (distance <= best) {
+          best = distance;
+          near = key;
+        }
+      }
+    for (const handle of canvas.querySelectorAll<SVGGElement>('[data-handle]'))
+      handle.dataset.near = String(handle.dataset.handle === near);
+  }, []);
   return (
     <main className={styles.page}>
       <header className={styles.header}>
         <a href="/" className={styles.brand}>
+          <span className={styles.brandMark} aria-hidden="true" />
           Ripple<span> / Cocoon Studio</span>
         </a>
         <span className={styles.badge}>
@@ -197,25 +251,78 @@ export function StudioEditor({
         </span>
       </header>
       <section className={styles.intro}>
-        <p className={styles.eyebrow}>A little shell. A lasting story.</p>
-        <h1>Shape what travels next.</h1>
-        <p>Pull a point. Find a pattern. Give this strain a shell of its own.</p>
-        {live === null ? (
-          <p className={styles.muted}>
-            Explore at your own pace. This practice design stays on your device and does not change
-            a live game.
-          </p>
-        ) : (
-          live.status
-        )}
+        <div className={styles.introText}>
+          <p className={styles.eyebrow}>A little shell. A lasting story.</p>
+          <h1>Shape what travels next.</h1>
+          <p>Pull a point. Find a pattern. Give this strain a shell of its own.</p>
+          {live === null ? (
+            <p className={styles.muted}>
+              Explore at your own pace. This practice design stays on your device and does not
+              change a live game.
+            </p>
+          ) : (
+            live.status
+          )}
+        </div>
+        <nav className={styles.coach} aria-label="Studio steps">
+          <ol className={styles.coachSteps}>
+            {steps.map((step, index) => (
+              <li key={step.id} data-state={step.state}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    revealSection(step.target);
+                  }}
+                >
+                  <span className={styles.coachMark} aria-hidden="true">
+                    {step.state === 'done' ? '✓' : index + 1}
+                  </span>
+                  {step.title}
+                </button>
+              </li>
+            ))}
+          </ol>
+          <div className={styles.coachNow}>
+            <p>
+              <span className={styles.coachLabel}>{next === null ? 'All set' : 'Now'}</span>
+              {next === null
+                ? 'Every step is done. Keep refining, or start over with Reset shell.'
+                : next.detail}
+            </p>
+            <button
+              type="button"
+              className={styles.coachTour}
+              onClick={() => {
+                setTouring(true);
+              }}
+            >
+              <span aria-hidden="true">▶</span> Studio tour
+            </button>
+          </div>
+        </nav>
       </section>
       <div className={styles.workspace}>
-        <section className={styles.preview} aria-label="Shell editor">
+        <section
+          id="studio-stage"
+          className={styles.preview}
+          aria-label="Shell editor"
+          data-camera={cameraOn}
+        >
           <div className={styles.previewTop}>
             <span>YOUR SHELL</span>
-            <span>Drag a point to sculpt</span>
+            <span>{cameraOn ? 'Pinch a white point to grab it' : 'Drag a point to sculpt'}</span>
           </div>
-          <EditorCanvas part={state.part} dispatch={dispatch} />
+          <div ref={canvasRef} className={styles.stage}>
+            <EditorCanvas part={state.part} dispatch={dispatch} cursorRef={cursorRef} />
+          </div>
+          <dl className={styles.readouts} aria-hidden="true">
+            {(['width', 'height', 'curvature'] as const).map((key) => (
+              <div key={key}>
+                <dt>{key === 'curvature' ? 'crown' : key}</dt>
+                <dd>{state.part.parameters[key]}</dd>
+              </div>
+            ))}
+          </dl>
           <div className={styles.toolbar}>
             <button
               onClick={() => {
@@ -247,17 +354,23 @@ export function StudioEditor({
           </p>
         </section>
         <aside className={styles.controls}>
-          <HandControls
-            part={state.part}
-            dispatch={dispatch}
-            available={live?.cameraAvailable ?? true}
-            onCamera={(event) => {
-              if (event === 'camera_enabled') cameraUsed.current = true;
-              live?.onEvent?.(event);
-            }}
-          />
-          <section>
-            <p className={styles.eyebrow}>01 / The trade-off</p>
+          <div id="studio-hands" className={styles.chapter}>
+            <HandControls
+              part={state.part}
+              dispatch={dispatch}
+              available={live?.cameraAvailable ?? true}
+              onPointer={followHand}
+              onCamera={(event) => {
+                if (event === 'camera_enabled') {
+                  cameraUsed.current = true;
+                  setCameraOn(true);
+                }
+                live?.onEvent?.(event);
+              }}
+            />
+          </div>
+          <section id="studio-trade" className={styles.chapter}>
+            <p className={styles.eyebrow}>02 / The trade-off</p>
             <h2>Reinforce the shell</h2>
             <label htmlFor="trade-off">Choose its genetic cost</label>
             <select
@@ -267,7 +380,10 @@ export function StudioEditor({
                 const selected = challenge.mutationTemplateIds.find(
                   (id) => id === event.target.value,
                 );
-                if (selected !== undefined) setTemplate(selected);
+                if (selected !== undefined) {
+                  setTemplate(selected);
+                  setTradeChosen(true);
+                }
               }}
             >
               {challenge.mutationTemplateIds.map((id) => (
@@ -281,9 +397,20 @@ export function StudioEditor({
                 ? 'This design is cosmetic. It changes no genes or fitness.'
                 : `A stronger shell gives up a little ${move.from === 'pulse' ? 'burst affinity' : move.from === 'calm' ? 'steadiness' : 'travel reserve'}. Its size and decoration add no extra power.`}
             </p>
+            {!tradeChosen && (
+              <button
+                type="button"
+                className={styles.quiet}
+                onClick={() => {
+                  setTradeChosen(true);
+                }}
+              >
+                Keep this trade-off
+              </button>
+            )}
           </section>
-          <section>
-            <p className={styles.eyebrow}>02 / The shape</p>
+          <section id="studio-shape" className={styles.chapter}>
+            <p className={styles.eyebrow}>03 / The shape</p>
             <h2>Make it yours</h2>
             {(['width', 'height', 'curvature'] as const).map((key) => (
               <label key={key} className={styles.rangeLabel}>
@@ -304,19 +431,22 @@ export function StudioEditor({
               </label>
             ))}
           </section>
-          <section>
-            <p className={styles.eyebrow}>03 / The signature</p>
+          <section id="studio-sign" className={styles.chapter}>
+            <p className={styles.eyebrow}>04 / The signature</p>
             <fieldset>
               <legend>Marking</legend>
               <div className={styles.options}>
                 {markingPatterns.map((pattern) => (
                   <button
                     key={pattern}
+                    className={styles.marking}
+                    data-pattern={pattern}
                     aria-pressed={state.part.marking.patternId === pattern}
                     onClick={() => {
                       dispatch({ type: 'marking', pattern });
                     }}
                   >
+                    <span className={styles.markingIcon} aria-hidden="true" />
                     {pattern}
                   </button>
                 ))}
@@ -335,23 +465,27 @@ export function StudioEditor({
                       dispatch({ type: 'palette', palette });
                     }}
                   >
+                    <span className={styles.swatch} aria-hidden="true" />
                     {palette.replace('-', ' + ')}
                   </button>
                 ))}
               </div>
             </fieldset>
           </section>
-          <button
-            className={styles.primary}
-            onClick={() => {
-              setConfirming(true);
-            }}
-          >
-            {live === null ? 'Save design' : 'Review and submit'} <span aria-hidden="true">↗</span>
-          </button>
-          <p className={styles.muted} role="status">
-            {saveStatus}
-          </p>
+          <div id="studio-save" className={styles.saveArea}>
+            <button
+              className={styles.primary}
+              onClick={() => {
+                setConfirming(true);
+              }}
+            >
+              {live === null ? 'Save design' : 'Review and submit'}{' '}
+              <span aria-hidden="true">↗</span>
+            </button>
+            <p className={styles.muted} role="status">
+              {saveStatus}
+            </p>
+          </div>
         </aside>
       </div>
       <footer className={styles.footer}>
@@ -402,6 +536,7 @@ export function StudioEditor({
               onClick={() => {
                 if (!cameraUsed.current) live.onEvent?.('fallback_selected');
                 live.submit(blueprint, creditOptIn, cameraUsed.current ? 'camera' : 'pointer');
+                setSubmitted(true);
                 setConfirming(false);
               }}
             >
@@ -424,6 +559,14 @@ export function StudioEditor({
           Keep editing
         </button>
       </dialog>
+      {touring && (
+        <Tour
+          stops={studioTour}
+          onClose={() => {
+            setTouring(false);
+          }}
+        />
+      )}
     </main>
   );
 }
