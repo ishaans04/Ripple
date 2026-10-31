@@ -1,10 +1,16 @@
 import { lazy, StrictMode, Suspense } from 'react';
 import { createRoot } from 'react-dom/client';
+import '@fontsource-variable/fraunces/soft.css';
+import '@fontsource-variable/fraunces/soft-italic.css';
+import '@fontsource-variable/bricolage-grotesque/wght.css';
+import '@fontsource-variable/jetbrains-mono/wght.css';
 import { Landing } from './landing/Landing.tsx';
 import './styles/global.css';
 
 const container = document.getElementById('root');
 if (container === null) throw new Error('Missing #root container');
+// Scroll reveals hide content only once script is running to reveal it again.
+document.documentElement.classList.add('js');
 const Studio = lazy(() => import('./studio/Studio.tsx'));
 const Controller = lazy(() => import('./controller/Controller.tsx'));
 const Preview = lazy(() => import('./controller/Preview.tsx'));

@@ -8,6 +8,7 @@
 
 html {
   color-scheme: dark;
+  -webkit-text-size-adjust: 100%;
 }
 
 body {
@@ -19,6 +20,7 @@ body {
   font-size: var(--text-md);
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
 }
 html[data-surface='overlay'],
 html[data-surface='overlay'] body {
@@ -32,10 +34,43 @@ p {
   margin: 0;
 }
 
+::selection {
+  background: var(--color-action);
+  color: var(--color-on-action);
+}
+
+a {
+  color: var(--color-action);
+  text-underline-offset: 0.2em;
+  text-decoration-thickness: 1px;
+}
+
 :focus-visible {
   outline: none;
   box-shadow: var(--focus-ring);
   border-radius: var(--radius-sm);
+}
+
+html:not([data-surface='overlay']) {
+  scrollbar-color: var(--color-line) var(--color-background);
+}
+
+/*
+ * Scroll reveal: elements start lowered behind a clip and useReveal marks them visible once.
+ * Opacity is never animated, so text is either hidden or shown at full contrast. Without
+ * JavaScript or with reduced motion, content is shown immediately.
+ */
+.js [data-reveal] {
+  transform: translate3d(0, 2.5rem, 0);
+  clip-path: inset(0 0 100% 0);
+  transition:
+    transform var(--motion-slow) var(--ease-out),
+    clip-path var(--motion-slow) var(--ease-out);
+  transition-delay: calc(var(--reveal-order, 0) * 80ms);
+}
+.js [data-reveal][data-visible] {
+  transform: none;
+  clip-path: inset(-3rem);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -44,5 +79,10 @@ p {
   *::after {
     animation-duration: 0ms !important;
     transition-duration: 0ms !important;
+    scroll-behavior: auto !important;
+  }
+  .js [data-reveal] {
+    transform: none;
+    clip-path: none;
   }
 }

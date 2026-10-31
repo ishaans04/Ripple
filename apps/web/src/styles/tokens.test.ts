@@ -30,7 +30,7 @@ function contrast(foreground: string, background: string): number {
 const AA_TEXT = 4.5;
 
 const foregrounds = ['text-primary', 'text-secondary', 'action', 'warning', 'fossil'];
-const surfaces = ['background', 'panel'];
+const surfaces = ['background', 'panel', 'raised'];
 
 describe('design token contrast', () => {
   for (const surface of surfaces) {
@@ -42,6 +42,12 @@ describe('design token contrast', () => {
       });
     }
   }
+
+  it('text on warning fills meets WCAG AA', () => {
+    expect(contrast(token('color-on-warning'), token('color-warning'))).toBeGreaterThanOrEqual(
+      AA_TEXT,
+    );
+  });
 
   it('text on action buttons meets WCAG AA', () => {
     expect(contrast(token('color-on-action'), token('color-action'))).toBeGreaterThanOrEqual(
