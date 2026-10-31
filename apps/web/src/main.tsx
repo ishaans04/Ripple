@@ -22,38 +22,50 @@ const Privacy = lazy(() => import('./privacy/Privacy.tsx'));
 if (window.location.pathname === '/overlay' || window.location.pathname === '/bridge')
   document.documentElement.dataset.surface = 'overlay';
 
+/** A quiet ripple while a page's code loads; stream surfaces keep plain text only. */
+function Opening({ label, plain = false }: { label: string; plain?: boolean }) {
+  return plain ? (
+    <p role="status">{label}</p>
+  ) : (
+    <div className="route-loader">
+      <span className="route-loader-ring" aria-hidden="true" />
+      <p role="status">{label}</p>
+    </div>
+  );
+}
+
 createRoot(container).render(
   <StrictMode>
     {window.location.pathname === '/privacy' ? (
-      <Suspense fallback={<p role="status">Opening privacy policy…</p>}>
+      <Suspense fallback={<Opening label="Opening privacy policy…" />}>
         <Privacy />
       </Suspense>
     ) : window.location.pathname === '/sandbox' ? (
-      <Suspense fallback={<p role="status">Opening sandbox…</p>}>
+      <Suspense fallback={<Opening label="Opening sandbox…" />}>
         <Sandbox />
       </Suspense>
     ) : window.location.pathname === '/studio' ? (
-      <Suspense fallback={<p role="status">Opening Cocoon Studio…</p>}>
+      <Suspense fallback={<Opening label="Opening Cocoon Studio…" />}>
         <Studio />
       </Suspense>
     ) : window.location.pathname === '/controller' ? (
-      <Suspense fallback={<p role="status">Opening controller…</p>}>
+      <Suspense fallback={<Opening label="Opening controller…" />}>
         <Controller />
       </Suspense>
     ) : window.location.pathname === '/preview' ? (
-      <Suspense fallback={<p role="status">Opening preview…</p>}>
+      <Suspense fallback={<Opening label="Opening preview…" />}>
         <Preview />
       </Suspense>
     ) : window.location.pathname === '/lineage' ? (
-      <Suspense fallback={<p role="status">Opening lineages…</p>}>
+      <Suspense fallback={<Opening label="Opening lineages…" />}>
         <Lineage />
       </Suspense>
     ) : window.location.pathname === '/bridge' ? (
-      <Suspense fallback={<p role="status">Starting the studio bridge…</p>}>
+      <Suspense fallback={<Opening label="Starting the studio bridge…" plain />}>
         <Bridge />
       </Suspense>
     ) : window.location.pathname === '/overlay' ? (
-      <Suspense fallback={<p role="status">Opening overlay…</p>}>
+      <Suspense fallback={<Opening label="Opening overlay…" plain />}>
         <Overlay />
       </Suspense>
     ) : (
