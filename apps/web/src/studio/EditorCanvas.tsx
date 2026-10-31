@@ -1,4 +1,11 @@
-import { memo, useRef, type Dispatch, type PointerEvent, type KeyboardEvent } from 'react';
+import {
+  memo,
+  useRef,
+  type Dispatch,
+  type KeyboardEvent,
+  type PointerEvent,
+  type RefObject,
+} from 'react';
 import { shellBounds, type ShellPart } from '@ripple/contracts';
 import { ShellRenderer } from './ShellRenderer.tsx';
 import { pointToParameter, shellGeometry, type ShellParameter } from './shellGeometry.ts';
@@ -8,9 +15,12 @@ import styles from './Studio.module.css';
 export const EditorCanvas = memo(function EditorCanvas({
   part,
   dispatch,
+  cursorRef,
 }: {
   part: ShellPart;
   dispatch: Dispatch<EditorAction>;
+  /** A hand-tracking cursor positioned directly by its owner, outside React rendering. */
+  cursorRef?: RefObject<SVGGElement | null>;
 }) {
   const active = useRef<ShellParameter | null>(null);
   const { handles } = shellGeometry(part.parameters);
@@ -53,6 +63,7 @@ export const EditorCanvas = memo(function EditorCanvas({
           <g
             key={key}
             className={styles.handle}
+            data-handle={key}
             role="slider"
             tabIndex={0}
             aria-label={`Shell ${key} control`}
@@ -80,10 +91,17 @@ export const EditorCanvas = memo(function EditorCanvas({
               dispatch({ type: 'end' });
             }}
           >
+            <circle cx={handles[key].x} cy={handles[key].y} r="44" className={styles.handleHalo} />
             <circle cx={handles[key].x} cy={handles[key].y} r="26" />
             <circle cx={handles[key].x} cy={handles[key].y} r="7" className={styles.handleDot} />
           </g>
         ))}
+        {cursorRef !== undefined && (
+          <g ref={cursorRef} className={styles.handCursor} data-status="lost" aria-hidden="true">
+            <circle r="46" className={styles.handCursorRing} />
+            <circle r="9" className={styles.handCursorDot} />
+          </g>
+        )}
       </ShellRenderer>
     </div>
   );
