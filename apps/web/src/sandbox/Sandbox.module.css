@@ -1,48 +1,173 @@
 .page {
-  max-width: 76rem;
-  margin: auto;
-  padding: 2rem;
-}
-.page main {
   display: grid;
-  gap: 1rem;
+  gap: var(--space-12);
 }
 .page h1,
 .page h2,
 .page p {
   margin: 0;
 }
-.page li {
-  margin-block: 0.5rem;
+.top {
+  display: grid;
+  gap: var(--space-3);
 }
 .badge {
-  color: var(--color-text);
-  border: 1px solid currentColor;
-  padding: 0.5rem;
   width: fit-content;
+  padding: 0.4rem 0.85rem;
+  border-radius: var(--radius-pill);
+  border: 1px solid rgb(255 122 87 / 0.5);
+  color: var(--color-warning);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  letter-spacing: 0.06em;
 }
-.controls {
+.title {
+  font-family: var(--font-display);
+  font-weight: 380;
+  font-size: clamp(2.4rem, 5vw, 4.2rem);
+  line-height: 0.95;
+  letter-spacing: -0.04em;
+  font-variation-settings: 'SOFT' 100;
+}
+.lead {
+  max-width: 42rem;
+  color: var(--color-text-secondary);
+  font-size: var(--text-lg);
+}
+.message:not(:empty) {
+  width: fit-content;
+  padding: 0.55rem 1rem;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--color-line);
+  background: var(--color-panel);
+  font-size: var(--text-sm);
+}
+.route {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: route;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));
+  gap: var(--space-3);
+}
+.route li {
+  counter-increment: route;
+  display: grid;
+  align-content: start;
+  gap: var(--space-2);
+  padding: 1rem 1.1rem;
+  border-radius: 16px;
+  border: 1px solid var(--color-line);
+  background: var(--color-panel);
+  color: var(--color-text-secondary);
+  font-size: var(--text-sm);
+}
+.route li::before {
+  content: counter(route, decimal-leading-zero);
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: 1.6rem;
+  line-height: 1;
+  color: var(--color-action);
+}
+.controls,
+.channels {
   display: flex;
   flex-wrap: wrap;
   gap: 0.6rem;
   align-items: center;
-  padding-block: 0.5rem;
+  padding: 1.25rem 1.4rem;
+  border-radius: 20px;
+  border: 1px solid var(--color-line);
+  background: var(--color-panel);
+}
+.channels {
+  padding: 0.6rem;
+  width: fit-content;
+  border-radius: var(--radius-pill);
 }
 .controls p {
   width: 100%;
+  color: var(--color-text-secondary);
+  font-size: var(--text-sm);
 }
 .page button {
-  padding: 0.6rem 0.9rem;
+  font: inherit;
+  font-size: var(--text-sm);
+  font-weight: 600;
+  padding: 0.65rem 1.1rem;
+  border-radius: var(--radius-pill);
+  border: 1px solid #5a5244;
+  background: var(--color-raised);
+  color: var(--color-text-primary);
   cursor: pointer;
+  transition:
+    transform var(--motion-fast) var(--ease-out),
+    border-color var(--motion-fast) linear,
+    background-color var(--motion-fast) linear;
+}
+.page button:hover:not(:disabled) {
+  border-color: var(--color-text-primary);
+}
+.page button:active:not(:disabled) {
+  transform: scale(0.97);
 }
 .page button[aria-pressed='true'] {
-  outline: 3px solid currentColor;
+  background: var(--color-text-primary);
+  border-color: var(--color-text-primary);
+  color: var(--color-on-action);
 }
 .page button:disabled {
   cursor: wait;
+  color: var(--color-fossil);
+  background: transparent;
+  border-color: var(--color-line);
 }
-@media (max-width: 40rem) {
-  .page {
-    padding: 1rem;
-  }
+.page .emphasis:not(:disabled),
+.page .start:not(:disabled) {
+  background: var(--color-action);
+  border-color: var(--color-action);
+  color: var(--color-on-action);
+}
+.page .start {
+  justify-self: start;
+  padding: 1rem 1.8rem;
+  font-size: var(--text-md);
+}
+.page .vote {
+  font-family: var(--font-mono);
+  font-weight: 500;
+}
+.links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-6);
+}
+.replay {
+  display: grid;
+  gap: var(--space-4);
+  justify-items: start;
+  padding: 1.4rem;
+  border-radius: 20px;
+  border: 1px solid var(--color-line);
+  background: var(--color-panel);
+}
+.replay h2 {
+  font-family: var(--font-display);
+  font-weight: 420;
+  font-size: 1.5rem;
+  font-variation-settings: 'SOFT' 100;
+}
+.replay ul {
+  margin: 0;
+  padding-left: 1.1rem;
+}
+.editor {
+  margin-top: calc(var(--space-12) * -0.5);
+  border-radius: 28px;
+  border: 1px solid var(--color-line);
+}
+.editor > main {
+  padding-inline: clamp(1rem, 2.5vw, 2rem);
 }

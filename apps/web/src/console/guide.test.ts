@@ -90,6 +90,12 @@ describe('sandbox guide', () => {
     expect(nextStep(sandboxGuide(true, done))).toBeNull();
   });
 
+  it('tells the visitor to close an open ballot before shaping the habitat', () => {
+    const voted = new Set<SandboxMilestone>(['voted']);
+    expect(nextStep(sandboxGuide(true, voted, 'VOTING'))?.detail).toMatch(/Next scheduled step/);
+    expect(nextStep(sandboxGuide(true, voted, 'OBSERVING'))?.detail).toMatch(/add local chat/);
+  });
+
   it('counts habitat input only while the round is observing', () => {
     expect(milestoneFor('chat', { round: null })).toBeNull();
     const observing = {

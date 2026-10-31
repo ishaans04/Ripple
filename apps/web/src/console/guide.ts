@@ -166,6 +166,7 @@ export type SandboxMilestone =
 export function sandboxGuide(
   started: boolean,
   milestones: ReadonlySet<SandboxMilestone>,
+  roundPhase: string | null = null,
 ): GuideStep[] {
   const drafts: Draft[] = [
     {
@@ -186,7 +187,10 @@ export function sandboxGuide(
       id: 'observe',
       target: 'controls',
       title: 'Shape the habitat',
-      detail: 'Add local chat or change habitat, then advance to see how the strain fared.',
+      detail:
+        roundPhase === 'VOTING'
+          ? 'The ballot is still open. Press Next scheduled step to close it and begin observing.'
+          : 'While the round is observing, add local chat or change habitat, then advance to see how the strain fared.',
       done: milestones.has('observed'),
     },
     {
