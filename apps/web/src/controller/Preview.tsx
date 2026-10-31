@@ -5,8 +5,13 @@ import styles from './Controller.module.css';
 export default function Preview() {
   const { channel, status } = useReadChannel();
   return (
-    <main className={styles.page}>
-      <h1>Ripple read-only preview</h1>
+    <main className={`${styles.page} ${styles.standalone}`}>
+      <header className={styles.top}>
+        <div className={styles.topText}>
+          <p className={styles.eyebrow}>Read-only · cannot send controls or votes</p>
+          <h1 className={styles.title}>Ripple read-only preview</h1>
+        </div>
+      </header>
       <p role="status">
         {status === 'invalid'
           ? 'The link or renderer state is unsupported. Ask the broadcaster for a new link.'

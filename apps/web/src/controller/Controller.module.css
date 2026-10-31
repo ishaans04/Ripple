@@ -1,53 +1,268 @@
+/* Channel controller, read-only preview and the cards they share. */
 .page {
-  max-width: 960px;
-  margin: 0 auto;
-  padding: 2rem 1.25rem;
   display: grid;
-  gap: 1.5rem;
+  gap: var(--space-12);
 }
+.standalone {
+  max-width: 64rem;
+  margin: 0 auto;
+  padding: var(--space-12) clamp(1.25rem, 4vw, 3rem) var(--space-24);
+  gap: var(--space-6);
+}
+
+/* ---------- Page header ---------- */
+.top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  justify-content: space-between;
+  gap: var(--space-4) var(--space-8);
+}
+.topText {
+  display: grid;
+  gap: var(--space-2);
+}
+.eyebrow {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--color-action);
+}
+.title {
+  font-family: var(--font-display);
+  font-weight: 380;
+  font-size: clamp(2.4rem, 5vw, 4.2rem);
+  line-height: 0.95;
+  letter-spacing: -0.04em;
+  font-variation-settings: 'SOFT' 100;
+}
+.statusPill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  max-width: 30rem;
+  padding: 0.55rem 1rem;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--color-line);
+  background: var(--color-panel);
+  font-size: var(--text-sm);
+}
+.statusPill::before {
+  content: '';
+  flex: none;
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background: var(--color-fossil);
+}
+.statusPill[data-connection='ready']::before {
+  background: var(--color-action);
+  box-shadow: 0 0 0 4px rgb(212 242 90 / 0.18);
+}
+.statusPill[data-connection='partial']::before {
+  background: var(--color-warning);
+}
+
+/* ---------- Connect ---------- */
+.connectCard {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-6);
+  padding: 2rem;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-line);
+  background:
+    radial-gradient(36rem 18rem at 100% 0%, rgb(212 242 90 / 0.1), transparent 70%),
+    var(--color-panel);
+}
+.connectCard > div:first-child {
+  display: grid;
+  gap: var(--space-2);
+  max-width: 34rem;
+}
+.connectTitle {
+  font-family: var(--font-display);
+  font-size: clamp(1.5rem, 2.4vw, 2rem);
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  font-variation-settings: 'SOFT' 100;
+}
+.secondaryLink {
+  align-self: center;
+}
+.checklist {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 0.25rem;
+}
+.page .checklist li {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin: 0;
+  padding: 0.7rem 0.9rem;
+  border-radius: 10px;
+  background: var(--color-background);
+}
+.checklist li::before {
+  content: '';
+  flex: none;
+  width: 1.1rem;
+  height: 1.1rem;
+  border-radius: 50%;
+  border: 1.5px dashed var(--color-fossil);
+}
+.checklist li[data-ok='true']::before {
+  border: none;
+  background:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M4 8.5l2.5 2.5L12 5' fill='none' stroke='%230e0d0b' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")
+      center / 80% no-repeat,
+    var(--color-action);
+}
+.subscriptions {
+  margin: 0;
+  padding-left: 1.1rem;
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--color-text-secondary);
+}
+.signOut {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: var(--space-6);
+  border-top: 1px solid var(--color-line);
+}
+
+/* ---------- Cards ---------- */
 .panel {
-  background: var(--color-panel, #182630);
-  border: 1px solid #48616b;
-  border-radius: 1rem;
-  padding: 1.5rem;
+  background: var(--color-panel);
+  border: 1px solid var(--color-line);
+  border-radius: 20px;
+  padding: 1.6rem 1.75rem;
   display: grid;
   gap: 1rem;
+  min-width: 0;
+}
+.panel > button,
+.panel > a {
+  justify-self: start;
+}
+.panel h2 {
+  font-family: var(--font-display);
+  font-weight: 420;
+  font-size: 1.55rem;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  font-variation-settings: 'SOFT' 80;
+}
+.panel h3 {
+  font-size: var(--text-md);
+  font-weight: 650;
+}
+.panel > p,
+.muted {
+  color: var(--color-text-secondary);
+}
+.panel summary {
+  cursor: pointer;
+  font-weight: 600;
+  list-style-position: outside;
+}
+details.panel > summary {
+  font-family: var(--font-display);
+  font-weight: 420;
+  font-size: 1.25rem;
+}
+details.panel:not([open]) {
+  padding-block: 1.1rem;
 }
 .page a {
-  color: #56d6c5;
+  color: var(--color-action);
 }
 .page label {
   display: grid;
-  gap: 0.4rem;
+  gap: 0.45rem;
+  font-size: var(--text-sm);
+  font-weight: 550;
 }
 .page input,
 .page select {
   width: 100%;
-  background: #101820;
-  color: #edf5f4;
-  border: 1px solid #a7bcc4;
-  border-radius: 0.4rem;
-  padding: 0.7rem;
+  background: var(--color-background);
+  color: var(--color-text-primary);
+  border: 1px solid #5a5244;
+  border-radius: 12px;
+  padding: 0.75rem 0.9rem;
   font: inherit;
+  font-weight: 400;
+  transition: border-color var(--motion-fast) linear;
+}
+.page input::placeholder {
+  color: var(--color-fossil);
+}
+.page input:hover,
+.page select:hover {
+  border-color: var(--color-text-secondary);
+}
+.page input:focus-visible,
+.page select:focus-visible {
+  border-color: var(--color-action);
+  border-radius: 12px;
 }
 .page button,
 .button {
-  padding: 0.7rem 1rem;
-  border: 1px solid #56d6c5;
-  border-radius: 0.4rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.65rem 1.15rem;
+  border: 1px solid #5a5244;
+  border-radius: var(--radius-pill);
   font: inherit;
-  color: #edf5f4;
-  background: #16443f;
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--color-text-primary);
+  background: var(--color-raised);
+  text-decoration: none;
   cursor: pointer;
+  transition:
+    transform var(--motion-fast) var(--ease-out),
+    background-color var(--motion-fast) linear,
+    border-color var(--motion-fast) linear;
+}
+.page button:hover:not(:disabled) {
+  border-color: var(--color-text-primary);
+}
+.page button:active:not(:disabled),
+.button:active {
+  transform: scale(0.97);
+}
+.page .button,
+.page .primaryButton {
+  background: var(--color-action);
+  border-color: var(--color-action);
+  color: var(--color-on-action);
+}
+.page .primaryButton:hover:not(:disabled),
+.page .button:hover {
+  border-color: var(--color-text-primary);
 }
 .page button:disabled {
-  opacity: 0.5;
+  color: var(--color-fossil);
+  background: transparent;
+  border-color: var(--color-line);
   cursor: default;
 }
 .actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.75rem;
+  align-items: center;
+  gap: 0.6rem 0.75rem;
 }
 .creature {
   width: min(240px, 100%);
@@ -58,6 +273,8 @@
 }
 .page code {
   overflow-wrap: anywhere;
+  font-family: var(--font-mono);
+  font-size: 0.85em;
 }
 .analysis {
   display: grid;
@@ -72,21 +289,21 @@
 .shadowResult,
 .rejectedResult {
   padding: 1rem;
-  border-radius: 0.5rem;
+  border-radius: 14px;
   display: grid;
   align-content: start;
   gap: 0.75rem;
   overflow-wrap: anywhere;
 }
 .actualResult {
-  border: 2px solid #56d6c5;
+  border: 2px solid var(--color-action);
 }
 .shadowResult {
-  border: 1px dashed #a7bcc4;
+  border: 1px dashed var(--color-text-secondary);
 }
 .rejectedResult {
-  border-left: 3px solid #f0bd68;
-  background: #101820;
+  border-left: 3px solid var(--color-warning);
+  background: var(--color-background);
 }
 .ancestorOutline {
   width: min(120px, 100%);
@@ -96,7 +313,7 @@
 .ancestorOutline svg path,
 .ancestorOutline svg ellipse {
   fill: none;
-  stroke: #a7bcc4;
+  stroke: var(--color-text-secondary);
 }
 .analysis summary {
   cursor: pointer;
@@ -109,8 +326,8 @@
 }
 
 .choices {
-  border: 1px solid #48616b;
-  border-radius: 0.5rem;
+  border: 1px solid var(--color-line);
+  border-radius: 14px;
   padding: 0.75rem 1rem;
   display: grid;
   gap: 0.5rem;
@@ -119,10 +336,11 @@
   display: flex;
   align-items: center;
   gap: 0.6rem;
+  font-weight: 400;
 }
 .page .inline input {
   width: auto;
-  accent-color: #56d6c5;
+  accent-color: var(--color-action);
 }
 
 .proposals {
