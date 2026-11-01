@@ -146,9 +146,16 @@ export function LoopTrack() {
           Math.floor(progress * lineageLoop.length * 0.999),
         );
         if (next !== active) {
+          const opening = active === -1;
           active = next;
           for (const [index, card] of Array.from(cards.current?.children ?? []).entries())
             (card as HTMLElement).dataset.active = String(index === next);
+          // The opening card appears already lit; colour fades start a frame later, so no card
+          // is caught between dark and lime unless the reader is scrolling.
+          if (opening)
+            requestAnimationFrame(() => {
+              host.dataset.settled = 'true';
+            });
         }
       });
     };

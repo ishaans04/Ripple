@@ -510,6 +510,9 @@
   border-radius: var(--radius-lg);
   border: 1px solid var(--color-line);
   background: var(--color-panel);
+  transition: transform var(--motion-medium) var(--ease-out);
+}
+.loopSection[data-settled='true'] .loopCard {
   transition:
     transform var(--motion-medium) var(--ease-out),
     background-color var(--motion-medium) linear,
