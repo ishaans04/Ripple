@@ -77,7 +77,12 @@ describe('subscription reconciliation', () => {
           condition: Record<string, string>;
           transport: { callback: string; method: string };
         };
-        const sub = { ...request, id: randomUUID(), status: 'enabled', cost: 0 };
+        // Twitch echoes the unused raid direction as an empty string rather than omitting it.
+        const condition =
+          request.type === 'channel.raid'
+            ? { from_broadcaster_user_id: '', to_broadcaster_user_id: '', ...request.condition }
+            : request.condition;
+        const sub = { ...request, condition, id: randomUUID(), status: 'enabled', cost: 0 };
         remote.push(sub);
         const raw = Buffer.from(JSON.stringify({ subscription: sub, challenge: 'challenge' })),
           id = randomUUID(),

@@ -37,6 +37,11 @@ describe('signed outgoing Twitch raids', () => {
     condition: { from_broadcaster_user_id: '123' },
     transport: { method: 'webhook', callback: `${config.origin}/webhooks/twitch` },
   };
+  // The provider's own shape: the unused direction arrives as an empty string.
+  const delivered = {
+    ...sub,
+    condition: { from_broadcaster_user_id: '123', to_broadcaster_user_id: '' },
+  };
   const event = {
     from_broadcaster_user_id: '123',
     to_broadcaster_user_id: '456',
@@ -132,8 +137,8 @@ describe('signed outgoing Twitch raids', () => {
   it('acknowledges durable receipt, creates one bounded child, and keeps the destination ballot unchanged', async () => {
     const previous = await readSnapshot(pool, worldId, target),
       id = randomUUID();
-    expect((await signed({ subscription: sub, event }, id)).statusCode).toBe(204);
-    expect((await signed({ subscription: sub, event }, id)).statusCode).toBe(204);
+    expect((await signed({ subscription: delivered, event }, id)).statusCode).toBe(204);
+    expect((await signed({ subscription: delivered, event }, id)).statusCode).toBe(204);
     const input = (
       await pool.query<{ command: unknown }>(
         "select command from inbox where world_id=$1 and provider='twitch-raid'",

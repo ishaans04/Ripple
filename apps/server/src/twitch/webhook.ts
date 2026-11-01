@@ -19,13 +19,23 @@ export const subscriptionVersions: Readonly<Record<string, string>> = Object.fre
   'channel.update': '2',
   'channel.raid': '1',
 });
+/**
+ * Twitch reports an unused optional condition field as an empty string (an outgoing raid arrives
+ * with `to_broadcaster_user_id: ""`). Empty means unrestricted, so drop it before comparing with the
+ * stored condition, which only ever names the fields Ripple requested.
+ */
+export const providerCondition = z
+  .record(z.string(), z.string())
+  .transform((condition) =>
+    Object.fromEntries(Object.entries(condition).filter(([, value]) => value !== '')),
+  );
 const bodySchema = z.object({
   subscription: z.object({
     id: z.string().min(1).max(200),
     type: z.string(),
     version: z.string(),
     status: z.string(),
-    condition: z.record(z.string(), z.string()),
+    condition: providerCondition,
     transport: z.object({ method: z.literal('webhook'), callback: z.string() }),
   }),
   challenge: z.string().min(1).max(2048).optional(),

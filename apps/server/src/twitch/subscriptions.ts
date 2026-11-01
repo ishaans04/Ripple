@@ -4,7 +4,7 @@ import { randomUUID } from 'node:crypto';
 import { z } from 'zod';
 import type pg from 'pg';
 import { type TwitchClient, TwitchError } from './client.ts';
-import { subscriptionVersions } from './webhook.ts';
+import { providerCondition, subscriptionVersions } from './webhook.ts';
 import { celebrationSubscriptions } from './celebrations.ts';
 
 const remoteSchema = z.object({
@@ -12,7 +12,7 @@ const remoteSchema = z.object({
   type: z.string(),
   version: z.string(),
   status: z.string(),
-  condition: z.record(z.string(), z.string()),
+  condition: providerCondition,
   cost: z.int().nonnegative(),
   transport: z.object({ method: z.string(), callback: z.string().optional() }),
 });
