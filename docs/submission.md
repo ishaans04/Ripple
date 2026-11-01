@@ -4,7 +4,7 @@ Ripple's source, migrations, pinned browser-local vision assets, tests and judge
 
 ## Reviewable artifacts
 
-- [Implementation plan](plan.md), [product specification](prd.md), [studio contract](cocoon-studio.md) and [delivery progress](progress.md).
+- [Implementation plan](plan.md), [product specification](prd.md) and [studio contract](cocoon-studio.md).
 - [Phase 9 balance, simulator, replay and actual Codex iteration evidence](evidence/phase9.md), including the principal session reference and limitations. Candidate-1 has not been advertised as a newly tuned winner.
 - [Phase 10 validation and capacity evidence](evidence/phase10.md), with machine-readable load, restore and separate Chrome/Edge client reports. Failed baselines remain identified; no passing synthetic result is presented as live acceptance.
 - [Recorded synthetic demonstration](demo/ripple-synthetic.webm), with persistent labeling of accelerated time and synthetic events. [Capture notes](demo/README.md) identify exactly what is shown and what authentic footage remains deferred.

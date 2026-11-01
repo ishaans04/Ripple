@@ -6,7 +6,7 @@ Version 1.0 | 27 October 2026 | Approved feature direction; implementation speci
 
 **Pitch:** Communities shape living strains. Raids carry their descendants. Every host changes the lineage, and successful visitors leave a trace for those who follow.
 
-**Document status:** This is the consolidated pre-release specification. No application, integration, balance result, or capacity benchmark is represented as completed. This document supersedes [the earlier blueprint](archive/ripple-blueprint.md) for implementation decisions. Numerical game parameters are initial, versioned balance candidates; they require the simulator and release checks described below.
+**Document status:** This is the consolidated pre-release specification. No application, integration, balance result, or capacity benchmark is represented as completed. This document supersedes the earlier design blueprint for implementation decisions. Numerical game parameters are initial, versioned balance candidates; they require the simulator and release checks described below.
 
 ## Contents
 

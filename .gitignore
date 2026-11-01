@@ -18,6 +18,12 @@ playwright-report/
 # Local PRD authoring workspace (not product code)
 tmp/
 
+# Local working notes and agent tooling (kept on disk, not published)
+AGENTS.md
+docs/progress.md
+docs/archive/
+.playwright-mcp/
+
 # Logs and OS files
 *.log
 npm-debug.log*
