@@ -19,7 +19,7 @@
 ![MediaPipe](https://img.shields.io/badge/MediaPipe-hand_tracking-0097A7?style=flat-square&logo=mediapipe&logoColor=white)
 ![Twitch EventSub](https://img.shields.io/badge/Twitch-EventSub-9146FF?style=flat-square&logo=twitch&logoColor=white)
 ![Docker Compose](https://img.shields.io/badge/Docker-Compose-2496ED?style=flat-square&logo=docker&logoColor=white)
-![Playwright](https://img.shields.io/badge/Playwright-Chrome_%2B_Edge-2EAD33?style=flat-square&logo=playwright&logoColor=white)
+![Playwright](https://img.shields.io/badge/Playwright-Chrome_%2B_Edge-2EAD33?style=flat-square)
 ![Vitest](https://img.shields.io/badge/Vitest-5-6E9F18?style=flat-square&logo=vitest&logoColor=white)
 
 [Quick start](#quick-start) · [How it plays](#how-it-plays) · [Architecture](#architecture) · [Testing](#testing-and-quality) · [Documentation](#documentation) · [Judge guide](docs/judge-guide.md)
