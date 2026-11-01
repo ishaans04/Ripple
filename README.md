@@ -1,105 +1,253 @@
 <div align="center">
 
-# Ripple
+# ◎ Ripple
 
-**A Twitch evolution game where chat steers mutations, live channel activity drives natural selection, and raids carry descendants into new communities.**
+### Turn the BRB screen into the best part of the stream.
 
-[![CI](https://github.com/ishaans04/Ripple/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/ishaans04/Ripple/actions/workflows/ci.yml)
-![Status: release candidate](https://img.shields.io/badge/status-release_candidate-d4f25a?style=flat-square)
-![Live Twitch acceptance: pending](https://img.shields.io/badge/live_Twitch_acceptance-pending-9146FF?style=flat-square&logo=twitch&logoColor=white)
-![Node.js 24 LTS](https://img.shields.io/badge/Node.js-24_LTS-5FA04E?style=flat-square&logo=nodedotjs&logoColor=white)
-![TypeScript 6](https://img.shields.io/badge/TypeScript-6.0_strict-3178C6?style=flat-square&logo=typescript&logoColor=white)
+**A Twitch evolution game where chat evolves a living creature and raids carry its descendants into new communities.**<br>
+And when the streamer steps away, the break becomes a studio:<br>
+viewers mold the creature's next shell with their **real hand movements**, tracked live through an ordinary webcam.
 
-![React 19](https://img.shields.io/badge/React-19-61DAFB?style=flat-square&logo=react&logoColor=black)
-![Vite 8](https://img.shields.io/badge/Vite-8-646CFF?style=flat-square&logo=vite&logoColor=white)
-![Fastify 5](https://img.shields.io/badge/Fastify-5-000000?style=flat-square&logo=fastify&logoColor=white)
-![PostgreSQL 18](https://img.shields.io/badge/PostgreSQL-18-4169E1?style=flat-square&logo=postgresql&logoColor=white)
-![Drizzle ORM](https://img.shields.io/badge/Drizzle_ORM-0.45-C5F74F?style=flat-square&logo=drizzle&logoColor=black)
-![Zod 4](https://img.shields.io/badge/Zod-4-3E67B1?style=flat-square&logo=zod&logoColor=white)
-![MediaPipe](https://img.shields.io/badge/MediaPipe-hand_tracking-0097A7?style=flat-square&logo=mediapipe&logoColor=white)
-![Twitch EventSub](https://img.shields.io/badge/Twitch-EventSub-9146FF?style=flat-square&logo=twitch&logoColor=white)
-![Docker Compose](https://img.shields.io/badge/Docker-Compose-2496ED?style=flat-square&logo=docker&logoColor=white)
-![Playwright](https://img.shields.io/badge/Playwright-Chrome_%2B_Edge-2EAD33?style=flat-square)
-![Vitest](https://img.shields.io/badge/Vitest-5-6E9F18?style=flat-square&logo=vitest&logoColor=white)
+[![Cocoon Studio: sculpt with your hands](https://img.shields.io/badge/Cocoon_Studio-sculpt_with_your_hands-0F8B7E?style=for-the-badge&logo=mediapipe&logoColor=white)](#cocoon-studio-sculpt-it-with-your-hands)
+[![Built for Twitch](https://img.shields.io/badge/Built_for-Twitch_EventSub-9146FF?style=for-the-badge&logo=twitch&logoColor=white)](#twitch-integration)
+[![Try it: three-minute sandbox](https://img.shields.io/badge/Try_it-3--minute_sandbox-C98A12?style=for-the-badge&logo=docker&logoColor=white)](#run-it-locally)
 
-[Quick start](#quick-start) · [How it plays](#how-it-plays) · [Architecture](#architecture) · [Testing](#testing-and-quality) · [Documentation](#documentation) · [Judge guide](docs/judge-guide.md)
+[![CI](https://img.shields.io/github/actions/workflow/status/ishaans04/Ripple/ci.yml?branch=main&style=flat-square&logo=githubactions&logoColor=white&label=CI)](https://github.com/ishaans04/Ripple/actions/workflows/ci.yml)
+[![Tests](https://img.shields.io/badge/tests-813_passing-2E7D4F?style=flat-square&logo=vitest&logoColor=white)](#testing-and-quality)
+[![Status: release candidate](https://img.shields.io/badge/status-release_candidate-d4f25a?style=flat-square)](#project-status)
+[![Live Twitch acceptance: pending](https://img.shields.io/badge/live_Twitch_acceptance-pending-9146FF?style=flat-square&logo=twitch&logoColor=white)](#project-status)
+[![Replay: deterministic](https://img.shields.io/badge/replay-deterministic-0F8B7E?style=flat-square)](#determinism-and-replay)
+[![Camera: never leaves the browser](https://img.shields.io/badge/camera-never_leaves_the_browser-4A4F57?style=flat-square)](#fair-and-private-by-design)
+
+[![Node.js](https://img.shields.io/badge/Node.js-24_LTS-5FA04E?style=flat-square&logo=nodedotjs&logoColor=white)](https://nodejs.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-6_strict-3178C6?style=flat-square&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![React](https://img.shields.io/badge/React-19-61DAFB?style=flat-square&logo=react&logoColor=black)](https://react.dev/)
+[![Vite](https://img.shields.io/badge/Vite-8-646CFF?style=flat-square&logo=vite&logoColor=white)](https://vite.dev/)
+[![Fastify](https://img.shields.io/badge/Fastify-5-000000?style=flat-square&logo=fastify&logoColor=white)](https://fastify.dev/)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-18-4169E1?style=flat-square&logo=postgresql&logoColor=white)](https://www.postgresql.org/)
+[![Drizzle ORM](https://img.shields.io/badge/Drizzle_ORM-0.45-C5F74F?style=flat-square&logo=drizzle&logoColor=black)](https://orm.drizzle.team/)
+[![Zod](https://img.shields.io/badge/Zod-4-3E67B1?style=flat-square&logo=zod&logoColor=white)](https://zod.dev/)
+[![MediaPipe](https://img.shields.io/badge/MediaPipe-Hand_Landmarker-0097A7?style=flat-square&logo=mediapipe&logoColor=white)](https://ai.google.dev/edge/mediapipe)
+[![Docker Compose](https://img.shields.io/badge/Docker-Compose-2496ED?style=flat-square&logo=docker&logoColor=white)](compose.yaml)
+[![Playwright](https://img.shields.io/badge/Playwright-Chrome_%2B_Edge-2EAD33?style=flat-square)](https://playwright.dev/)
+[![Vitest](https://img.shields.io/badge/Vitest-5-6E9F18?style=flat-square&logo=vitest&logoColor=white)](https://vitest.dev/)
+
+**[Run it locally](#run-it-locally)** &nbsp;·&nbsp;
+**[Cocoon Studio](#cocoon-studio-sculpt-it-with-your-hands)** &nbsp;·&nbsp;
+**[How it plays](#how-it-plays)** &nbsp;·&nbsp;
+**[Architecture](#architecture)** &nbsp;·&nbsp;
+**[Judge guide](docs/judge-guide.md)**
+
+<br>
+
+<img src="docs/images/ripple-landing.png" alt="The Ripple landing page: the Ripple wordmark beside a teal founding-strain creature, with Enter the console and Try a three-minute expedition actions" width="100%">
 
 </div>
 
-<p align="center">
-  <img src="docs/images/ripple-landing.png" alt="Ripple landing page: the Ripple wordmark beside a teal founding-strain creature, with Enter the console and Try a three-minute expedition actions" width="100%">
-</p>
-
-**Ripple** is a deterministic, chat-driven evolution game for Twitch streamers and their communities. Viewers vote in chat (`!ripple 1`, `2` or `3`) on bounded genetic mutations, the stream's real chat activity becomes the habitat that scores each strain's fitness, and an actual Twitch raid branches a descendant into another channel, where a new community decides how it adapts. Between rounds, viewers can design the creature's shell in **Cocoon Studio** with a mouse, touch or in-browser **MediaPipe hand tracking**.
-
-Every outcome is reproducible: a pure TypeScript game engine turns checksum-chained accepted records into the same lineage every time, so an entire world can be exported, replayed and verified. Ripple ships as one Fastify service plus PostgreSQL, with signed Twitch EventSub intake, snapshot-first WebSockets, a transparent OBS overlay, a broadcaster console and a keyless judge sandbox.
-
 > [!NOTE]
-> **Release candidate.** All implementation phases are complete and verified in CI. Real Twitch, OBS and hosted acceptance has not been performed yet: it needs authorized broadcaster and bot accounts and a public HTTPS URL. Everything you can run locally is real application code against PostgreSQL, and synthetic worlds are always labelled as such. See [Project status](#project-status).
+> **Release candidate.** Every implementation phase is complete and verified in CI. Real Twitch, OBS and hosted acceptance has not been performed yet, because it needs authorized broadcaster and bot accounts and a public HTTPS URL. Everything you can run locally is real application code against PostgreSQL, and synthetic worlds are always labelled. See [Project status](#project-status).
 
-<details>
-<summary><strong>Table of contents</strong></summary>
+## At a glance
 
-- [Highlights](#highlights)
-- [How it plays](#how-it-plays)
-- [Product surfaces](#product-surfaces)
-- [Architecture](#architecture)
-- [Tech stack](#tech-stack)
-- [Quick start](#quick-start)
-- [Local development](#local-development)
-- [Configuration](#configuration)
-- [Testing and quality](#testing-and-quality)
-- [Determinism and replay](#determinism-and-replay)
-- [Security and privacy](#security-and-privacy)
-- [Twitch integration](#twitch-integration)
-- [Deployment and operations](#deployment-and-operations)
-- [Command-line tools](#command-line-tools)
-- [HTTP and real-time API](#http-and-real-time-api)
-- [Repository layout](#repository-layout)
-- [Project status](#project-status)
-- [Documentation](#documentation)
-- [Acknowledgements and license](#acknowledgements-and-license)
+Every stream has dead air. The streamer steps away for food, a call or a stretch, the channel sits on a _Be right back_ card, chat goes quiet and viewers drift off. **Ripple gives those minutes a job.** It is an evolution game that lives on the stream: chat evolves a creature, the channel's real activity decides whether it thrives, raids carry its descendants to other communities, and the moment the streamer switches to their break scene, a studio opens where viewers reshape the creature with their own hands in front of a webcam.
 
-</details>
+| **01 · Vote**                                                                                                 | **02 · Survive**                                                                                                    | **03 · Sculpt**                                                                                                                                | **04 · Travel**                                                                                                                                |
+| :------------------------------------------------------------------------------------------------------------ | :------------------------------------------------------------------------------------------------------------------ | :--------------------------------------------------------------------------------------------------------------------------------------------- | :--------------------------------------------------------------------------------------------------------------------------------------------- |
+| Chat picks one of three genetic mutations with `!ripple 1`, `2` or `3`. One account, one vote, no pay-to-win. | The stream is the habitat. Chat's burst and steadiness score the creature's fitness and move its energy up or down. | On a break, Cocoon Studio opens. Viewers pinch, pull and stretch the creature's shell with in-browser hand tracking, then chat picks a winner. | A real raid sends one descendant to the destination channel, carrying its genes, its community-made shell and a passport of where it has been. |
 
-## Highlights
+## The problem: dead air
 
-- **Chat-steered evolution.** Each ballot offers three legal mutation cards. Every account's first valid vote stands, ties fall to a seeded order, and no votes means Hold.
-- **The stream is the habitat.** Burst and steadiness are measured from chat activity, one contribution per account per 10-second bucket. Viewer counts and payments never buy game power.
-- **Raids that branch lineages.** A raid sends one descendant; the parent always stays home. The receiving community can prepare, welcome, shelter or contest it, and overflow waits in a first-in, first-out harbor.
-- **Mechanics with memory.** Habitat traces left by successful visitors, dormant minority-backed mutations, live ancestor trials and plain-language explanations of every energy change.
-- **Cocoon Studio.** During a break, the community designs the creature's shell, chat picks among at most two finalists, the broadcaster approves, and the design hatches at the next mutation slot and travels with future raids.
-- **Deterministic and replayable.** Integer-only rules, seeded randomness and checksum-chained records rebuild any world exactly, with a channel-by-channel equality check.
-- **Built for broadcasts.** A transparent 1920×1080 OBS overlay, reduced-motion support, no sound, and accessibility checks in every browser journey.
-- **Private by design.** Camera frames and hand landmarks never leave the browser, analytics carry no viewer identities, and artist identities can be erased without breaking replay.
-- **Judge-ready.** A keyless, isolated sandbox world with a neighbor channel covers the whole loop, studio included, in about three minutes.
+**The quietest minutes of a stream can be its most creative ones.**
+
+When a streamer goes AFK, the usual options are a static BRB card, a looping clip or a countdown. Viewers have nothing to do, so they leave, and the stream comes back to a thinner chat. Ripple flips that around. Switching to a configured break scene in OBS opens **Cocoon Studio** automatically, and the game clock pauses at its checkpoint. While the streamer is away, viewers turn on their camera, pinch the creature's shell and pull it into a new shape. When creation closes, chat votes between the finalists and **Keep current**, the streamer approves the winner, and the new shell hatches at the next mutation. From then on it travels with every descendant the creature sends out on a raid.
+
+```mermaid
+flowchart TB
+    subgraph AWAY["While the streamer is away"]
+        direction LR
+        BRB(["Streamer switches<br/>to the BRB scene"]) --> BRIDGE["OBS bridge<br/>reports the scene"]
+        BRIDGE --> OPEN["Cocoon Studio opens<br/>game clock pauses"]
+        OPEN --> SCULPT["Viewers sculpt<br/>with their hands,<br/>a mouse or touch"]
+    end
+
+    subgraph AFTER["After creation closes"]
+        direction LR
+        VOTE{"Chat votes<br/>finalists vs<br/>Keep current"} --> APPROVE["Streamer<br/>approves"]
+        APPROVE --> HATCH(["Shell hatches at<br/>the next mutation"])
+        HATCH --> RAID["Raid descendants<br/>inherit the design"]
+    end
+
+    AWAY --> AFTER
+
+    classDef stream fill:#F1EAFE,stroke:#9146FF,color:#2E1A5C
+    classDef studio fill:#E3F5F2,stroke:#0F8B7E,color:#0B3D37
+    classDef decide fill:#FCF1DC,stroke:#C98A12,color:#4A3306
+    class BRB,BRIDGE,RAID stream
+    class OPEN,SCULPT,HATCH studio
+    class VOTE,APPROVE decide
+    style AWAY fill:#FAFAF8,stroke:#9AA0A6,stroke-dasharray:4 3,color:#202226
+    style AFTER fill:#FAFAF8,stroke:#9AA0A6,stroke-dasharray:4 3,color:#202226
+```
+
+No OBS bridge? The broadcaster can open the studio with one click from the console instead.
+
+|                                                         | A static BRB screen |                       **Ripple's break studio**                        |
+| :------------------------------------------------------ | :-----------------: | :--------------------------------------------------------------------: |
+| Viewers have something to do while the streamer is away |          ✕          |                       ✓ sculpt, propose and vote                       |
+| What they make outlasts the break                       |          ✕          |            ✓ the winning shell joins the creature for good             |
+| It follows the community to other channels              |          ✕          |      ✓ raid descendants inherit it and credit where it came from       |
+| The streamer stays in control                           |          ✓          | ✓ approve the winner, keep the current shell, or turn on auto-approval |
+| Anyone can join, with or without a camera               |          ✓          |  ✓ pointer, touch and keyboard get the same choices and the same vote  |
+| It starts on its own                                    |          ✓          |           ✓ from a configured OBS break scene, or one click            |
+
+## Cocoon Studio: sculpt it with your hands
+
+This is the heart of Ripple. Google's **MediaPipe Hand Landmarker** runs inside the viewer's own browser, in a Web Worker, and follows 21 points on each hand from an ordinary webcam. Your index fingertip becomes a cursor over the creature, and pinching your thumb and index finger together grabs its shell. There is nothing to install, no GPU server and no video upload: the creature changes shape in real time as your hand moves.
+
+### Gestures
+
+| Gesture                                             | What it does                                                             |
+| :-------------------------------------------------- | :----------------------------------------------------------------------- |
+| **Point** with your index finger                    | Moves the hand cursor over the shell                                     |
+| **Pinch** thumb and index finger over a white point | Grabs that control point: the shell's width, its height or its curvature |
+| **Move while pinching**                             | Reshapes the shell live, always inside its bounds                        |
+| **Release**                                         | Lets go. Each pinch-and-move is one step you can undo                    |
+| **Pinch with both hands and pull apart**            | Scales the whole shell (turn off one-hand mode first)                    |
+| **Hand leaves the frame**                           | Editing freezes until tracking returns. Nothing is saved or submitted    |
+
+A short calibration panel offers a mirrored camera preview, a live hand-detection status, a pinch demonstration, a sensitivity slider (0.5 to 1.5), one-hand mode (on by default), and undo, redo and reset.
+
+### From webcam to shell
+
+```mermaid
+flowchart LR
+    CAM(["Webcam<br/>off until you enable it"])
+
+    subgraph BROWSER["Inside your browser only"]
+        direction LR
+        WORKER["Web Worker<br/>MediaPipe Hand Landmarker<br/>pinned, checksum-verified model"]
+        GEST["Gesture interpreter<br/>confidence gate · pinch hysteresis<br/>smoothing · sensitivity"]
+        EDIT["Bounded shell editor<br/>undo · redo · reset<br/>draft kept locally"]
+        SVG["Versioned SVG<br/>shell renderer"]
+    end
+
+    CONFIRM{"Review and submit<br/>an explicit click"}
+    SERVER[("Ripple server<br/>validates one declarative<br/>blueprint of at most 8 KB")]
+
+    CAM -- "video frames" --> WORKER
+    WORKER -- "21 landmarks per hand" --> GEST
+    GEST -- "editor actions" --> EDIT
+    EDIT --> SVG
+    EDIT --> CONFIRM
+    CONFIRM -- "shape numbers only,<br/>no video, no landmarks" --> SERVER
+
+    classDef local fill:#E3F5F2,stroke:#0F8B7E,color:#0B3D37
+    classDef gate fill:#FCF1DC,stroke:#C98A12,color:#4A3306
+    classDef remote fill:#F1EAFE,stroke:#9146FF,color:#2E1A5C
+    classDef cam fill:#F4F4F2,stroke:#6B6F76,color:#202226
+    class WORKER,GEST,EDIT,SVG local
+    class CONFIRM gate
+    class SERVER remote
+    class CAM cam
+    style BROWSER fill:#FAFAF8,stroke:#0F8B7E,stroke-dasharray:4 3,color:#0B3D37
+```
+
+The interpreter only trusts a hand it is confident about (at least 0.7, with all 21 landmarks inside the frame). Grabbing a point takes a tighter pinch than holding it, so a grip does not flicker loose mid-drag, and the fingertip is smoothed to steady small tremors.
+
+### What you shape, and what Ripple enforces
+
+| You shape, with hands, pointer, touch or keyboard                     | Ripple enforces, on the server                                                                                      |
+| :-------------------------------------------------------------------- | :------------------------------------------------------------------------------------------------------------------ |
+| Shell width (300 to 850), height (250 to 750), curvature (100 to 800) | Which genetic trade-offs are legal right now: Grit +2 against Pulse, Calm or Drift −2, or an appearance-only option |
+| Marking pattern: plain, bands or dots                                 | Which proposals are eligible, and the seeded draw of at most two finalists                                          |
+| Palette: teal-amber, coral-ink or moss-cream                          | The vote result, with **Keep current** as the no-vote default and the tie-breaker                                   |
+| Your own private draft, until you choose to submit it                 | When the design becomes real: at the next mutation slot, in one transaction                                         |
+
+**A bigger shell never buys more Grit.** The shape is creative expression; the gene change is fixed by the template chosen for the session, so drawing well is never a game advantage.
+
+### Fair and private by design
+
+- **Same chances for everyone.** Pointer, touch and keyboard drive the same parameters and limits as hand control, with the same eligibility, the same vote weight and the same chance of winning. Camera quality and gesture accuracy confer nothing.
+- **Your camera stays yours.** Video and hand landmarks never leave the browser, the microphone is never requested, the camera stays off until you enable it, and its tracks stop when the studio closes.
+- **Nothing happens by accident.** Losing tracking never saves or submits, and submitting always takes an explicit confirmation.
+- **Practice any time.** `/studio` works as a local practice editor with draft recovery and JSON download, clearly separate from live proposals.
+- **Credit on your terms.** Artists sign in with Twitch for identity only, with no scopes, and can choose **Forget my artist identity** later without breaking replay.
+
+### The studio lifecycle
+
+```mermaid
+stateDiagram-v2
+    direction LR
+    [*] --> OPENING: break scene or console
+    OPENING --> CREATING: creature and challenge captured
+    CREATING --> VOTING: creation window closes
+    VOTING --> REVIEW: a design wins
+    VOTING --> PENDING_HATCH: a design wins, auto-approval on
+    VOTING --> COMPLETED: Keep current wins
+    REVIEW --> PENDING_HATCH: streamer approves
+    REVIEW --> CANCELLED: streamer keeps the current shell
+    PENDING_HATCH --> COMPLETED: hatches at the next mutation
+    CREATING --> CANCELLED: streamer returns early
+    COMPLETED --> [*]
+    CANCELLED --> [*]
+```
+
+1. A break opens the studio, from a configured OBS scene through the OBS bridge or with one click in the console. The game clock checkpoints, so the break costs the creature nothing.
+2. Only currently legal shell trade-offs are offered, or a labelled appearance-only option when none is legal.
+3. Viewers sculpt during the creation window (five minutes by default, configurable from 10 seconds to 30 minutes). Drafts stay local until the artist confirms one bounded, declarative blueprint.
+4. When creation closes, a recorded seeded draw picks at most two finalists, and chat votes between them and **Keep current**.
+5. The streamer approves the winner or keeps the current shell. With auto-approval turned on, the winner is approved automatically, which is safe because every template is already bounded. An approved design waits on the overlay as a visible cocoon and hatches at the next mutation slot. Repeated breaks never create extra mutation slots.
+6. Raid descendants inherit the committed design. Their passports credit the studio, the creating channel and, only when they opt in, the artist.
+
+Coming back before creation closes cancels the session. Returning during the vote either lets it finish or cancels it, as the broadcaster configured.
 
 ## How it plays
 
 The central loop is **seed → choose → observe → adapt → raid → welcome → inherit → leave a trace**.
 
-```text
- HOME CHANNEL        seed ──► choose ──► observe ──► adapt ──┬──► next round
-                              !ripple    chat as             │
-                              1, 2, 3    habitat             │ raid: one descendant
-                                                             ▼ carries its history
- RECEIVING CHANNEL   welcome ──► inherit ──► adapt ──► leave a trace
+```mermaid
+flowchart LR
+    subgraph HOME["Home channel"]
+        direction LR
+        SEED(["Seed"]) --> CHOOSE["Choose<br/>!ripple 1 · 2 · 3"]
+        CHOOSE --> OBSERVE["Observe<br/>chat as habitat"]
+        OBSERVE --> ADAPT["Adapt<br/>energy rises or falls"]
+        ADAPT -- "next round" --> CHOOSE
+    end
+
+    subgraph AWAY["Receiving channel"]
+        direction LR
+        WELCOME["Welcome"] --> INHERIT["Inherit"] --> SETTLE["Adapt"] --> TRACE(["Leave a trace"])
+    end
+
+    ADAPT -- "raid: one descendant<br/>carries its history" --> WELCOME
+
+    classDef home fill:#E3F5F2,stroke:#0F8B7E,color:#0B3D37
+    classDef away fill:#F1EAFE,stroke:#9146FF,color:#2E1A5C
+    style HOME fill:#FAFAF8,stroke:#0F8B7E,stroke-dasharray:4 3,color:#0B3D37
+    style AWAY fill:#FAFAF8,stroke:#9146FF,stroke-dasharray:4 3,color:#2E1A5C
+    class SEED,CHOOSE,OBSERVE,ADAPT home
+    class WELCOME,INHERIT,SETTLE,TRACE away
 ```
 
-1. **Seed.** A broadcaster names a founding strain. Its genome has four genes, **Pulse**, **Calm**, **Grit** and **Drift**, each from 0 to 15 and always summing to 24.
-2. **Choose.** Chat votes on three mutation cards drawn from a seeded shuffle of the legal moves. A mutation moves two points between two genes.
-3. **Observe.** For a fixed window, Ripple measures the channel's burst and steadiness (0–1000). Confident observations need at least three distinct accounts; otherwise the round is labelled limited and health is held.
-4. **Adapt.** An integer fitness contract scores the genome against the habitat, with Grit protection, capped shocks and clamps. The result explains every signed contribution and its two leading causes. Energy at zero means extinction.
-5. **Raid.** When the streamer raids, one descendant branches into the destination channel with health derived from Drift. Destinations choose an admission policy (ask, accept or reject) and can block source channels or lineages.
-6. **Welcome.** The receiving community votes on a welcome choice, may grant finite shelter, and resolves contests against its incumbent under matched conditions. Losers become fossils that keep their final appearance.
-7. **Inherit.** Children carry their genome, committed shell design, appearance mapping and origin marks, so every creature shows where its lineage has been.
-8. **Leave a trace.** A raid-origin survivor that thrives through two valid observations can earn a habitat trace. The host chooses Keep or Clear (Clear by default), and a kept trace changes the habitat for later residents and visitors until it expires.
+| Step                  | What happens                                                                                                                                                                                                                                                     |
+| :-------------------- | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **1 · Seed**          | A broadcaster names a founding strain. Its genome has four genes, **Pulse**, **Calm**, **Grit** and **Drift**, each from 0 to 15 and always summing to 24.                                                                                                       |
+| **2 · Choose**        | Chat votes on three mutation cards drawn from a seeded shuffle of the legal moves. A mutation moves two points between two genes. Every account's first valid vote stands, ties fall to a seeded order, and no votes means Hold.                                 |
+| **3 · Observe**       | For a fixed window, Ripple measures the channel's burst and steadiness (0 to 1000), one contribution per account per 10-second bucket. Confident observations need at least three distinct accounts; otherwise the round is labelled limited and health is held. |
+| **4 · Adapt**         | An integer fitness contract scores the genome against the habitat, with Grit protection, capped shocks and clamps. Every signed contribution is explained, with its two leading causes. Energy at zero means extinction.                                         |
+| **5 · Raid**          | When the streamer raids, one descendant branches into the destination channel with health derived from Drift. The parent always stays home. Destinations choose to ask, accept or reject, and can block sources or lineages.                                     |
+| **6 · Welcome**       | The receiving community votes on a welcome choice, may grant finite shelter, and resolves contests against its incumbent under matched conditions. Losers become fossils that keep their final appearance. Overflow waits in a first-in, first-out harbor.       |
+| **7 · Inherit**       | Children carry their genome, committed shell design, appearance mapping and origin marks, so every creature shows where its lineage has been.                                                                                                                    |
+| **8 · Leave a trace** | A raid-origin survivor that thrives through two valid observations can earn a habitat trace. The host chooses Keep or Clear (Clear by default), and a kept trace changes the habitat for later residents and visitors until it expires.                          |
+
+Viewer counts, bits and subscriptions never buy game power.
 
 <details>
-<summary><strong>The deeper mechanics</strong></summary>
+<summary><b>The deeper mechanics</b></summary>
 
 | Mechanic          | What it does                                                                                                                                                                                                    |
-| ----------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| :---------------- | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Dormant mutations | A losing direction backed by a qualified minority is captured. It can return once as a labelled, legally rebased card while its allowance lasts (three later valid observations), and raid children inherit it. |
 | Ancestor trials   | Each resolved round also scores the lineage's founding genome against the same recorded inputs, so chat can see whether evolution actually helped.                                                              |
 | Rejected choices  | The cards chat did not pick are evaluated against the same recorded start energy, habitat and shocks, and saved as clearly labelled comparisons.                                                                |
@@ -112,80 +260,164 @@ Every mechanic is versioned. A world pins its mechanics policy, and existing cha
 
 </details>
 
-### Cocoon Studio
+## A stream, end to end
 
-Cocoon Studio turns a stream break into a community design session:
+```mermaid
+sequenceDiagram
+    autonumber
+    actor ST as Streamer
+    participant CH as Chat
+    participant RP as Ripple
+    participant OV as OBS overlay
+    participant VS as Viewers in the studio
+    participant NB as Raided channel
 
-1. A break opens the studio, manually from the console or automatically from a configured OBS scene through the OBS bridge. The game clock pauses at its checkpoint.
-2. Only currently legal shell trade-offs are offered (Grit +2 against Pulse, Calm or Drift −2), or a labelled appearance-only option.
-3. Anyone can sculpt locally; artists sign in with Twitch for identity only, with no scopes. Drafts never reach the server until the artist confirms one bounded, declarative blueprint.
-4. When creation closes, a recorded seeded draw picks at most two finalists. **Keep current** is always offered, is the no-vote default and wins ties.
-5. The broadcaster approves or keeps the current shell, or restricted templates are approved automatically. An approved design waits as a visible cocoon and hatches at the next mutation slot in one transaction.
-6. Raid children inherit committed designs. Passports credit the studio, the creating channel and, only when they opt in, the artist.
+    rect rgba(15, 139, 126, 0.10)
+    Note over ST,NB: Evolve
+    ST->>RP: Seed a founding strain
+    RP->>OV: Ballot with three mutation cards
+    CH->>RP: !ripple 2 (each account's first vote stands)
+    RP->>OV: Mutation applied, observation window opens
+    CH->>RP: Chat activity becomes burst and steadiness
+    RP->>OV: Energy change, with its two leading causes
+    end
 
-Hand tracking is optional and runs entirely in the browser: pinch a white control point, move, release. Losing tracking freezes editing and never saves or submits, and pointer, touch and keyboard controls offer the same choices.
+    rect rgba(201, 138, 18, 0.12)
+    Note over ST,NB: Break
+    ST->>RP: Switches to the BRB scene (OBS bridge)
+    RP->>VS: Cocoon Studio opens, game clock pauses
+    VS->>VS: Pinch, pull and stretch the shell by hand
+    VS->>RP: Each artist submits one bounded blueprint
+    RP->>CH: Finalists vs Keep current
+    CH->>RP: Vote
+    ST->>RP: Back from the break, approves the winner
+    RP->>OV: A cocoon waits, then hatches at the next mutation
+    end
+
+    rect rgba(145, 70, 255, 0.10)
+    Note over ST,NB: Raid
+    ST->>RP: Raids another channel (signed channel.raid event)
+    RP->>NB: One descendant arrives with its genes, shell and passport
+    NB->>RP: Welcome vote, shelter or contest
+    RP->>NB: Survivors can leave a trace in the new habitat
+    end
+```
 
 ## Product surfaces
 
 | Route         | Audience                | What it is                                                                                                                                   |
-| ------------- | ----------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| :------------ | :---------------------- | :------------------------------------------------------------------------------------------------------------------------------------------- |
 | `/`           | Everyone                | Scroll-told introduction to the loop, with live service status                                                                               |
+| `/studio`     | Viewers and artists     | Cocoon Studio: hand, pointer, touch and keyboard editing; local practice with draft recovery and JSON download, or a live studio from a link |
 | `/sandbox`    | Judges and visitors     | Keyless synthetic expedition: home and neighbor channels, accelerated clock, studio, replay and reset                                        |
-| `/studio`     | Viewers and artists     | Cocoon Studio: local practice with draft recovery and JSON download, or a live studio from a studio link                                     |
 | `/controller` | Broadcasters            | The console: Twitch connection, seeding, pause and recovery, visitor policy and blocks, mechanics, studio settings, display options, metrics |
 | `/overlay`    | OBS browser source      | Transparent 1920×1080 creature and decision panel with server-aligned countdowns and explicit paused, offline and interrupted states         |
+| `/bridge`     | OBS browser source      | Reports scene changes and heartbeats so a break scene can open the studio automatically                                                      |
 | `/preview`    | Moderators and partners | Read-only detailed view of the channel's game, from a revocable link                                                                         |
 | `/lineage`    | Communities             | Lineage map with collapsible family trees, fossils and traces, plus each branch's passport                                                   |
-| `/bridge`     | OBS browser source      | Reports scene changes and heartbeats so breaks can open the studio automatically                                                             |
 | `/privacy`    | Everyone                | Camera locality, retention, deletion and the effect of erasure on accepted designs                                                           |
+
+The overlay is built for broadcasts: transparent at 1920×1080, silent, readable on stream and respectful of reduced-motion settings. Every browser journey runs accessibility checks.
 
 ## Architecture
 
-Ripple is one TypeScript application service plus PostgreSQL, deployed as a single image. Browsers never talk to the database, and hand-tracking inference runs in the viewer's browser, so no GPU or vision backend is needed.
+Ripple is one TypeScript application service plus PostgreSQL, deployed as a single image. Browsers never talk to the database, and hand tracking runs in each viewer's browser, so no GPU or vision backend is needed.
 
-```text
-   Twitch: OAuth, EventSub webhooks, chat                     Browsers
-                  │                                            /overlay  /controller  /studio
-                  │ HMAC-verified, deduplicated receipts       /sandbox  /lineage     /preview
-                  ▼                                                │ HTTPS and WebSockets
- ┌────────────────────────────────────────────────────────────────┴──────────────────┐
- │ Fastify service (Node.js 24)                                                      │
- │                                                                                   │
- │  intake ──► durable inbox ──► ordered worker ──► @ripple/engine (pure rules)      │
- │  owner controls: CSRF,         leased deadlines,    no I/O, no clock,             │
- │  idempotency keys,             sorted locks,        no ambient randomness         │
- │  version checks                up to 32 channels                                  │
- │                                in parallel ──► outbox ──► gateways (WebSockets)   │
- └───────────────────────────────────────┬───────────────────────────────────────────┘
-                                         ▼
- PostgreSQL 18: world-scoped state · checksum-chained accepted records · immutable ancestry
-                and rules · receipts and idempotency · per-lineage family log
+```mermaid
+flowchart LR
+    TWIN(["Twitch EventSub<br/>chat · raids · stream state"])
+    BRIDGE(["OBS bridge<br/>scene changes"])
+    OWNER(["Console and studio<br/>commands · proposals"])
+
+    subgraph SVC["Fastify service on Node.js 24"]
+        direction LR
+        INTAKE["Intake<br/>HMAC · CSRF<br/>idempotency keys"]
+        INBOX[("Durable<br/>inbox")]
+        WORKER["Ordered worker<br/>sorted locks<br/>leased deadlines"]
+        ENGINE["@ripple/engine<br/>pure rules, no I/O"]
+        OUTBOX[("Transactional<br/>outbox")]
+        GW["Gateways<br/>snapshot-first<br/>WebSockets"]
+    end
+
+    DB[("PostgreSQL 18<br/>checksum-chained<br/>accepted records")]
+
+    OVERLAY(["OBS overlay"])
+    VIEWS(["Live pages<br/>console · lineage · sandbox"])
+    BOT(["Twitch chat<br/>bot messages"])
+
+    TWIN --> INTAKE
+    BRIDGE --> INTAKE
+    OWNER --> INTAKE
+    INTAKE --> INBOX --> WORKER
+    WORKER <--> ENGINE
+    WORKER <--> DB
+    WORKER --> OUTBOX
+    OUTBOX --> GW
+    OUTBOX --> BOT
+    GW --> OVERLAY
+    GW --> VIEWS
+
+    classDef ext fill:#F1EAFE,stroke:#9146FF,color:#2E1A5C
+    classDef core fill:#E3F5F2,stroke:#0F8B7E,color:#0B3D37
+    classDef pure fill:#FCF1DC,stroke:#C98A12,color:#4A3306
+    classDef store fill:#F4F4F2,stroke:#6B6F76,color:#202226
+    class TWIN,BRIDGE,OWNER,OVERLAY,VIEWS,BOT ext
+    class INTAKE,WORKER,GW core
+    class ENGINE pure
+    class INBOX,OUTBOX,DB store
+    style SVC fill:#FAFAF8,stroke:#9AA0A6,color:#202226
 ```
 
-- **Ordered, durable processing.** Every input is persisted before it is acknowledged. A per-channel ordered worker applies inputs under sorted transaction locks, so both sides of a raid stay consistent, and recovers cleanly after crashes or process gaps.
-- **A pure engine.** `@ripple/engine` performs no I/O and never reads the clock or ambient randomness. It uses safe-integer arithmetic, versioned rulesets identified by the SHA-256 of their canonical JSON (RFC 8785), and seeded xoshiro128\*\* randomness, so the same inputs give the same result in Node or the browser.
-- **Transactional publishing.** Public updates and bot messages are committed with the game change that caused them, then delivered. WebSockets start with a current snapshot, carry complete versioned projections, reject client writes and repair missed updates from PostgreSQL.
-- **World isolation.** Every record belongs to one world. Sandbox, replay and live worlds never mix, and synthetic clocks and commands are rejected for live worlds on the server.
-- **Scoped access.** Read capabilities are hashed at rest, travel in URL fragments or `Authorization` headers, and exchange for single-use, 30-second WebSocket tickets.
+Every input is persisted before it is acknowledged, a per-channel worker applies it through the pure engine under sorted locks (up to 32 channels in parallel), and the resulting public updates and bot messages leave through a transactional outbox. PostgreSQL holds world-scoped state, checksum-chained accepted records, immutable ancestry and the per-lineage family log.
 
-## Tech stack
+| Design rule                        | What it means in practice                                                                                                                                                                      |
+| :--------------------------------- | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Persist before acknowledging**   | Every input is stored before Twitch or a browser gets a reply, so a crash never loses a vote, a raid or a proposal.                                                                            |
+| **One ordered worker per channel** | Inputs apply in order under sorted transaction locks, so both sides of a raid stay consistent and recovery after a crash or process gap is clean.                                              |
+| **A pure engine**                  | `@ripple/engine` uses safe-integer arithmetic, versioned rulesets identified by the SHA-256 of their canonical JSON (RFC 8785) and seeded xoshiro128\*\* randomness. Same inputs, same result. |
+| **Publish with the change**        | Public updates and bot messages commit in the same transaction as the game change that caused them, then deliver.                                                                              |
+| **Snapshot-first sockets**         | WebSockets open with a current snapshot, carry complete versioned projections, reject client writes and repair missed updates from PostgreSQL.                                                 |
+| **World isolation**                | Every record belongs to one world. Sandbox, replay and live worlds never mix, and live worlds reject synthetic clocks and commands on the server.                                              |
+| **Scoped access**                  | Read capabilities are hashed at rest, travel in URL fragments or `Authorization` headers, and exchange for single-use, 30-second WebSocket tickets.                                            |
+| **Vision at the edge**             | Camera, gesture and clock code stay out of the engine. The server only ever sees a validated, declarative shell blueprint.                                                                     |
 
-| Layer       | Technology                                                                                                          |
-| ----------- | ------------------------------------------------------------------------------------------------------------------- |
-| Language    | TypeScript 6 in strict mode; sources run directly on Node.js 24 type stripping during development                   |
-| Server      | Fastify 5 with `@fastify/websocket`, `@fastify/helmet`, `@fastify/rate-limit` and `@fastify/static`; `pg`; `ws`     |
-| Data        | PostgreSQL 18; Drizzle ORM schema with versioned SQL migrations applied under an advisory lock                      |
-| Contracts   | Zod 4 schemas shared by the server and the browser                                                                  |
-| Game engine | Pure TypeScript with `@noble/hashes`, canonical JSON and seeded xoshiro128\*\*                                      |
-| Web         | React 19, Vite 8 and CSS Modules; self-hosted Fraunces, Bricolage Grotesque and JetBrains Mono                      |
-| Vision      | MediaPipe Tasks Vision 1.1.1 in a module worker, with a pinned, SHA-256-verified hand landmarker model              |
-| Testing     | Vitest 5 with fast-check property tests, real-PostgreSQL integration tests, Playwright in Chrome and Edge, axe-core |
-| Quality     | ESLint 10 with type-aware rules, Prettier 3, dependency-notice checks                                               |
-| Delivery    | Multi-stage Docker image pinned by digest, Docker Compose, GitHub Actions and Railway                               |
+## Determinism and replay
 
-## Quick start
+Accepted records are the source of truth. Each channel's records form a checksum chain, and cross-channel dependencies such as raids record the destination positions they observed.
 
-**Requirements:** Docker with Compose v2.
+```sh
+npm run replay -- export WORLD_ID bundle.json   # every channel's accepted records
+npm run replay -- verify bundle.json            # checksums, rules and dependency bounds
+npm run replay -- run bundle.json               # rebuild in a new, isolated replay world
+```
+
+`run` rebuilds the world in channel order, waits for raid dependencies, prints each channel's resident, committed design and studio outcomes, and compares the result with the source world channel by channel, exiting with code 2 on any difference. Replay uses accepted records only: no camera data, landmarks or provider calls, which is exactly why a hand-sculpted shell replays identically.
+
+## Security and privacy
+
+| Area                | How Ripple handles it                                                                                                                                                                                              |
+| :------------------ | :----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Webhooks**        | Verified with HMAC over the raw request bytes, deduplicated by receipt and reconciled against Twitch's subscription state                                                                                          |
+| **Owner controls**  | Twitch sign-in sessions with `__Host-` cookies, an exact `Origin` check, CSRF tokens, idempotency keys and channel version checks                                                                                  |
+| **Grants and keys** | Encrypted at rest with independent keys. Changing `ACTOR_HASH_KEY` refuses startup rather than silently changing vote identity                                                                                     |
+| **Hardening**       | Security headers with a strict Content Security Policy, rate limiting and bounded input everywhere                                                                                                                 |
+| **Camera**          | Video and hand landmarks stay in the browser, the microphone is never requested, and camera tracks stop when the studio closes                                                                                     |
+| **Analytics**       | Only allow-listed events with counts and kinds: no viewer identities, chat text, video or landmarks. Live and sandbox populations are kept separate                                                                |
+| **Erasure**         | Accepted records hold opaque credit tokens, so replay survives erasure. Retention runs every 30 seconds, and a separate erasure ledger keeps restores honest. See [privacy operations](docs/privacy-operations.md) |
+
+## Twitch integration
+
+Live integration is off by default, so local evaluation needs no secrets. When enabled, Ripple supports broadcaster and operator-bot OAuth with encrypted grants and refresh leases, signed EventSub intake with subscription reconciliation, chat voting and activity with Shared Chat deduplication, stream online and offline recovery, and bounded bot output through a committed outbox. Raids arrive as signed `channel.raid` notifications.
+
+Open `/controller` on a configured HTTPS deployment to connect a channel. The [Twitch setup guide](docs/twitch-setup.md) lists the exact redirect URLs, scopes, operator bot authorization and the live acceptance checklist. For a rehearsal on a local machine behind an HTTPS tunnel:
+
+```sh
+docker compose -f compose.yaml -f compose.live.yaml up --build -d
+```
+
+## Run it locally
+
+**The fastest way in** needs only Docker with Compose v2:
 
 ```sh
 git clone https://github.com/ishaans04/Ripple.git
@@ -193,22 +425,9 @@ cd Ripple
 docker compose up --build
 ```
 
-Open <http://localhost:3000> and choose **Try a three-minute expedition**. No Twitch account, credentials or camera are needed.
+Open <http://localhost:3000> and choose **Try a three-minute expedition**. No Twitch account, credentials or camera are needed; enable hand controls in the studio if you want to try sculpting with a webcam. Compose starts PostgreSQL, waits for it to become healthy, applies migrations once in a dedicated step, then starts the app. Stop it with `Ctrl+C` or `docker compose down`, and add `--volumes` to delete the database. The [judge guide](docs/judge-guide.md) walks through the full expedition.
 
-Compose starts PostgreSQL, waits for it to become healthy, applies migrations once in a dedicated step, then starts the app. Stop it with `Ctrl+C` or `docker compose down`, and add `--volumes` to delete the database. The [judge guide](docs/judge-guide.md) walks through the full expedition.
-
-<details>
-<summary><strong>Troubleshooting</strong></summary>
-
-- **Port 3000 or 55432 is already in use.** Stop the other process, or change the published port in `compose.yaml`.
-- **The page says the service cannot reach its database.** Run `docker compose ps` and check that `db` is healthy and `migrate` exited with code 0. Use `docker compose logs migrate app` for details.
-- **The image is stale after pulling new code.** Rerun with `--build`.
-
-</details>
-
-## Local development
-
-**Requirements:** Node.js 24 LTS (see `.nvmrc`) and Docker for PostgreSQL.
+**For development**, use Node.js 24 LTS (see `.nvmrc`) and Docker for PostgreSQL:
 
 ```sh
 npm ci
@@ -222,7 +441,7 @@ npm run dev -w @ripple/web       # web app on http://localhost:5173, proxying th
 Workspace packages resolve to their TypeScript sources through the `ripple-source` export condition; `npm run build` emits JavaScript for production.
 
 | Script                                    | Purpose                                                                   |
-| ----------------------------------------- | ------------------------------------------------------------------------- |
+| :---------------------------------------- | :------------------------------------------------------------------------ |
 | `npm run lint`                            | ESLint with strict, type-aware rules                                      |
 | `npm run format` / `format:check`         | Format with Prettier, or check formatting                                 |
 | `npm run typecheck`                       | TypeScript across the root, every workspace and the browser tests         |
@@ -233,12 +452,13 @@ Workspace packages resolve to their TypeScript sources through the `ripple-sourc
 | `npm run db:up` / `db:migrate`            | Start PostgreSQL, or apply migrations                                     |
 | `npm run db:generate -w @ripple/database` | Generate a migration from schema changes                                  |
 
-## Configuration
+<details>
+<summary><b>Configuration</b></summary>
 
 The server validates its environment at startup and stops with a message naming each invalid variable, without echoing values. See [`.env.example`](.env.example).
 
 | Variable               | Default            | Meaning                                                                      |
-| ---------------------- | ------------------ | ---------------------------------------------------------------------------- |
+| :--------------------- | :----------------- | :--------------------------------------------------------------------------- |
 | `DATABASE_URL`         | required           | PostgreSQL connection string                                                 |
 | `DATABASE_POOL_MAX`    | `48`               | Shared connection budget for HTTP, workers and gateways (8–64)               |
 | `HOST` / `PORT`        | `0.0.0.0` / `3000` | Listener address                                                             |
@@ -251,11 +471,10 @@ The server validates its environment at startup and stops with a message naming 
 | `ENABLE_CELEBRATIONS`  | `false`            | Optional cheer, subscription and hype train celebrations (presentation only) |
 | `RULESET_VERSION`      | `candidate-1`      | Versioned balance parameters                                                 |
 
-<details>
-<summary><strong>Live Twitch variables</strong> (required when <code>ENABLE_LIVE_TWITCH=true</code>)</summary>
+With `ENABLE_LIVE_TWITCH=true`, the server also requires:
 
 | Variable                 | Requirement                                                  |
-| ------------------------ | ------------------------------------------------------------ |
+| :----------------------- | :----------------------------------------------------------- |
 | `PUBLIC_BASE_URL`        | The stable HTTPS origin of the deployment                    |
 | `TWITCH_REDIRECT_URI`    | `PUBLIC_BASE_URL` + `/auth/twitch/callback`                  |
 | `TWITCH_CLIENT_ID`       | Twitch application client ID                                 |
@@ -270,61 +489,70 @@ Keep real values in your host's secret store, never in the repository or a Docke
 
 </details>
 
+<details>
+<summary><b>Troubleshooting</b></summary>
+
+- **Port 3000 or 55432 is already in use.** Stop the other process, or change the published port in `compose.yaml`.
+- **The page says the service cannot reach its database.** Run `docker compose ps` and check that `db` is healthy and `migrate` exited with code 0. Use `docker compose logs migrate app` for details.
+- **The image is stale after pulling new code.** Rerun with `--build`.
+- **Hand tracking feels slow.** It runs on your CPU. Close other heavy tabs and apps, face your palm to the camera in good light, and keep one-hand mode on.
+
+</details>
+
 ## Testing and quality
 
-Every push to `main` runs the full pipeline in GitHub Actions. The latest green run executed **490 unit tests, 225 real-PostgreSQL integration tests and 98 browser journeys**.
+| Suite                                                                                         | Command                    | Tests in the latest green run |
+| :-------------------------------------------------------------------------------------------- | :------------------------- | ----------------------------: |
+| Unit and property tests: engine rules, contracts, gestures, editor state and services         | `npm test`                 |                           490 |
+| Integration tests on real PostgreSQL: ordering, crash and retry, raid races, studio, replay   | `npm run test:integration` |                           225 |
+| Browser journeys in installed Chrome and Edge, including the studio with real model inference | `npm run test:e2e`         |                            98 |
+|                                                                                               | **Total**                  |                       **813** |
 
-| Layer                   | What it covers                                                                                                                                                   | Command                    |
-| ----------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------- |
-| Unit and property tests | Engine rules, contracts, gestures, editor state and services, with fast-check over every legal genome                                                            | `npm test`                 |
-| Integration tests       | Real PostgreSQL: ordering, transactions, crash and retry, raid races, studio flows, privacy and replay                                                           | `npm run test:integration` |
-| Browser journeys        | Installed Chrome and Edge against the real service and security headers: studio with real model inference, console, overlay, lineage, sandbox, axe WCAG 2.1 A/AA | `npm run test:e2e`         |
-| Installed smoke tools   | Inside the production image: a round, raids, mechanics, a studio break and the judge API journey                                                                 | `npm run smoke:*`          |
-| Installed judge journey | A real browser drives the installed app end to end with no intercepted requests                                                                                  | `npm run test:judge`       |
-| Policy simulator        | Six policies across six habitats on a held-out split, with reproducible results                                                                                  | `npm run simulate`         |
-| Restore rehearsal       | Real dump, separate-database restore, reapplied erasures and deterministic replay                                                                                | `npm run test:restore`     |
-| Release load            | Signed HTTP intake, 300 live sockets, simultaneous studios and a worker killed after commit, with strict latency and durability gates                            | `npm run test:load`        |
+CI runs on every push to `main`, and it checks more than tests:
 
-CI runs four jobs: lint, formatting, notices, types, unit, build, integration and simulator checks on Linux; the browser suite on Windows; a Compose smoke test that starts the stack exactly as an evaluator would; and two independent release-load trials. Measured results and their limits are recorded in the [Phase 9](docs/evidence/phase9.md) and [Phase 10](docs/evidence/phase10.md) evidence.
+- **Static checks.** ESLint with type-aware rules, Prettier formatting, TypeScript across every workspace, and a dependency-notice check that fails on any unlisted third-party license.
+- **Fast-check properties** over every legal genome: the gene budget is conserved, cosmetic designs never change fitness, no mutation slot is committed twice, and out-of-bounds or executable blueprint content is rejected.
+- **Hand tracking in real browsers.** The studio journeys run the actual MediaPipe model in a worker under the app's security headers, show that hand and pointer input produce identical blueprints, and prove that tracking loss never submits and a denied camera still leaves a working editor.
+- **Accessibility.** axe-core WCAG 2.1 A and AA checks on every browser journey.
+- **A Compose smoke test** starts the stack exactly as an evaluator would.
+- **Two independent release-load trials**: signed HTTP intake, 300 live sockets, simultaneous studios and a worker killed after commit, with strict latency and durability gates.
 
-## Determinism and replay
+<details>
+<summary><b>More verification tools</b></summary>
 
-Accepted records are the source of truth. Each channel's records form a checksum chain, and cross-channel dependencies such as raids record the destination positions they observed.
+| Tool                    | What it covers                                                                    | Command                |
+| :---------------------- | :-------------------------------------------------------------------------------- | :--------------------- |
+| Installed smoke tools   | Inside the production image: a round, raids, mechanics, a studio break, judge API | `npm run smoke:*`      |
+| Installed judge journey | A real browser drives the installed app end to end with no intercepted requests   | `npm run test:judge`   |
+| Policy simulator        | Six policies across six habitats on a held-out split, with reproducible results   | `npm run simulate`     |
+| Restore rehearsal       | Real dump, separate-database restore, reapplied erasures and deterministic replay | `npm run test:restore` |
+| Release load            | The load gates described above                                                    | `npm run test:load`    |
 
-```sh
-npm run replay -- export WORLD_ID bundle.json   # every channel's accepted records
-npm run replay -- verify bundle.json            # checksums, rules and dependency bounds
-npm run replay -- run bundle.json               # rebuild in a new, isolated replay world
-```
+Measured results and their limits are recorded in the [Phase 9](docs/evidence/phase9.md) and [Phase 10](docs/evidence/phase10.md) evidence.
 
-`run` rebuilds the world in channel order, waits for raid dependencies, prints each channel's resident, committed design and studio outcomes, and compares the result with the source world channel by channel, exiting with code 2 on any difference. Replay uses accepted records only: no camera data, landmarks or provider calls.
+</details>
 
-## Security and privacy
+## Tech stack
 
-- **Webhooks** are verified with HMAC over the raw request bytes, deduplicated by receipt and reconciled against Twitch's subscription state.
-- **Owner controls** use Twitch sign-in sessions with `__Host-` cookies, an exact `Origin` check, CSRF tokens, idempotency keys and channel version checks.
-- **Grants and secrets** are encrypted at rest with independent keys. Changing `ACTOR_HASH_KEY` refuses startup rather than silently changing vote identity.
-- **Hardening** includes security headers with a strict Content Security Policy, rate limiting and bounded input everywhere.
-- **Camera privacy.** Video and hand landmarks stay in the browser, the microphone is never requested, and camera tracks stop when the studio closes.
-- **Anonymous analytics.** Only allow-listed events with counts and kinds are recorded: no viewer identities, chat text, video or landmarks. Live and sandbox populations are kept separate.
-- **Erasure.** Artists can choose **Forget my artist identity**. Accepted records hold opaque credit tokens, so replay survives erasure. Retention runs every 30 seconds, and a separate erasure ledger keeps restores honest. See [privacy operations](docs/privacy-operations.md).
-
-## Twitch integration
-
-Live integration is off by default, so local evaluation needs no secrets. When enabled, Ripple supports broadcaster and operator-bot OAuth with encrypted grants and refresh leases, signed EventSub intake with subscription reconciliation, chat voting and activity with Shared Chat deduplication, stream online and offline recovery, and bounded bot output through a committed outbox. Raids arrive as signed `channel.raid` notifications.
-
-Open `/controller` on a configured HTTPS deployment to connect a channel. The [Twitch setup guide](docs/twitch-setup.md) lists the exact redirect URLs, scopes, operator bot authorization and the live acceptance checklist. For a rehearsal on a local machine behind an HTTPS tunnel:
-
-```sh
-docker compose -f compose.yaml -f compose.live.yaml up --build -d
-```
+| Layer           | Built with                                                                                                          |
+| :-------------- | :------------------------------------------------------------------------------------------------------------------ |
+| **Language**    | TypeScript 6 in strict mode; sources run directly on Node.js 24 type stripping during development                   |
+| **Server**      | Fastify 5 with `@fastify/websocket`, `@fastify/helmet`, `@fastify/rate-limit` and `@fastify/static`; `pg`; `ws`     |
+| **Data**        | PostgreSQL 18; Drizzle ORM schema with versioned SQL migrations applied under an advisory lock                      |
+| **Contracts**   | Zod 4 schemas shared by the server and the browser                                                                  |
+| **Game engine** | Pure TypeScript with `@noble/hashes`, canonical JSON and seeded xoshiro128\*\*                                      |
+| **Web**         | React 19, Vite 8 and CSS Modules; self-hosted Fraunces, Bricolage Grotesque and JetBrains Mono                      |
+| **Vision**      | MediaPipe Tasks Vision 1.1.1 in a module worker, with a pinned, SHA-256-verified hand landmarker model              |
+| **Testing**     | Vitest 5 with fast-check property tests, real-PostgreSQL integration tests, Playwright in Chrome and Edge, axe-core |
+| **Quality**     | ESLint 10 with type-aware rules, Prettier 3, dependency-notice checks                                               |
+| **Delivery**    | Multi-stage Docker image pinned by digest, Docker Compose, GitHub Actions and Railway                               |
 
 ## Deployment and operations
 
 The recommended first host is **Railway**: one always-on Docker service and a private PostgreSQL 18 service in the same region. [`railway.json`](railway.json) runs migrations as a pre-deploy step, gates rollout on `/health/ready` and drains connections for 20 seconds. Keep app sleep disabled: webhooks, sockets and round deadlines need a running process.
 
 | Endpoint        | Purpose                                                 |
-| --------------- | ------------------------------------------------------- |
+| :-------------- | :------------------------------------------------------ |
 | `/health/live`  | Liveness: the process is serving                        |
 | `/health/ready` | Readiness: the database is reachable and migrations ran |
 
@@ -332,12 +560,13 @@ The recommended first host is **Railway**: one always-on Docker service and a pr
 - [Operations runbook](docs/operations.md): alerts, incident recovery, backup and restore, deploy and rollback.
 - `npm run status` prints private backlog, deadline, delivery and database diagnostics.
 
-## Command-line tools
+<details>
+<summary><b>Command-line tools</b></summary>
 
 All tools run from source with `npm run <script>`, and the production image ships them under `apps/server/dist/cli/`.
 
 | Script                               | Purpose                                                                                              |
-| ------------------------------------ | ---------------------------------------------------------------------------------------------------- |
+| :----------------------------------- | :--------------------------------------------------------------------------------------------------- |
 | `sandbox`                            | Create and drive isolated synthetic worlds: votes, activity, raids, studio breaks, pauses and claims |
 | `smoke:game` / `raids` / `mechanics` | Verify a synthetic round, a two-channel raid, or earned mechanics against a running app              |
 | `smoke:studio` / `smoke:judge`       | Verify a studio break through hatch and raid, or the keyless judge API journey                       |
@@ -350,9 +579,6 @@ All tools run from source with `npm run <script>`, and the production image ship
 | `test:load` / `test:restore`         | Release load test, and the dump and restore rehearsal                                                |
 | `release:package`                    | Package the exact validated source with a SHA-256 manifest                                           |
 
-<details>
-<summary><strong>Synthetic world CLI</strong></summary>
-
 `npm run sandbox -- create` creates and seeds a labelled synthetic world that expires after 24 hours, and returns its IDs, a private owner capability, a read capability and a snapshot. Set `RIPPLE_SANDBOX_CAPABILITY` to the owner capability, then use the returned IDs:
 
 ```sh
@@ -364,7 +590,7 @@ npm run sandbox -- status WORLD_ID CHANNEL_ID
 ```
 
 | Commands                                                                         | Purpose                                                              |
-| -------------------------------------------------------------------------------- | -------------------------------------------------------------------- |
+| :------------------------------------------------------------------------------- | :------------------------------------------------------------------- |
 | `vote`, `activity`, `advance`, `status`                                          | Drive ballots and observations on the shared synthetic clock         |
 | `pause`, `resume`, `offline`, `online`, `input-outage`, `recover`                | Exercise pauses, stream outages and interrupted-observation recovery |
 | `peer`, `seed`, `policy`, `prepare`, `raid`, `admit`, `decline`                  | Add up to eight channels, raid between them and manage admission     |
@@ -377,13 +603,11 @@ Each `advance` accepts 1–300,000 milliseconds and returns an operation UUID; p
 
 </details>
 
-## HTTP and real-time API
-
 <details>
-<summary><strong>Endpoint overview</strong></summary>
+<summary><b>HTTP and real-time API</b></summary>
 
 | Area              | Endpoints                                                                                                                                                           |
-| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| :---------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | Health            | `GET /health/live`, `GET /health/ready`                                                                                                                             |
 | Scoped reads      | `GET /api/worlds/:id/snapshot`, `GET /api/lineages`, `GET /api/lineages/:id`, `GET /api/organisms/:id/passport`, `GET /api/rounds/:id/explanation`                  |
 | Real time         | `POST /api/overlay/exchange` for a single-use 30-second ticket, then the `/api/live` WebSocket                                                                      |
@@ -399,39 +623,75 @@ Scoped reads take `worldId` and `channelId` query parameters and `Authorization:
 
 ## Repository layout
 
+Ripple is an npm workspaces monorepo. The **server** (`apps/server`) owns every write: it takes in Twitch events and browser commands, orders them per channel and asks the **engine** (`packages/engine`) what happens next. The **web app** (`apps/web`) renders every screen, including the studio, where hand tracking runs locally. Both sides share the **contracts** (`packages/contracts`), and the **database** package (`packages/database`) owns the schema and migrations.
+
 ```text
-apps/
-  server/        Fastify service: HTTP API, Twitch, ordered worker, gateways, simulator, CLIs
-  web/           React + Vite: landing, console, overlay, studio, sandbox, lineage, bridge
-packages/
-  engine/        Pure, deterministic game rules
-  contracts/     Zod schemas shared by the server and the browser
-  database/      Drizzle schema, SQL migrations and the migration runner
-tests/           Browser journeys, installed-judge check, restore rehearsal and release packager
-docs/            Specification, guides, runbooks, measured evidence and demo
+Ripple/
+├── apps/
+│   ├── server/src/
+│   │   ├── game/           ordered worker, rounds, raids, studio, gateways, replay, metrics
+│   │   ├── twitch/         OAuth grants, EventSub intake, chat, bot output, celebrations
+│   │   ├── routes/         health, scoped reads, sandbox, public studio and analytics
+│   │   ├── privacy/        artist credits, erasure ledger, retention maintenance
+│   │   ├── simulator/      policy, habitat, adversarial and studio scenarios
+│   │   ├── release/        load-test server, crash worker and studio fixture
+│   │   └── cli/            sandbox, smoke, replay, simulate, metrics, privacy, status, load
+│   └── web/src/
+│       ├── studio/         Cocoon Studio: hand worker, camera, gestures, editor, shell renderer
+│       ├── landing/        the scroll-told landing page
+│       ├── controller/     the broadcaster console
+│       ├── overlay/        the transparent OBS overlay
+│       ├── bridge/         the OBS scene bridge
+│       ├── sandbox/        the keyless judge expedition
+│       ├── lineage/        lineage map and passports
+│       ├── creature/       creature rendering shared by every screen
+│       └── realtime/       snapshot-first WebSocket client
+├── packages/
+│   ├── engine/             pure, deterministic rules: genome, ballots, habitat, raids, studio
+│   ├── contracts/          Zod schemas shared by the server and the browser
+│   └── database/           Drizzle schema, SQL migrations and the migration runner
+├── tests/                  browser journeys, installed-judge check, restore rehearsal, packager
+├── docs/                   specification, guides, runbooks, measured evidence and demo
+├── .github/workflows/      the CI pipeline
+├── Dockerfile              multi-stage production image
+├── compose.yaml            PostgreSQL, migrations and the app for local evaluation
+├── compose.live.yaml       overrides for a live Twitch rehearsal behind HTTPS
+└── railway.json            Railway deploy, pre-deploy migrations and health gate
 ```
 
 ## Project status
 
 | Area                                               | Implemented and verified in CI | Live acceptance                                       |
-| -------------------------------------------------- | ------------------------------ | ----------------------------------------------------- |
+| :------------------------------------------------- | :----------------------------- | :---------------------------------------------------- |
 | Game engine, persistence, ordered worker, gateways | Yes                            | Not applicable                                        |
 | Twitch live loop: OAuth, EventSub, chat, bot       | Yes, with provider fixtures    | Pending: needs broadcaster and bot accounts           |
 | Raids, welcome, shelter, contests, lineage         | Yes                            | Pending: needs a real two-channel raid                |
 | Traces, dormant mutations, ancestor trials         | Yes                            | Pending with the live loop                            |
-| Cocoon Studio and OBS bridge                       | Yes                            | Pending: two-channel studio rehearsal and OBS capture |
+| Cocoon Studio, hand tracking and OBS bridge        | Yes, in Chrome and Edge        | Pending: two-channel studio rehearsal and OBS capture |
 | OBS overlay                                        | Yes, in Chrome and Edge        | Pending: real OBS readability check                   |
 | Judge sandbox, replay, simulator, analytics        | Yes                            | Not applicable                                        |
 | Load, restore, retention and runbooks              | Yes, measured synthetically    | Pending: hosted capacity and backup recovery          |
 
 Synthetic and sandbox results never count as live acceptance. A [labelled synthetic demo](docs/demo/README.md) records the installed app through the whole loop; authentic Twitch and OBS footage follows live acceptance. The remaining operator steps are listed in the [release handoff](docs/submission.md#deferred-acceptance-and-operator-handoff).
 
+## Limits, stated up front
+
+| Limit                                                  | Why it is there                                                                                                                                      |
+| :----------------------------------------------------- | :--------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Live Twitch, OBS and hosted acceptance is **pending**. | It needs authorized broadcaster and bot accounts and a public HTTPS URL. Sandbox and synthetic results never stand in for it.                        |
+| Hand tracking runs on the **viewer's CPU**.            | Keeping inference in the browser keeps video private and needs no server GPU, so responsiveness depends on the device. Other inputs are equal.       |
+| A design is **one shell with one marking layer**.      | A bounded, declarative blueprint keeps every creature readable on stream and safe to render. There are no free-form meshes or uploaded images.       |
+| Shape is **expression, not power**.                    | The gene trade-off is fixed by the session's legal template, so a bigger or better-drawn shell never wins fitness.                                   |
+| Coming back early **cancels an open studio**.          | Creation belongs to the break. Set the creation window to match a typical break; returning during the vote can finish or cancel, as configured.      |
+| Payments and viewer counts **buy nothing**.            | Cheers, subscriptions and hype trains only show a thank-you. The payer and the amount are never read or stored.                                      |
+| The recorded demo is **synthetic**.                    | It shows the installed app with synthetic events and accelerated time, labelled on screen. Authentic Twitch and OBS footage follows live acceptance. |
+
 ## Documentation
 
 | Document                                             | Contents                                                        |
-| ---------------------------------------------------- | --------------------------------------------------------------- |
+| :--------------------------------------------------- | :-------------------------------------------------------------- |
 | [Product specification](docs/prd.md)                 | Game model, rules, architecture, data model, API and acceptance |
-| [Cocoon Studio specification](docs/cocoon-studio.md) | The studio addendum: flows, rules, privacy and verification     |
+| [Cocoon Studio specification](docs/cocoon-studio.md) | The studio addendum: flows, gestures, rules, privacy and tests  |
 | [Delivery plan](docs/plan.md)                        | Phased implementation plan and its exit checks                  |
 | [Judge guide](docs/judge-guide.md)                   | The three-minute sandbox expedition and replay tools            |
 | [Twitch setup](docs/twitch-setup.md)                 | Accounts, redirect URLs, secrets and live acceptance checklists |
@@ -443,8 +703,17 @@ Synthetic and sandbox results never count as live acceptance. A [labelled synthe
 | [Phase 10 evidence](docs/evidence/phase10.md)        | Load, restore, client performance and hardening results         |
 | [Synthetic demo](docs/demo/README.md)                | What the recorded demonstration shows, and how to reproduce it  |
 
+## Author
+
+**Ishaan Sharma** · [github.com/ishaans04](https://github.com/ishaans04) · [sharmaishaaan04@gmail.com](mailto:sharmaishaaan04@gmail.com)
+
 ## Acknowledgements and license
 
 Hand tracking uses Google's [MediaPipe](https://ai.google.dev/edge/mediapipe) Tasks Vision runtime and hand landmarker model under the Apache-2.0 license, served locally from pinned, checksum-verified files. Typefaces are self-hosted from Fontsource. Full attributions and license texts are in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
 
 This repository does not yet include a license file. Third-party components keep their own licenses.
+
+<div align="center">
+<br>
+<sub><b>Ripple</b> · Turn the BRB screen into the best part of the stream. · <a href="#-ripple">Back to top ↑</a></sub>
+</div>
