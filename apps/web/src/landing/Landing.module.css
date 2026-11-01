@@ -275,6 +275,7 @@
 }
 .bob {
   position: absolute;
+  will-change: transform;
   inset: 12%;
   animation: bob 7s var(--ease-in-out) infinite;
 }
@@ -289,6 +290,7 @@
 }
 .orbit {
   position: absolute;
+  will-change: transform;
   inset: 0;
   border-radius: 50%;
   border: 1px dashed var(--color-line);
@@ -308,6 +310,7 @@
 }
 .wordmark {
   align-self: end;
+  will-change: transform;
   display: flex;
   font-family: var(--font-display);
   font-weight: 330;
@@ -408,6 +411,7 @@
 .marqueeTrack {
   display: flex;
   width: max-content;
+  will-change: transform;
   animation: marquee 38s linear infinite;
 }
 .marqueeTrack > span {
@@ -765,6 +769,7 @@
 }
 .stageDish::before {
   content: '';
+  will-change: transform;
   position: absolute;
   inset: 3%;
   border-radius: 50%;
@@ -869,6 +874,14 @@
 }
 
 /* ---------- Raids ---------- */
+.raids,
+.surfaces,
+.facts,
+.finale {
+  /* Off-screen sections skip layout and paint until they approach the viewport. */
+  content-visibility: auto;
+  contain-intrinsic-size: auto 900px;
+}
 .raids {
   padding: clamp(7rem, 14vw, 12rem) var(--gutter);
   display: grid;
