@@ -8,23 +8,13 @@
 And when the streamer steps away, the break becomes a studio:<br>
 viewers mold the creature's next shell with their **real hand movements**, tracked live through an ordinary webcam.
 
+[![Codex × TwitchCon Hackathon 2026](https://img.shields.io/badge/Codex_%C3%97_TwitchCon-Hackathon_2026-111111?style=for-the-badge)](https://twitchcon-codex.devpost.com/)
 [![Cocoon Studio: sculpt with your hands](https://img.shields.io/badge/Cocoon_Studio-sculpt_with_your_hands-0F8B7E?style=for-the-badge&logo=mediapipe&logoColor=white)](#cocoon-studio-sculpt-it-with-your-hands)
 [![Built for Twitch](https://img.shields.io/badge/Built_for-Twitch_EventSub-9146FF?style=for-the-badge&logo=twitch&logoColor=white)](#twitch-integration)
-[![Try it: three-minute sandbox](https://img.shields.io/badge/Try_it-3--minute_sandbox-C98A12?style=for-the-badge&logo=docker&logoColor=white)](#run-it-locally)
 
-[![CI](https://img.shields.io/github/actions/workflow/status/ishaans04/Ripple/ci.yml?branch=main&style=flat-square&logo=githubactions&logoColor=white&label=CI)](https://github.com/ishaans04/Ripple/actions/workflows/ci.yml)
-[![Tests](https://img.shields.io/badge/tests-813_passing-2E7D4F?style=flat-square&logo=vitest&logoColor=white)](#testing-and-quality)
-[![Status: release candidate](https://img.shields.io/badge/status-release_candidate-d4f25a?style=flat-square)](#project-status)
-[![Live Twitch acceptance: pending](https://img.shields.io/badge/live_Twitch_acceptance-pending-9146FF?style=flat-square&logo=twitch&logoColor=white)](#project-status)
-[![Replay: deterministic](https://img.shields.io/badge/replay-deterministic-0F8B7E?style=flat-square)](#determinism-and-replay)
-[![Camera: never leaves the browser](https://img.shields.io/badge/camera-never_leaves_the_browser-4A4F57?style=flat-square)](#fair-and-private-by-design)
-
-[![Node.js](https://img.shields.io/badge/Node.js-24_LTS-5FA04E?style=flat-square&logo=nodedotjs&logoColor=white)](https://nodejs.org/)
+[![Built with OpenAI Codex](https://img.shields.io/badge/built_with-OpenAI_Codex-111111?style=flat-square)](#how-codex-was-used)
 [![TypeScript](https://img.shields.io/badge/TypeScript-6_strict-3178C6?style=flat-square&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
-[![React](https://img.shields.io/badge/React-19-61DAFB?style=flat-square&logo=react&logoColor=black)](https://react.dev/)
-[![Vite](https://img.shields.io/badge/Vite-8-646CFF?style=flat-square&logo=vite&logoColor=white)](https://vite.dev/)
 [![Fastify](https://img.shields.io/badge/Fastify-5-000000?style=flat-square&logo=fastify&logoColor=white)](https://fastify.dev/)
-[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-18-4169E1?style=flat-square&logo=postgresql&logoColor=white)](https://www.postgresql.org/)
 [![Drizzle ORM](https://img.shields.io/badge/Drizzle_ORM-0.45-C5F74F?style=flat-square&logo=drizzle&logoColor=black)](https://orm.drizzle.team/)
 [![Zod](https://img.shields.io/badge/Zod-4-3E67B1?style=flat-square&logo=zod&logoColor=white)](https://zod.dev/)
 [![MediaPipe](https://img.shields.io/badge/MediaPipe-Hand_Landmarker-0097A7?style=flat-square&logo=mediapipe&logoColor=white)](https://ai.google.dev/edge/mediapipe)
@@ -32,6 +22,7 @@ viewers mold the creature's next shell with their **real hand movements**, track
 [![Playwright](https://img.shields.io/badge/Playwright-Chrome_%2B_Edge-2EAD33?style=flat-square)](https://playwright.dev/)
 [![Vitest](https://img.shields.io/badge/Vitest-5-6E9F18?style=flat-square&logo=vitest&logoColor=white)](https://vitest.dev/)
 
+**[Hackathon entry](#built-for-the-codex--twitchcon-hackathon)** &nbsp;·&nbsp;
 **[Run it locally](#run-it-locally)** &nbsp;·&nbsp;
 **[Cocoon Studio](#cocoon-studio-sculpt-it-with-your-hands)** &nbsp;·&nbsp;
 **[How it plays](#how-it-plays)** &nbsp;·&nbsp;
@@ -45,7 +36,7 @@ viewers mold the creature's next shell with their **real hand movements**, track
 </div>
 
 > [!NOTE]
-> **Release candidate.** Every implementation phase is complete and verified in CI. Real Twitch, OBS and hosted acceptance has not been performed yet, because it needs authorized broadcaster and bot accounts and a public HTTPS URL. Everything you can run locally is real application code against PostgreSQL, and synthetic worlds are always labelled. See [Project status](#project-status).
+> **Built for the [Codex × TwitchCon Hackathon](https://twitchcon-codex.devpost.com/)** (23 October to 2 November 2026): an interactive experience for streamers and their communities that connects to Twitch through chat, EventSub, the Twitch API and an OBS overlay, built with OpenAI Codex. Judges can run the whole loop locally in about three minutes with no Twitch account, credentials or camera; see [the hackathon section](#built-for-the-codex--twitchcon-hackathon).
 
 ## At a glance
 
@@ -99,6 +90,40 @@ No OBS bridge? The broadcaster can open the studio with one click from the conso
 | The streamer stays in control                           |          ✓          | ✓ approve the winner, keep the current shell, or turn on auto-approval |
 | Anyone can join, with or without a camera               |          ✓          |  ✓ pointer, touch and keyboard get the same choices and the same vote  |
 | It starts on its own                                    |          ✓          |           ✓ from a configured OBS break scene, or one click            |
+
+## Built for the Codex × TwitchCon Hackathon
+
+> **Codex × TwitchCon Hackathon** · OpenAI × Twitch · 23 October to 2 November 2026<br>
+> [Hackathon page](https://twitchcon-codex.devpost.com/) · [Official rules](https://twitchcon-codex.devpost.com/rules)
+
+The hackathon asks developers to build, with OpenAI Codex, an interactive experience for streamers and their communities that connects to Twitch. Ripple's answer starts from the least interactive part of any stream, the break, and turns it into the moment the whole community creates something together.
+
+| The hackathon asks for                                | How Ripple answers                                                                                                                                                                |
+| :---------------------------------------------------- | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Built for streamers and their community on Twitch** | Chat evolves a shared creature, the community sculpts its shell during breaks, and raids carry that creation into other channels with credit to where it came from.               |
+| **An interactive experience that connects to Twitch** | Chat voting with `!ripple`, chat activity as the habitat, signed EventSub intake for raids and stream state, Twitch sign-in, bot messages and a transparent OBS overlay.          |
+| **Built with OpenAI Codex**                           | Developed with Codex as the coding agent, with a recorded principal session and measured before-and-after evidence. See [How Codex was used](#how-codex-was-used).                |
+| **Source, assets and instructions to run it**         | One command, `docker compose up --build`, starts everything. A keyless sandbox covers the whole loop in about three minutes, and the [judge guide](docs/judge-guide.md) walks it. |
+
+| Judging criterion                                                                      | Where Ripple stands                                                                                                                                                                                         |
+| :------------------------------------------------------------------------------------- | :---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Potential impact**: how useful or entertaining is it for streamers and communities   | Breaks stop being dead air. Every viewer gets a voice, a vote and a way to create, raids gain a story, and no payment or viewer count ever buys game power.                                                 |
+| **Technological implementation**: how well is it built, and how well does it use Codex | A pure, deterministic engine with whole-world replay, durable ordered processing, in-browser hand tracking with no video upload, and 813 tests across unit, real-PostgreSQL integration and browser suites. |
+| **Design**: is it easy to use and fun to watch                                         | Three cards and one chat command to vote, a creature that visibly changes, a 1920×1080 overlay readable on stream, sculpting with your bare hands, and accessibility checks on every browser journey.       |
+
+### How Codex was used
+
+Ripple was built with OpenAI Codex as the coding agent: implementing features, investigating failures, and reproducing and fixing defects against real PostgreSQL with measured before-and-after results. The principal Codex session is `01a18d83-decb-7e01-8cbe-e6c69963d4ab`.
+
+One recorded iteration from the [Phase 9 evidence](docs/evidence/phase9.md): the judge sandbox returned HTTP 500 on its next step because PostgreSQL rejected an aggregate over the world clock. After that fix, two further defects were reproduced against the earlier source revision and fixed with stable synthetic account keys and an advisory transaction lock:
+
+| Observation                                                    | Before          | After                           |
+| :------------------------------------------------------------- | :-------------- | :------------------------------ |
+| The same four synthetic accounts click different choices twice | 8 votes counted | 4; each first valid vote stands |
+| Two concurrent creations compete for one remaining slot        | Both enter      | One enters; one is rejected     |
+| Regression checks                                              | 0 pass, 2 fail  | 2 pass, 0 fail                  |
+
+The [machine-readable evidence](docs/evidence/phase9-repair.json) keeps the commands, environment, source revisions, assertions and failures. Ripple itself needs neither Codex nor an OpenAI API key to run.
 
 ## Cocoon Studio: sculpt it with your hands
 
@@ -659,32 +684,17 @@ Ripple/
 └── railway.json            Railway deploy, pre-deploy migrations and health gate
 ```
 
-## Project status
-
-| Area                                               | Implemented and verified in CI | Live acceptance                                       |
-| :------------------------------------------------- | :----------------------------- | :---------------------------------------------------- |
-| Game engine, persistence, ordered worker, gateways | Yes                            | Not applicable                                        |
-| Twitch live loop: OAuth, EventSub, chat, bot       | Yes, with provider fixtures    | Pending: needs broadcaster and bot accounts           |
-| Raids, welcome, shelter, contests, lineage         | Yes                            | Pending: needs a real two-channel raid                |
-| Traces, dormant mutations, ancestor trials         | Yes                            | Pending with the live loop                            |
-| Cocoon Studio, hand tracking and OBS bridge        | Yes, in Chrome and Edge        | Pending: two-channel studio rehearsal and OBS capture |
-| OBS overlay                                        | Yes, in Chrome and Edge        | Pending: real OBS readability check                   |
-| Judge sandbox, replay, simulator, analytics        | Yes                            | Not applicable                                        |
-| Load, restore, retention and runbooks              | Yes, measured synthetically    | Pending: hosted capacity and backup recovery          |
-
-Synthetic and sandbox results never count as live acceptance. A [labelled synthetic demo](docs/demo/README.md) records the installed app through the whole loop; authentic Twitch and OBS footage follows live acceptance. The remaining operator steps are listed in the [release handoff](docs/submission.md#deferred-acceptance-and-operator-handoff).
-
 ## Limits, stated up front
 
-| Limit                                                  | Why it is there                                                                                                                                      |
-| :----------------------------------------------------- | :--------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Live Twitch, OBS and hosted acceptance is **pending**. | It needs authorized broadcaster and bot accounts and a public HTTPS URL. Sandbox and synthetic results never stand in for it.                        |
-| Hand tracking runs on the **viewer's CPU**.            | Keeping inference in the browser keeps video private and needs no server GPU, so responsiveness depends on the device. Other inputs are equal.       |
-| A design is **one shell with one marking layer**.      | A bounded, declarative blueprint keeps every creature readable on stream and safe to render. There are no free-form meshes or uploaded images.       |
-| Shape is **expression, not power**.                    | The gene trade-off is fixed by the session's legal template, so a bigger or better-drawn shell never wins fitness.                                   |
-| Coming back early **cancels an open studio**.          | Creation belongs to the break. Set the creation window to match a typical break; returning during the vote can finish or cancel, as configured.      |
-| Payments and viewer counts **buy nothing**.            | Cheers, subscriptions and hype trains only show a thank-you. The payer and the amount are never read or stored.                                      |
-| The recorded demo is **synthetic**.                    | It shows the installed app with synthetic events and accelerated time, labelled on screen. Authentic Twitch and OBS footage follows live acceptance. |
+| Limit                                                      | Why it is there                                                                                                                                      |
+| :--------------------------------------------------------- | :--------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Live Twitch, OBS and hosted acceptance is **pending**.     | It needs authorized broadcaster and bot accounts and a public HTTPS URL. Sandbox and synthetic results never stand in for it.                        |
+| Hand tracking runs on the **viewer's CPU**.                | Keeping inference in the browser keeps video private and needs no server GPU, so responsiveness depends on the device. Other inputs are equal.       |
+| A design is **one shell with one marking layer**.          | A bounded, declarative blueprint keeps every creature readable on stream and safe to render. There are no free-form meshes or uploaded images.       |
+| Shape is **expression, not power**.                        | The gene trade-off is fixed by the session's legal template, so a bigger or better-drawn shell never wins fitness.                                   |
+| Coming back early **cancels an open studio**.              | Creation belongs to the break. Set the creation window to match a typical break; returning during the vote can finish or cancel, as configured.      |
+| Payments and viewer counts **buy nothing**.                | Cheers, subscriptions and hype trains only show a thank-you. The payer and the amount are never read or stored.                                      |
+| The [recorded demo](docs/demo/README.md) is **synthetic**. | It shows the installed app with synthetic events and accelerated time, labelled on screen. Authentic Twitch and OBS footage follows live acceptance. |
 
 ## Documentation
 
