@@ -10,6 +10,10 @@ Phase 4 implements the adapter and controller. Real Twitch and hosted acceptance
 4. Set `DATABASE_URL` to the private database URL, `HOST=0.0.0.0`, `SHUTDOWN_GRACE_MS=15000`, `RULESET_VERSION=candidate-1` and the application credentials. Generate **three independent** 32-byte base64 values for `TOKEN_ENCRYPTION_KEY`, `SESSION_SECRET` and `ACTOR_HASH_KEY`. Generate a separate 64-character hexadecimal `TWITCH_EVENTSUB_SECRET` and an independent `OPERATOR_SECRET` of at least 32 characters. Generate secrets locally with Node's `crypto.randomBytes`; never put them in chat, source control, URL parameters or screenshots.
 5. Set `ENABLE_LIVE_TWITCH=true` and deploy. Incomplete, mismatched or insecure configuration fails startup without printing secret values. `/health/ready` confirms the service and migrations, not Twitch readiness. The default Compose file deliberately does not forward live secrets from `.env` into containers.
 
+### Live mode on a local machine
+
+For rehearsal before a hosted deployment, `compose.live.yaml` runs the same image in live mode behind an HTTPS tunnel that forwards to `http://localhost:3000` (for example a free ngrok static domain). Put the step 3–4 values in the gitignored `.env`, with `PUBLIC_BASE_URL` set to the tunnel origin, then run `docker compose -f compose.yaml -f compose.live.yaml up --build -d`. Compose stops before starting if any required value is missing. The tunnel domain must stay the same between runs, because Twitch matches the redirect URI exactly and subscriptions point at its webhook URL. Open `/controller` through the tunnel origin, not `localhost`, because owner sessions use `__Host-` cookies and an exact Origin check. A tunnel on a personal machine is not hosted acceptance.
+
 ## Authorize the bot and broadcasters
 
 Open `/controller` on the HTTPS deployment. Under **Operator bot setup**, enter the deployment's operator secret and select **Authorize bot account**. Sign into the intended bot account at Twitch. This separate flow requests `user:read:chat`, `user:write:chat` and `user:bot`. It issues no broadcaster-control session. The secret is sent in a same-origin request body, never a URL.

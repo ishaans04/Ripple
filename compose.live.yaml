@@ -1,0 +1,23 @@
+# Live Twitch mode on a local machine behind an HTTPS tunnel (for example a free ngrok static domain).
+#   docker compose -f compose.yaml -f compose.live.yaml up --build -d
+# Values come from the gitignored .env through Compose interpolation; nothing secret is stored here
+# or baked into the image (.env is also in .dockerignore). Open /controller through PUBLIC_BASE_URL,
+# not localhost: owner sessions use __Host- cookies and an exact Origin check.
+
+services:
+  app:
+    environment:
+      ENABLE_LIVE_TWITCH: 'true'
+      ENABLE_COCOON_STUDIO: ${ENABLE_COCOON_STUDIO:-true}
+      ENABLE_CELEBRATIONS: ${ENABLE_CELEBRATIONS:-false}
+      RULESET_VERSION: ${RULESET_VERSION:-candidate-1}
+      PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:?set PUBLIC_BASE_URL in .env}
+      TWITCH_REDIRECT_URI: ${TWITCH_REDIRECT_URI:?set TWITCH_REDIRECT_URI in .env}
+      TWITCH_CLIENT_ID: ${TWITCH_CLIENT_ID:?set TWITCH_CLIENT_ID in .env}
+      TWITCH_CLIENT_SECRET: ${TWITCH_CLIENT_SECRET:?set TWITCH_CLIENT_SECRET in .env}
+      TWITCH_EVENTSUB_SECRET: ${TWITCH_EVENTSUB_SECRET:?set TWITCH_EVENTSUB_SECRET in .env}
+      TOKEN_ENCRYPTION_KEY: ${TOKEN_ENCRYPTION_KEY:?set TOKEN_ENCRYPTION_KEY in .env}
+      SESSION_SECRET: ${SESSION_SECRET:?set SESSION_SECRET in .env}
+      ACTOR_HASH_KEY: ${ACTOR_HASH_KEY:?set ACTOR_HASH_KEY in .env}
+      OPERATOR_SECRET: ${OPERATOR_SECRET:?set OPERATOR_SECRET in .env}
+      SHUTDOWN_GRACE_MS: ${SHUTDOWN_GRACE_MS:-15000}
