@@ -20,6 +20,7 @@ const RING_SPEED = 0.16; // px per ms
 const RING_LIFE = 4200; // ms
 const MAX_RINGS = 22;
 const WAVE_WIDTH = 26;
+const LEVELS = 6;
 
 /**
  * Decorative pond: the pointer drops ripples that push drifting plankton outward. All work
@@ -44,9 +45,10 @@ export function Pond() {
       visible = true,
       lastDrop = 0,
       lastPointer = { x: -999, y: -999, at: 0 };
+    const buckets: number[][] = Array.from({ length: LEVELS * 2 }, () => []);
 
     function seed() {
-      const ratio = Math.min(window.devicePixelRatio || 1, 1.75);
+      const ratio = Math.min(window.devicePixelRatio || 1, 1.5);
       const box = canvas.getBoundingClientRect();
       width = box.width;
       height = box.height;
@@ -90,6 +92,9 @@ export function Pond() {
         }
       }
       const t = now / 1000;
+      // Motes are grouped into a few brightness buckets so each frame sets a handful of fill
+      // styles and issues one path per bucket, instead of restyling every mote.
+      for (const bucket of buckets) bucket.length = 0;
       for (const mote of motes) {
         let x = mote.x + Math.sin(t * 0.3 + mote.phase) * 14,
           y = mote.y + Math.cos(t * 0.23 + mote.phase) * 10,
@@ -109,11 +114,23 @@ export function Pond() {
           y += (dy / distance) * wave * 18;
           lift = Math.max(lift, wave);
         }
-        context.fillStyle = mote.lit
-          ? `rgba(212, 242, 90, ${0.55 + lift * 0.45})`
-          : `rgba(239, 232, 216, ${0.16 + lift * 0.6})`;
+        const level = Math.min(LEVELS - 1, Math.floor(lift * LEVELS));
         const size = mote.size + lift * 2.2;
-        context.fillRect(x - size / 2, y - size / 2, size, size);
+        buckets[(mote.lit ? LEVELS : 0) + level]?.push(x - size / 2, y - size / 2, size);
+      }
+      for (const [index, bucket] of buckets.entries()) {
+        if (bucket.length === 0) continue;
+        const lit = index >= LEVELS,
+          level = (index % LEVELS) / (LEVELS - 1);
+        context.fillStyle = lit
+          ? `rgba(212, 242, 90, ${(0.55 + level * 0.45).toFixed(2)})`
+          : `rgba(239, 232, 216, ${(0.16 + level * 0.6).toFixed(2)})`;
+        context.beginPath();
+        for (let at = 0; at < bucket.length; at += 3) {
+          const size = bucket[at + 2] ?? 0;
+          context.rect(bucket[at] ?? 0, bucket[at + 1] ?? 0, size, size);
+        }
+        context.fill();
       }
     }
 
