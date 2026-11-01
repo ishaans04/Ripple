@@ -236,7 +236,7 @@ export function StudioEditor({
       handle.dataset.near = String(handle.dataset.handle === near);
   }, []);
   return (
-    <main className={styles.page}>
+    <main className={styles.page} data-camera={cameraOn}>
       <header className={styles.header}>
         <a href="/" className={styles.brand}>
           <span className={styles.brandMark} aria-hidden="true" />

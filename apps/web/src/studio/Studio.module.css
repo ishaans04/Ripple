@@ -139,13 +139,35 @@
   background: var(--color-raised);
 }
 .coachSteps li[data-state='next'] .coachMark {
+  position: relative;
+  isolation: isolate;
   border-color: var(--color-action);
   color: var(--color-action);
+}
+.coachSteps li[data-state='next'] .coachMark::after {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border-radius: 50%;
+  background: rgb(212 242 90 / 0.18);
+  z-index: -1;
+  opacity: 0;
   animation: beckon 2s var(--ease-in-out) infinite;
 }
+/* Hand tracking shares the main thread at frame rate, so decorative motion rests while the camera runs. */
+.page[data-camera='true'] .coachSteps li .coachMark::after,
+.page[data-camera='true'] .preview::before {
+  animation: none;
+}
 @keyframes beckon {
+  from,
+  to {
+    transform: scale(1);
+    opacity: 0;
+  }
   50% {
-    box-shadow: 0 0 0 5px rgb(212 242 90 / 0.18);
+    transform: scale(1.42);
+    opacity: 1;
   }
 }
 .coachNow {
