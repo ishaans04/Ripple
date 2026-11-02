@@ -18,6 +18,7 @@ viewers mold the creature's next shell with their **real hand movements**, track
 **[Try the live demo](https://ripple-oze8.onrender.com/)** &nbsp;·&nbsp;
 **[The problem](#the-problem-dead-air)** &nbsp;·&nbsp;
 **[Cocoon Studio](#cocoon-studio-sculpt-it-with-your-hands)** &nbsp;·&nbsp;
+**[Hand tracking](#how-the-hand-tracking-works)** &nbsp;·&nbsp;
 **[How it plays](#how-it-plays)** &nbsp;·&nbsp;
 **[Architecture](#architecture)** &nbsp;·&nbsp;
 **[Run it locally](#run-it-locally)** &nbsp;·&nbsp;
@@ -146,7 +147,56 @@ flowchart LR
     style BROWSER fill:#FAFAF8,stroke:#0F8B7E,stroke-dasharray:4 3,color:#0B3D37
 ```
 
-The interpreter only trusts a hand it is confident about (at least 0.7, with all 21 landmarks inside the frame). Grabbing a point takes a tighter pinch than holding it, so a grip does not flicker loose mid-drag, and the fingertip is smoothed to steady small tremors.
+The interpreter only trusts a hand it is confident about (at least 0.7, with all 21 landmarks inside the frame). Grabbing a point takes a tighter pinch than holding it, so a grip does not flicker loose mid-drag, and the fingertip is smoothed to steady small tremors. The next section explains each stage.
+
+### How the hand tracking works
+
+Cocoon Studio is a small computer-vision pipeline that runs entirely in the viewer's browser. Each camera frame becomes 21 hand landmarks, the landmarks become a gesture, and the gesture becomes a bounded change to the shell. Nothing reaches the server until the artist submits a finished design, and even then it receives only the shape's numbers.
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant CAM as Webcam
+    participant PAGE as Studio page
+    participant W as Tracking worker (MediaPipe)
+    participant G as Gesture interpreter
+    participant ED as Shell editor
+
+    PAGE->>CAM: Request 640×480 video, no audio
+    loop Each animation frame, with at most one frame in flight
+        PAGE->>W: Video frame as an ImageBitmap, transferred without copying
+        W->>W: Hand Landmarker in VIDEO mode, up to two hands
+        W-->>PAGE: 21 (x, y) landmarks per hand, confidence, inference time
+        PAGE->>G: Landmarks, the current shell and your settings
+        G-->>ED: Cursor position, grab, move, release or scale
+        ED-->>PAGE: Clamped, validated shell redrawn as SVG
+    end
+```
+
+**1 · Camera capture.** The camera stays off until you choose **Enable hand controls**. Ripple then asks for 640×480 video at about 15 frames per second (at most 30) and never asks for audio. Browsers only allow camera access on HTTPS or `localhost`. Ripple's `Permissions-Policy` header allows the camera only on `/studio` and `/sandbox`, and blocks the microphone on every page.
+
+**2 · Inference in a worker.** A dedicated module worker loads Google's **MediaPipe Tasks Vision 1.1.1** WebAssembly runtime and the **hand landmarker model** (7.8 MB) from Ripple's own origin, never from a CDN. The build stops unless the model's SHA-256 matches the pinned value, and only the studio pages' Content Security Policy allows WebAssembly to compile. The model runs on the CPU in VIDEO mode, which tracks hands from frame to frame instead of searching each frame from scratch. It follows up to two hands, with detection, presence and tracking confidence thresholds of 0.6. Running in a worker keeps the page and the shell responsive while the model works.
+
+**3 · Adaptive frame scheduling.** On each animation frame, the page copies the current video frame into an `ImageBitmap` and transfers it to the worker. Only one frame is processed at a time. The next one waits for 1.5 times the last inference time, kept between 75 and 400 ms, so a slower computer processes fewer frames instead of building up a queue and falling behind. Every bitmap is closed after use, and processing pauses while the tab is hidden. If the model takes more than 30 seconds to load or a frame takes more than 5 seconds, the camera stops and pointer controls take over. Your draft is kept either way.
+
+**4 · Landmarks.** For each hand, the model returns 21 landmarks: the wrist plus four points along each finger, in coordinates from 0 to 1. The worker returns only each point's x and y and a confidence score. Frames stay inside the worker, and landmarks never leave the browser.
+
+**5 · Gesture interpretation.** A pure, unit-tested function turns the landmarks into editor actions. Its actions can only change the shell's shape; it cannot submit anything or change genes.
+
+| Stage            | Rule                                                                                                                                                                                                                     |
+| :--------------- | :----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Trust gate       | The hand needs confidence of at least 0.7, with all 21 landmarks valid and inside the frame. Otherwise tracking is lost and editing freezes.                                                                             |
+| Warm-up          | Three valid frames in a row are needed before any action, so a hand entering the frame cannot grab by accident.                                                                                                          |
+| Cursor           | The index fingertip (landmark 8), mirrored so it moves like a reflection and mapped onto a 1000 × 1000 editing surface. Larger movements are smoothed by moving 40% of the way toward each new reading.                  |
+| Pinch measure    | The distance from the thumb tip (landmark 4) to the index tip, divided by the hand's size (wrist to the base of the middle finger). The same pinch registers whether your hand is close to the camera or far from it.    |
+| Grab and hold    | A grab needs a pinch ratio under 0.35, and the grip holds until the ratio rises above 0.55. The gap between the two values stops the grip flickering at the threshold.                                                   |
+| Choosing a point | A pinch grabs the nearest of the width, height and curvature points, if it is within 125 units.                                                                                                                          |
+| Shaping          | The fingertip's position sets a new value for the grabbed parameter. The sensitivity setting (0.5 to 1.5) scales the change, and the result is clamped to the shell's limits.                                            |
+| Two-hand scale   | With one-hand mode off, pinching with both hands (ratio under 0.4), fingertips at least 80 units apart, resizes the whole shell. Moving your hands apart or together scales width and height from where the pinch began. |
+
+**6 · Editing and feedback.** Hand changes go through the same editor as pointer and keyboard changes: every value is rounded, clamped and validated against the shared blueprint schema. Each pinch-and-move is recorded as one undo step, and the editor keeps up to 100. The mirrored camera preview draws the 21-point hand skeleton, with the thumb and index tips highlighted. They change colour while you grip, so you can see when a grab has registered.
+
+**Measured responsiveness.** CI runs the real model and worker in installed Chrome and Edge, using a licensed test image in place of a live camera and with the CPU slowed four times. Each run must keep the 95th-percentile time from input to the next frame under 100 ms and the animation-frame time under 150 ms. It must also keep one frame in flight and make no design writes while editing. The latest recorded run measured 16.7 ms for the animation-frame time in both browsers. On an earlier local run (Intel i7-1260P laptop), input to next frame took 26.5 ms in Chrome and 64 ms in Edge at the 95th percentile. Responsiveness with a real camera still depends on the viewer's CPU, lighting and camera; see [Limits](#limits-stated-up-front).
 
 ### What you shape, and what Ripple enforces
 
@@ -323,7 +373,7 @@ sequenceDiagram
 Open it in a desktop browser such as Chrome or Edge. There is nothing to install and no account to create. Everything you do happens in a private world made just for you, so you can try every control without affecting anyone else.
 
 > [!TIP]
-> The demo server is kept awake from 8 am to 8 pm US Pacific (15:00 to 03:00 UTC). Outside those hours it sleeps when nobody is using it, so if the first page is slow to appear, give it up to a minute to wake up; after that it responds normally.
+> The demo server is kept awake from 8 am to 8 pm US Pacific (15:00 to 03:00 UTC) by scheduled health checks ([how it works](#the-public-demo)). Outside those hours it sleeps when nobody is using it, so if the first page is slow to appear, give it up to a minute to wake up; after that it responds normally.
 
 ### Try it in three minutes
 
@@ -555,6 +605,8 @@ Keep real values in your host's secret store, never in the repository or a Docke
 - **The page says the service cannot reach its database.** Run `docker compose ps` and check that `db` is healthy and `migrate` exited with code 0. Use `docker compose logs migrate app` for details.
 - **The image is stale after pulling new code.** Rerun with `--build`.
 - **Hand tracking feels slow.** It runs on your CPU. Close other heavy tabs and apps, face your palm to the camera in good light, and keep one-hand mode on.
+- **The camera does not start.** Browsers only allow the camera on HTTPS or `localhost`. Check that the site has camera permission; if the camera is denied or unavailable, pointer, touch and keyboard controls keep working.
+- **The live demo takes about a minute to open.** Outside 15:00 to 03:00 UTC the free demo server sleeps when idle and wakes on the first request. See [the public demo](#the-public-demo).
 
 </details>
 
@@ -605,6 +657,7 @@ Measured results and their limits are recorded in the [replay and judge evidence
 | **Testing**     | Vitest 5 with fast-check property tests, real-PostgreSQL integration tests, Playwright in Chrome and Edge, axe-core |
 | **Quality**     | ESLint 10 with type-aware rules, Prettier 3, dependency-notice checks                                               |
 | **Delivery**    | Multi-stage Docker image pinned by digest, Docker Compose, GitHub Actions and a Railway configuration               |
+| **Public demo** | Render web service and Neon PostgreSQL, kept awake by cron-job.org and a scheduled GitHub Actions workflow          |
 
 ## Deployment and operations
 
@@ -615,7 +668,30 @@ Ripple runs anywhere that can run its Docker image next to a PostgreSQL database
 | `/health/live`  | Liveness: the process is serving                        |
 | `/health/ready` | Readiness: the database is reachable and migrations ran |
 
-- [Deployment guide](docs/deployment.md): topology, sizing, backups and point-in-time recovery, cost.
+### The public demo
+
+The [live demo](#live-demo) runs on a free Render web service built from the Dockerfile, with a free Neon PostgreSQL database. Render puts a free service to sleep after 15 minutes without traffic, and waking it takes about a minute. To spare judges that wait, two schedulers request `/health/ready` every 10 minutes from 15:00 to 03:00 UTC (8 am to 8 pm US Pacific):
+
+| Scheduler                                                                        | Role                                                                                                                                    |
+| :------------------------------------------------------------------------------- | :-------------------------------------------------------------------------------------------------------------------------------------- |
+| [cron-job.org](https://cron-job.org)                                             | Primary. Runs on time to the minute and emails on repeated failures.                                                                    |
+| [`keep-demo-awake.yml`](.github/workflows/keep-demo-awake.yml) on GitHub Actions | Backup kept in the repository. A single `curl` with no checkout and no permissions, retrying for up to four minutes while Render wakes. |
+
+Both use the same cron expression, in UTC:
+
+```text
+4,14,24,34,44,54 15-23,0-2 * * *
+```
+
+**Why not around the clock?** While the server is awake, its ordered worker checks PostgreSQL continuously, so Neon's free compute never gets to scale to zero. Running 24 hours a day at Neon's smallest size (0.25 compute units) would use about 186 compute-unit-hours a month, beyond the free 100, and Neon would suspend the database until the next month. Twelve hours a day uses about 93. Render's 750 free instance hours a month cover either schedule.
+
+**Why `/health/ready`?** It queries the database, so a suspended or unreachable database makes the ping fail and sends an alert. `/health/live` would keep answering even while the sandbox could not work.
+
+The pingers never touch application code. Disable the workflow from the repository's Actions tab, or pause the job in cron-job.org, to stop them. Setup steps are in the [deployment guide](docs/deployment.md#keeping-the-free-public-demo-awake).
+
+### Guides and tools
+
+- [Deployment guide](docs/deployment.md): topology, sizing, backups and point-in-time recovery, cost, and keeping the free public demo awake.
 - [Operations runbook](docs/operations.md): alerts, incident recovery, backup and restore, deploy and rollback.
 - `npm run status` prints private backlog, deadline, delivery and database diagnostics.
 
@@ -711,7 +787,7 @@ Ripple/
 │   └── database/           Drizzle schema, SQL migrations and the migration runner
 ├── tests/                  browser journeys, installed-judge check, restore rehearsal, packager
 ├── docs/                   specification, guides, runbooks, measured evidence and demo
-├── .github/workflows/      the CI pipeline
+├── .github/workflows/      the CI pipeline and the public demo's keep-awake schedule
 ├── Dockerfile              multi-stage production image
 ├── compose.yaml            PostgreSQL, migrations and the app for local evaluation
 ├── compose.live.yaml       overrides for a live Twitch rehearsal behind HTTPS
@@ -731,18 +807,18 @@ Ripple/
 
 ## Documentation
 
-| Document                                                | Contents                                                             |
-| :------------------------------------------------------ | :------------------------------------------------------------------- |
-| [Product specification](docs/prd.md)                    | Game model, rules, architecture, data model and API                  |
-| [Cocoon Studio specification](docs/cocoon-studio.md)    | The studio addendum: flows, gestures, rules, privacy and tests       |
-| [Judge guide](docs/judge-guide.md)                      | The three-minute sandbox expedition and replay tools                 |
-| [Twitch setup](docs/twitch-setup.md)                    | Accounts, redirect URLs, secrets and end-to-end checklists           |
-| [Deployment](docs/deployment.md)                        | Hosting topology, sizing, backups and cost                           |
-| [Operations](docs/operations.md)                        | Monitoring, incidents, restore, deploy and rollback                  |
-| [Privacy operations](docs/privacy-operations.md)        | Retention and deletion procedures                                    |
-| [Replay and judge evidence](docs/evidence/phase9.md)    | Balance, simulator, replay and judge measurements                    |
-| [Load and hardening evidence](docs/evidence/phase10.md) | Load, restore, client performance and hardening results              |
-| [Recorded walkthrough](docs/demo/README.md)             | What the recorded sandbox walkthrough shows, and how to reproduce it |
+| Document                                                | Contents                                                                   |
+| :------------------------------------------------------ | :------------------------------------------------------------------------- |
+| [Product specification](docs/prd.md)                    | Game model, rules, architecture, data model and API                        |
+| [Cocoon Studio specification](docs/cocoon-studio.md)    | The studio addendum: flows, gestures, rules, privacy and tests             |
+| [Judge guide](docs/judge-guide.md)                      | The three-minute sandbox expedition and replay tools                       |
+| [Twitch setup](docs/twitch-setup.md)                    | Accounts, redirect URLs, secrets and end-to-end checklists                 |
+| [Deployment](docs/deployment.md)                        | Hosting topology, sizing, backups, cost and the demo's keep-awake schedule |
+| [Operations](docs/operations.md)                        | Monitoring, incidents, restore, deploy and rollback                        |
+| [Privacy operations](docs/privacy-operations.md)        | Retention and deletion procedures                                          |
+| [Replay and judge evidence](docs/evidence/phase9.md)    | Balance, simulator, replay and judge measurements                          |
+| [Load and hardening evidence](docs/evidence/phase10.md) | Load, restore, client performance and hardening results                    |
+| [Recorded walkthrough](docs/demo/README.md)             | What the recorded sandbox walkthrough shows, and how to reproduce it       |
 
 ## Built for the Codex × TwitchCon Hackathon
 
@@ -755,7 +831,7 @@ The hackathon asks developers to build, with OpenAI Codex, an interactive experi
 | :---------------------------------------------------- | :---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Built for streamers and their community on Twitch** | Chat evolves a shared creature, the community sculpts its shell during breaks, and raids carry that creation into other channels with credit to where it came from.           |
 | **An interactive experience that connects to Twitch** | Chat voting with `!ripple`, chat activity as the habitat, signed EventSub intake for raids and stream state, Twitch sign-in, bot messages and a transparent OBS overlay.      |
-| **Built with OpenAI Codex**                           | Developed with Codex as the coding agent, with a recorded principal session and measured before-and-after evidence. See [How Codex was used](#how-codex-was-used).            |
+| **Built with OpenAI Codex**                           | Developed with Codex as the coding agent across four recorded sessions, with measured before-and-after evidence. See [How Codex was used](#how-codex-was-used).               |
 | **Source, assets and instructions to run it**         | Try the [live demo](#live-demo) in a browser, or start everything locally with `docker compose up --build`. The keyless sandbox covers the whole loop in about three minutes. |
 
 | Judging criterion                                                                      | Where Ripple stands                                                                                                                                                                                         |
@@ -766,7 +842,16 @@ The hackathon asks developers to build, with OpenAI Codex, an interactive experi
 
 ### How Codex was used
 
-Ripple was built with OpenAI Codex as the coding agent: implementing features, investigating failures, and reproducing and fixing defects against real PostgreSQL with measured before-and-after results. The principal Codex session is `01a18d83-decb-7e01-8cbe-e6c69963d4ab`.
+Ripple was built with OpenAI Codex as the coding agent: writing the specification and plan, implementing features, investigating failures, and reproducing and fixing defects against real PostgreSQL with measured before-and-after results. The work ran across four Codex sessions:
+
+| Codex session                          | Started (UTC)     | What the repository history shows after it started                                                                                                                          |
+| :------------------------------------- | :---------------- | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `01a17ca0-b2ec-7231-952d-184c8a8bbd4b` | 27 October, 09:11 | The product specification, delivery plan and Cocoon Studio specification, repository conventions, and the pure, deterministic game engine                                   |
+| `01a17dd6-41c1-7b23-a98d-a87540e32033` | 27 October, 14:49 | Studio blueprint contracts, the shell editor and in-browser hand tracking, the durable event backbone and replay, the Twitch live loop, and the first raid and lineage work |
+| `01a18648-11d1-7350-a907-345a6b8efb3e` | 29 October, 06:10 | Raids and lineage, the deeper mechanics, the overlay, console and passports, and the connected Cocoon Studio from break to hatch                                            |
+| `01a18d83-decb-7e01-8cbe-e6c69963d4ab` | 30 October, 15:53 | The principal session: the keyless judge sandbox and tooling, the repair iteration below, hardening, release-load and restore gates, and the presentation                   |
+
+Start times come from the session IDs, and the last column summarizes the commits made after each session started.
 
 One recorded iteration from the [project evidence](docs/evidence/phase9.md): the judge sandbox returned HTTP 500 on its next step because PostgreSQL rejected an aggregate over the world clock. After that fix, two further defects were reproduced against the earlier source revision and fixed with stable synthetic account keys and an advisory transaction lock:
 
