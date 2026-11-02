@@ -1,14 +1,12 @@
 # Run a judge expedition
 
-## Start a clean installation
+## Open the live demo
 
-Install Docker, clone the repository, and run:
+Open **<https://ripple-oze8.onrender.com>** in a desktop browser such as Chrome or Edge, choose **Try a three-minute expedition**, then **Start my sandbox**. There is nothing to install, and no Twitch account, bot account, credentials, camera or OpenAI key is required.
 
-```sh
-docker compose up --build
-```
+The demo server sleeps when nobody is using it. If the first page is slow to appear, give it up to a minute to wake up; after that it responds normally.
 
-Open <http://localhost:3000>, choose **Try sandbox**, then **Start my sandbox**. No Twitch grants, bot account, public URL, camera or OpenAI key are required. The first image download/build is installation time. Each judge gets a separate, one-day synthetic world with a home and a neighbor. The persistent badge labels the accelerated clock and every synthetic action.
+Each judge gets a separate, one-day synthetic world with a home and a neighbor channel, so nothing you do affects anyone else. The persistent badge labels the accelerated clock and every synthetic action.
 
 ## The short journey
 
@@ -20,11 +18,25 @@ Open <http://localhost:3000>, choose **Try sandbox**, then **Start my sandbox**.
 
 Home and neighbor share the synthetic clock. Advancing one channel also processes due work elsewhere; it never advances live Twitch time. Stable judge/crowd accounts each get one accepted vote per ballot. Errors and limits are shown from committed results; retrying a different vote cannot overwrite the first. A lost connection keeps the local editor draft, and the world fragment reloads the same expedition. An expired world offers reset.
 
-The automated installed browser journey, including a confirmed pointer design, hatch, replay, lineage inspection and reset, measured 19.2 seconds. This is an automated path after startup, not measured human reading time. See [the evidence](evidence/phase9.md).
+To sculpt freely without a sandbox, open [Cocoon Studio practice](https://ripple-oze8.onrender.com/studio) and choose **Enable hand controls**. Practice drafts stay on your device and are never submitted.
+
+The automated browser journey, including a confirmed pointer design, hatch, replay, lineage inspection and reset, measured 19.2 seconds on a local installation and 42.4 seconds against the live demo, where each step makes a network round trip. These are automated paths after startup, not measured human reading time. See [the evidence](evidence/phase9.md).
+
+## Run it locally instead
+
+If you prefer your own copy, install Docker with Compose v2, clone the repository and start it:
+
+```sh
+git clone https://github.com/ishaans04/Ripple.git
+cd Ripple
+docker compose up --build
+```
+
+Open <http://localhost:3000> and follow the same journey. The first image download and build is installation time. Compose starts PostgreSQL, applies migrations once, then starts the app; stop it with `Ctrl+C` or `docker compose down`, and add `--volumes` to delete the database.
 
 ## Replay and analytics tools
 
-With Node.js 24, `npm ci`, and the local database configured as in `.env.example`, commands run from the repository root:
+These tools run against a local installation. With Node.js 24, `npm ci`, and the local database configured as in `.env.example`, commands run from the repository root:
 
 ```sh
 npm run replay -- export WORLD_UUID tmp/expedition.json
@@ -38,6 +50,6 @@ Create the output directory first. The CLI resolves file paths against the invok
 
 Metrics keep live and sandbox populations separate, report missing denominators as null, distinguish accepted server events from advisory browser signals, and expose the input-modality completion denominators. These counts do not demonstrate retention. No video or landmarks enter them, and declared input modality affects no game rule.
 
-After installation, `npm run smoke:judge` checks the real HTTP path. `npm run test:judge` drives an actual Chromium browser against the installed application with no intercepted requests; first install Chromium with `npx playwright install chromium`. On Windows with installed Chrome, set `JUDGE_BROWSER_CHANNEL=chrome`. `JUDGE_BASE_URL` can select another local installation. Normal `npm run test:e2e` runs the complete Windows Chrome/Edge browser suite on its own server; do not run two suites on the same port or artifact directory concurrently.
+After installation, `npm run smoke:judge` checks the real HTTP path. `npm run test:judge` drives an actual Chromium browser against the installed application with no intercepted requests; first install Chromium with `npx playwright install chromium`. On Windows with installed Chrome, set `JUDGE_BROWSER_CHANNEL=chrome`. Set `JUDGE_BASE_URL` to run it against another installation, such as `https://ripple-oze8.onrender.com`. Normal `npm run test:e2e` runs the complete Windows Chrome/Edge browser suite on its own server; do not run two suites on the same port or artifact directory concurrently.
 
-Real Twitch chat, raids, the two-channel studio rehearsal and real OBS capture remain pending. [Twitch setup](twitch-setup.md) documents those gates; sandbox or accelerated footage must stay labeled.
+The sandbox, in the live demo or locally, uses synthetic chat, votes and raids. Connecting a real Twitch channel, with chat voting, raids, the studio on stream and the OBS overlay, follows the [Twitch setup guide](twitch-setup.md). Keep any sandbox or accelerated footage labelled as synthetic.
