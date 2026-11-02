@@ -323,7 +323,7 @@ sequenceDiagram
 Open it in a desktop browser such as Chrome or Edge. There is nothing to install and no account to create. Everything you do happens in a private world made just for you, so you can try every control without affecting anyone else.
 
 > [!TIP]
-> The demo server sleeps when nobody is using it. If the first page is slow to appear, give it up to a minute to wake up; after that it responds normally.
+> The demo server is kept awake from 8 am to 8 pm US Pacific (15:00 to 03:00 UTC). Outside those hours it sleeps when nobody is using it, so if the first page is slow to appear, give it up to a minute to wake up; after that it responds normally.
 
 ### Try it in three minutes
 

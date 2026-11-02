@@ -4,7 +4,7 @@
 
 Open **<https://ripple-oze8.onrender.com>** in a desktop browser such as Chrome or Edge, choose **Try a three-minute expedition**, then **Start my sandbox**. There is nothing to install, and no Twitch account, bot account, credentials, camera or OpenAI key is required.
 
-The demo server sleeps when nobody is using it. If the first page is slow to appear, give it up to a minute to wake up; after that it responds normally.
+The demo server is kept awake from 8 am to 8 pm US Pacific (15:00 to 03:00 UTC). Outside those hours it sleeps when nobody is using it, so if the first page is slow to appear, give it up to a minute to wake up; after that it responds normally.
 
 Each judge gets a separate, one-day synthetic world with a home and a neighbor channel, so nothing you do affects anyone else. The persistent badge labels the accelerated clock and every synthetic action.
 
