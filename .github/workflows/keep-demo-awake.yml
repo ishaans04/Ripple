@@ -1,0 +1,31 @@
+name: Keep demo awake
+
+# The public demo runs on a Render free web service, which sleeps after 15 idle minutes and takes
+# about a minute to wake. Pinging every 10 minutes keeps it awake from 15:00 to 03:00 UTC
+# (8 am to 8 pm US Pacific). The window is deliberately not 24/7: while the server is awake its
+# game runtime queries the Neon free database continuously, and 12 hours a day at 0.25 CU stays
+# inside Neon's 100 CU-hour monthly allowance. GitHub may start scheduled runs late; an external
+# scheduler such as cron-job.org on the same window is the primary pinger (docs/deployment.md).
+on:
+  schedule:
+    - cron: '4,14,24,34,44,54 15-23,0-2 * * *'
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: keep-demo-awake
+  cancel-in-progress: false
+
+jobs:
+  ping:
+    name: Ping the live demo
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      # /health/ready also queries the database, so a suspended Neon compute fails the run
+      # instead of passing while the sandbox is broken.
+      - run: >-
+          curl --fail --silent --show-error
+          --max-time 90 --retry 4 --retry-delay 15 --retry-all-errors --retry-max-time 240
+          https://ripple-oze8.onrender.com/health/ready

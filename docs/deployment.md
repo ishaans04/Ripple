@@ -25,3 +25,14 @@ Checked 30 October 2026: [Railway pricing](https://docs.railway.com/pricing) lis
 Render with a paid Docker web service and paid managed PostgreSQL is a reasonable alternative when you prefer that provider's database operations and billing. A VPS can cost less but makes you responsible for patching, TLS, off-host backups, WAL, monitoring and recovery. Static hosting alone, request-only functions and sleeping free services do not fit Ripple's current persistent-worker design. Recheck provider pricing and backup terms before purchasing.
 
 No hosted service or paid resource has been created by Phase 10 implementation. The final live acceptance and production credentials remain with the operator.
+
+## Keeping the free public demo awake
+
+The public demo at <https://ripple-oze8.onrender.com> runs on a Render free web service with a Neon free PostgreSQL database. Render [spins a free service down](https://render.com/docs/free) after 15 minutes without inbound traffic and takes about a minute to wake. It allows 750 free instance hours per workspace each month. While the server is awake, its game runtime queries the database continuously, so Neon cannot [scale to zero](https://neon.com/faqs/free-plan-limits-and-quotas) either. Neon's free plan allows 100 CU-hours per project each month and suspends compute until the next month once they are used. Running around the clock at the smallest 0.25 CU compute would use about 186 CU-hours, so the demo stays awake only from 15:00 to 03:00 UTC (8 am to 8 pm US Pacific). That is about 93 CU-hours a month. Outside the window, the first visit waits for a normal cold start.
+
+Two pingers request `/health/ready` every 10 minutes during the window. That endpoint queries the database, so a suspended Neon compute is reported as a failure even though the pages would still load:
+
+1. **cron-job.org (primary).** Create a free account at <https://cron-job.org>, then create a cron job with URL `https://ripple-oze8.onrender.com/health/ready`, request method GET, a custom schedule in the UTC time zone with minutes `4,14,24,34,44,54` and hours `15-23,0-2`, a 30-second timeout, and failure notifications turned on. A first run that times out during a cold start is expected; the next one finds the service awake.
+2. **GitHub Actions (backup).** [`.github/workflows/keep-demo-awake.yml`](../.github/workflows/keep-demo-awake.yml) uses the same window and retries for up to four minutes while Render wakes. GitHub can start scheduled runs late and disables schedules after 60 days without repository activity, so it is only a backup. Run it by hand from the Actions tab to check the live demo, and disable it there to stop pinging.
+
+Check Render's instance-hour usage and Neon's CU-hour usage in their dashboards during the first week. If the Neon compute is configured above 0.25 CU, or another free Render service shares the workspace, shorten the window.
