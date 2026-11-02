@@ -8,6 +8,7 @@
 And when the streamer steps away, the break becomes a studio:<br>
 viewers mold the creature's next shell with their **real hand movements**, tracked live through an ordinary webcam.
 
+[![Live demo: ripple-oze8.onrender.com](https://img.shields.io/badge/Live_demo-ripple--oze8.onrender.com-E8553D?style=for-the-badge)](https://ripple-oze8.onrender.com/)
 [![Codex × TwitchCon Hackathon 2026](https://img.shields.io/badge/Codex_%C3%97_TwitchCon-Hackathon_2026-111111?style=for-the-badge)](https://twitchcon-codex.devpost.com/)
 [![Cocoon Studio: sculpt with your hands](https://img.shields.io/badge/Cocoon_Studio-sculpt_with_your_hands-0F8B7E?style=for-the-badge&logo=mediapipe&logoColor=white)](#cocoon-studio-sculpt-it-with-your-hands)
 [![Built for Twitch](https://img.shields.io/badge/Built_for-Twitch_EventSub-9146FF?style=for-the-badge&logo=twitch&logoColor=white)](#twitch-integration)
@@ -22,6 +23,8 @@ viewers mold the creature's next shell with their **real hand movements**, track
 [![Playwright](https://img.shields.io/badge/Playwright-Chrome_%2B_Edge-2EAD33?style=flat-square)](https://playwright.dev/)
 [![Vitest](https://img.shields.io/badge/Vitest-5-6E9F18?style=flat-square&logo=vitest&logoColor=white)](https://vitest.dev/)
 
+**[Try the live demo](https://ripple-oze8.onrender.com/)** &nbsp;·&nbsp;
+**[What the demo includes](#live-demo)** &nbsp;·&nbsp;
 **[Hackathon entry](#built-for-the-codex--twitchcon-hackathon)** &nbsp;·&nbsp;
 **[Run it locally](#run-it-locally)** &nbsp;·&nbsp;
 **[Cocoon Studio](#cocoon-studio-sculpt-it-with-your-hands)** &nbsp;·&nbsp;
@@ -36,7 +39,7 @@ viewers mold the creature's next shell with their **real hand movements**, track
 </div>
 
 > [!NOTE]
-> **Built for the [Codex × TwitchCon Hackathon](https://twitchcon-codex.devpost.com/)** (23 October to 2 November 2026): an interactive experience for streamers and their communities that connects to Twitch through chat, EventSub, the Twitch API and an OBS overlay, built with OpenAI Codex. Judges can run the whole loop locally in about three minutes with no Twitch account, credentials or camera; see [the hackathon section](#built-for-the-codex--twitchcon-hackathon).
+> **Built for the [Codex × TwitchCon Hackathon](https://twitchcon-codex.devpost.com/)** (23 October to 2 November 2026): an interactive experience for streamers and their communities that connects to Twitch through chat, EventSub, the Twitch API and an OBS overlay, built with OpenAI Codex. **Try it now at [ripple-oze8.onrender.com](https://ripple-oze8.onrender.com/)**: the whole game loop runs in your browser in about three minutes, with no install, Twitch account or camera required. See [what the demo includes](#live-demo) and [the hackathon section](#built-for-the-codex--twitchcon-hackathon).
 
 ## At a glance
 
@@ -45,6 +48,50 @@ Every stream has dead air. The streamer steps away for food, a call or a stretch
 | **01 · Vote**                                                                                                 | **02 · Survive**                                                                                                    | **03 · Sculpt**                                                                                                                                | **04 · Travel**                                                                                                                                |
 | :------------------------------------------------------------------------------------------------------------ | :------------------------------------------------------------------------------------------------------------------ | :--------------------------------------------------------------------------------------------------------------------------------------------- | :--------------------------------------------------------------------------------------------------------------------------------------------- |
 | Chat picks one of three genetic mutations with `!ripple 1`, `2` or `3`. One account, one vote, no pay-to-win. | The stream is the habitat. Chat's burst and steadiness score the creature's fitness and move its energy up or down. | On a break, Cocoon Studio opens. Viewers pinch, pull and stretch the creature's shell with in-browser hand tracking, then chat picks a winner. | A real raid sends one descendant to the destination channel, carrying its genes, its community-made shell and a passport of where it has been. |
+
+## Live demo
+
+### **[ripple-oze8.onrender.com](https://ripple-oze8.onrender.com/)**
+
+Open it in a desktop browser such as Chrome or Edge. There is nothing to install and no account to create. Everything you do happens in a private world made just for you, so you can try every control without affecting anyone else.
+
+> [!TIP]
+> The demo server sleeps when nobody is using it. If the first page is slow to appear, give it up to a minute to wake up; after that it responds normally.
+
+### Try it in three minutes
+
+1. Open the demo and choose **Try a three-minute expedition**, then **Start my sandbox**. You get a home channel and a neighbor channel that share a clock you advance yourself.
+2. **Vote.** Choose **Synthetic vote 1**, then **Next scheduled step** to close the ballot and watch the creature's genes change.
+3. **Survive.** Choose **Add local chat**, optionally **Change habitat**, and advance again. The channel card explains how its energy changed and why.
+4. **Raid.** Choose **Simulate raid to other channel**, switch to **Neighbor channel** and follow the visitor through its welcome vote and its contest with the resident.
+5. **Sculpt.** Back home, choose **Start break studio**. Shape the shell with your mouse, keyboard, touch or **Enable hand controls** for your webcam, then **Review and submit** and **Submit proposal**.
+6. **Pick and hatch.** Advance to close creation, vote for your design, choose **Approve design**, and keep advancing until the new shell hatches onto the creature.
+7. **Verify.** Open **Inspect round details** or **Lineage and passports**, then choose **Replay and verify** to rebuild both channels from their records and confirm they match. **Reset sandbox** starts a fresh world.
+
+The [judge guide](docs/judge-guide.md) explains each step in more detail.
+
+### What the demo includes
+
+| Page                                                              | What you can do there                                                                                                                                                |
+| :---------------------------------------------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [Landing page](https://ripple-oze8.onrender.com/)                 | Meet the game: how chat, the habitat, the break studio and raids fit together.                                                                                       |
+| [Sandbox](https://ripple-oze8.onrender.com/sandbox)               | Play the whole loop as both the streamer and the chat: votes, chat activity, habitats, raids, a break studio, finalist voting, approval, hatching, replay and reset. |
+| [Cocoon Studio practice](https://ripple-oze8.onrender.com/studio) | Sculpt a shell freely with your hands through a webcam, or with a mouse, touch or keyboard. Drafts stay on your device and are never submitted from this page.       |
+| Round details, lineage and passports                              | Opened from inside your sandbox: a read-only live view of each channel, the family tree of every creature and the passport each descendant carries.                  |
+| [Privacy](https://ripple-oze8.onrender.com/privacy)               | What Ripple stores, what it never collects and how deletion works.                                                                                                   |
+
+Every sandbox action is clearly labelled synthetic, and each sandbox world expires after a day. The camera is optional: if you enable hand controls, video and hand landmarks stay in your browser and are never uploaded.
+
+### What the demo does not include
+
+The demo is not connected to Twitch. The sandbox drives the same game rules with synthetic chat, votes and raids, so you can see everything a channel would, but these parts need a real Twitch channel:
+
+| Not in the demo                                                                         | How to see it                                                                                                                                                                                           |
+| :-------------------------------------------------------------------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Real chat voting with `!ripple`, the chat bot, real raids and stream online and offline | Run your own copy with the [Twitch setup guide](docs/twitch-setup.md). In the demo, the sandbox's synthetic controls stand in for chat and raids.                                                       |
+| Signing in to the broadcaster console with Twitch                                       | The [console](https://ripple-oze8.onrender.com/controller) opens, but connecting a channel needs Twitch. The sandbox gives you the same streamer controls on a synthetic channel.                       |
+| The OBS overlay and scene bridge on a live stream                                       | The sandbox shows the same live channel state the overlay displays, and a manual **Start break studio** stands in for the scene bridge. OBS setup is in the [Twitch setup guide](docs/twitch-setup.md). |
+| Twitch sign-in for studio artists and paid-event celebrations                           | Both need a live channel. Sandbox artists are synthetic, and celebrations never affect the game.                                                                                                        |
 
 ## The problem: dead air
 
@@ -98,12 +145,12 @@ No OBS bridge? The broadcaster can open the studio with one click from the conso
 
 The hackathon asks developers to build, with OpenAI Codex, an interactive experience for streamers and their communities that connects to Twitch. Ripple's answer starts from the least interactive part of any stream, the break, and turns it into the moment the whole community creates something together.
 
-| The hackathon asks for                                | How Ripple answers                                                                                                                                                                |
-| :---------------------------------------------------- | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Built for streamers and their community on Twitch** | Chat evolves a shared creature, the community sculpts its shell during breaks, and raids carry that creation into other channels with credit to where it came from.               |
-| **An interactive experience that connects to Twitch** | Chat voting with `!ripple`, chat activity as the habitat, signed EventSub intake for raids and stream state, Twitch sign-in, bot messages and a transparent OBS overlay.          |
-| **Built with OpenAI Codex**                           | Developed with Codex as the coding agent, with a recorded principal session and measured before-and-after evidence. See [How Codex was used](#how-codex-was-used).                |
-| **Source, assets and instructions to run it**         | One command, `docker compose up --build`, starts everything. A keyless sandbox covers the whole loop in about three minutes, and the [judge guide](docs/judge-guide.md) walks it. |
+| The hackathon asks for                                | How Ripple answers                                                                                                                                                            |
+| :---------------------------------------------------- | :---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Built for streamers and their community on Twitch** | Chat evolves a shared creature, the community sculpts its shell during breaks, and raids carry that creation into other channels with credit to where it came from.           |
+| **An interactive experience that connects to Twitch** | Chat voting with `!ripple`, chat activity as the habitat, signed EventSub intake for raids and stream state, Twitch sign-in, bot messages and a transparent OBS overlay.      |
+| **Built with OpenAI Codex**                           | Developed with Codex as the coding agent, with a recorded principal session and measured before-and-after evidence. See [How Codex was used](#how-codex-was-used).            |
+| **Source, assets and instructions to run it**         | Try the [live demo](#live-demo) in a browser, or start everything locally with `docker compose up --build`. The keyless sandbox covers the whole loop in about three minutes. |
 
 | Judging criterion                                                                      | Where Ripple stands                                                                                                                                                                                         |
 | :------------------------------------------------------------------------------------- | :---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -115,7 +162,7 @@ The hackathon asks developers to build, with OpenAI Codex, an interactive experi
 
 Ripple was built with OpenAI Codex as the coding agent: implementing features, investigating failures, and reproducing and fixing defects against real PostgreSQL with measured before-and-after results. The principal Codex session is `01a18d83-decb-7e01-8cbe-e6c69963d4ab`.
 
-One recorded iteration from the [Phase 9 evidence](docs/evidence/phase9.md): the judge sandbox returned HTTP 500 on its next step because PostgreSQL rejected an aggregate over the world clock. After that fix, two further defects were reproduced against the earlier source revision and fixed with stable synthetic account keys and an advisory transaction lock:
+One recorded iteration from the [project evidence](docs/evidence/phase9.md): the judge sandbox returned HTTP 500 on its next step because PostgreSQL rejected an aggregate over the world clock. After that fix, two further defects were reproduced against the earlier source revision and fixed with stable synthetic account keys and an advisory transaction lock:
 
 | Observation                                                    | Before          | After                           |
 | :------------------------------------------------------------- | :-------------- | :------------------------------ |
@@ -346,7 +393,7 @@ The overlay is built for broadcasts: transparent at 1920×1080, silent, readable
 
 ## Architecture
 
-Ripple is one TypeScript application service plus PostgreSQL, deployed as a single image. Browsers never talk to the database, and hand tracking runs in each viewer's browser, so no GPU or vision backend is needed.
+Ripple is one TypeScript application service plus PostgreSQL, shipped as a single image. Browsers never talk to the database, and hand tracking runs in each viewer's browser, so no GPU or vision backend is needed.
 
 ```mermaid
 flowchart LR
@@ -434,7 +481,7 @@ npm run replay -- run bundle.json               # rebuild in a new, isolated rep
 
 Live integration is off by default, so local evaluation needs no secrets. When enabled, Ripple supports broadcaster and operator-bot OAuth with encrypted grants and refresh leases, signed EventSub intake with subscription reconciliation, chat voting and activity with Shared Chat deduplication, stream online and offline recovery, and bounded bot output through a committed outbox. Raids arrive as signed `channel.raid` notifications.
 
-Open `/controller` on a configured HTTPS deployment to connect a channel. The [Twitch setup guide](docs/twitch-setup.md) lists the exact redirect URLs, scopes, operator bot authorization and the live acceptance checklist. For a rehearsal on a local machine behind an HTTPS tunnel:
+Open `/controller` on your own HTTPS installation to connect a channel. The [Twitch setup guide](docs/twitch-setup.md) lists the exact redirect URLs, scopes, operator bot authorization and an end-to-end checklist. For a rehearsal on a local machine behind an HTTPS tunnel:
 
 ```sh
 docker compose -f compose.yaml -f compose.live.yaml up --build -d
@@ -491,7 +538,7 @@ The server validates its environment at startup and stops with a message naming 
 | `SHUTDOWN_GRACE_MS`    | `15000`            | Time to drain requests before forcing exit (1,000–120,000)                   |
 | `WEB_ROOT`             | unset              | Built web app to serve; the Docker image sets it                             |
 | `TEST_DATABASE_URL`    | unset              | Connection used by integration tests to create and drop temporary databases  |
-| `ENABLE_LIVE_TWITCH`   | `false`            | Turns on the hosted Twitch integration; requires the variables below         |
+| `ENABLE_LIVE_TWITCH`   | `false`            | Turns on the live Twitch integration; requires the variables below           |
 | `ENABLE_COCOON_STUDIO` | `true`             | Installation-wide studio switch; each channel still opts in from its console |
 | `ENABLE_CELEBRATIONS`  | `false`            | Optional cheer, subscription and hype train celebrations (presentation only) |
 | `RULESET_VERSION`      | `candidate-1`      | Versioned balance parameters                                                 |
@@ -553,7 +600,7 @@ CI runs on every push to `main`, and it checks more than tests:
 | Restore rehearsal       | Real dump, separate-database restore, reapplied erasures and deterministic replay | `npm run test:restore` |
 | Release load            | The load gates described above                                                    | `npm run test:load`    |
 
-Measured results and their limits are recorded in the [Phase 9](docs/evidence/phase9.md) and [Phase 10](docs/evidence/phase10.md) evidence.
+Measured results and their limits are recorded in the [replay and judge evidence](docs/evidence/phase9.md) and the [load and hardening evidence](docs/evidence/phase10.md).
 
 </details>
 
@@ -570,11 +617,11 @@ Measured results and their limits are recorded in the [Phase 9](docs/evidence/ph
 | **Vision**      | MediaPipe Tasks Vision 1.1.1 in a module worker, with a pinned, SHA-256-verified hand landmarker model              |
 | **Testing**     | Vitest 5 with fast-check property tests, real-PostgreSQL integration tests, Playwright in Chrome and Edge, axe-core |
 | **Quality**     | ESLint 10 with type-aware rules, Prettier 3, dependency-notice checks                                               |
-| **Delivery**    | Multi-stage Docker image pinned by digest, Docker Compose, GitHub Actions and Railway                               |
+| **Delivery**    | Multi-stage Docker image pinned by digest, Docker Compose, GitHub Actions and a Railway configuration               |
 
 ## Deployment and operations
 
-The recommended first host is **Railway**: one always-on Docker service and a private PostgreSQL 18 service in the same region. [`railway.json`](railway.json) runs migrations as a pre-deploy step, gates rollout on `/health/ready` and drains connections for 20 seconds. Keep app sleep disabled: webhooks, sockets and round deadlines need a running process.
+Ripple runs anywhere that can run its Docker image next to a PostgreSQL database in the same region. Apply migrations before each start with `node packages/database/dist/cli/migrate.js`, then run `node apps/server/dist/main.js`. The included [`railway.json`](railway.json) does this as a pre-deploy step, gates rollout on `/health/ready` and drains connections for 20 seconds. A host that sleeps when idle is fine for the keyless sandbox, but a Twitch-connected installation must stay awake: webhooks, sockets and round deadlines need a running process.
 
 | Endpoint        | Purpose                                                 |
 | :-------------- | :------------------------------------------------------ |
@@ -686,32 +733,29 @@ Ripple/
 
 ## Limits, stated up front
 
-| Limit                                                      | Why it is there                                                                                                                                      |
-| :--------------------------------------------------------- | :--------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Live Twitch, OBS and hosted acceptance is **pending**.     | It needs authorized broadcaster and bot accounts and a public HTTPS URL. Sandbox and synthetic results never stand in for it.                        |
-| Hand tracking runs on the **viewer's CPU**.                | Keeping inference in the browser keeps video private and needs no server GPU, so responsiveness depends on the device. Other inputs are equal.       |
-| A design is **one shell with one marking layer**.          | A bounded, declarative blueprint keeps every creature readable on stream and safe to render. There are no free-form meshes or uploaded images.       |
-| Shape is **expression, not power**.                        | The gene trade-off is fixed by the session's legal template, so a bigger or better-drawn shell never wins fitness.                                   |
-| Coming back early **cancels an open studio**.              | Creation belongs to the break. Set the creation window to match a typical break; returning during the vote can finish or cancel, as configured.      |
-| Payments and viewer counts **buy nothing**.                | Cheers, subscriptions and hype trains only show a thank-you. The payer and the amount are never read or stored.                                      |
-| The [recorded demo](docs/demo/README.md) is **synthetic**. | It shows the installed app with synthetic events and accelerated time, labelled on screen. Authentic Twitch and OBS footage follows live acceptance. |
+| Limit                                             | Why it is there                                                                                                                                 |
+| :------------------------------------------------ | :---------------------------------------------------------------------------------------------------------------------------------------------- |
+| Hand tracking runs on the **viewer's CPU**.       | Keeping inference in the browser keeps video private and needs no server GPU, so responsiveness depends on the device. Other inputs are equal.  |
+| A design is **one shell with one marking layer**. | A bounded, declarative blueprint keeps every creature readable on stream and safe to render. There are no free-form meshes or uploaded images.  |
+| Shape is **expression, not power**.               | The gene trade-off is fixed by the session's legal template, so a bigger or better-drawn shell never wins fitness.                              |
+| Coming back early **cancels an open studio**.     | Creation belongs to the break. Set the creation window to match a typical break; returning during the vote can finish or cancel, as configured. |
+| Payments and viewer counts **buy nothing**.       | Cheers, subscriptions and hype trains only show a thank-you. The payer and the amount are never read or stored.                                 |
+| Sandbox worlds are **synthetic and short-lived**. | They run on an accelerated clock you control, label every synthetic action, expire after a day and never mix with Twitch-connected worlds.      |
 
 ## Documentation
 
-| Document                                             | Contents                                                        |
-| :--------------------------------------------------- | :-------------------------------------------------------------- |
-| [Product specification](docs/prd.md)                 | Game model, rules, architecture, data model, API and acceptance |
-| [Cocoon Studio specification](docs/cocoon-studio.md) | The studio addendum: flows, gestures, rules, privacy and tests  |
-| [Delivery plan](docs/plan.md)                        | Phased implementation plan and its exit checks                  |
-| [Judge guide](docs/judge-guide.md)                   | The three-minute sandbox expedition and replay tools            |
-| [Twitch setup](docs/twitch-setup.md)                 | Accounts, redirect URLs, secrets and live acceptance checklists |
-| [Deployment](docs/deployment.md)                     | Hosting topology, sizing, backups and cost                      |
-| [Operations](docs/operations.md)                     | Monitoring, incidents, restore, deploy and rollback             |
-| [Privacy operations](docs/privacy-operations.md)     | Retention and deletion procedures                               |
-| [Release handoff](docs/submission.md)                | Reviewable artifacts, packaging and deferred acceptance         |
-| [Phase 9 evidence](docs/evidence/phase9.md)          | Balance, simulator, replay and judge measurements               |
-| [Phase 10 evidence](docs/evidence/phase10.md)        | Load, restore, client performance and hardening results         |
-| [Synthetic demo](docs/demo/README.md)                | What the recorded demonstration shows, and how to reproduce it  |
+| Document                                                | Contents                                                             |
+| :------------------------------------------------------ | :------------------------------------------------------------------- |
+| [Product specification](docs/prd.md)                    | Game model, rules, architecture, data model and API                  |
+| [Cocoon Studio specification](docs/cocoon-studio.md)    | The studio addendum: flows, gestures, rules, privacy and tests       |
+| [Judge guide](docs/judge-guide.md)                      | The three-minute sandbox expedition and replay tools                 |
+| [Twitch setup](docs/twitch-setup.md)                    | Accounts, redirect URLs, secrets and end-to-end checklists           |
+| [Deployment](docs/deployment.md)                        | Hosting topology, sizing, backups and cost                           |
+| [Operations](docs/operations.md)                        | Monitoring, incidents, restore, deploy and rollback                  |
+| [Privacy operations](docs/privacy-operations.md)        | Retention and deletion procedures                                    |
+| [Replay and judge evidence](docs/evidence/phase9.md)    | Balance, simulator, replay and judge measurements                    |
+| [Load and hardening evidence](docs/evidence/phase10.md) | Load, restore, client performance and hardening results              |
+| [Recorded walkthrough](docs/demo/README.md)             | What the recorded sandbox walkthrough shows, and how to reproduce it |
 
 ## Author
 
